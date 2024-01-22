@@ -1,7 +1,6 @@
-all:
-	echo "Compiling"
+compile:
+	stack install --local-bin-path . wacc:exe:compile
 
+.PHONY: clean
 clean:
-	echo "Cleaning"
-
-.PHONY: all clean
+	$(RM) compile
