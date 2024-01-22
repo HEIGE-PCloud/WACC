@@ -1,0 +1,46 @@
+name: wacc
+version: 0.1.0.0
+author:
+  - Daniel Trowbridge <dt222@ic.ac.uk>
+  - Manav Sankriti <ms3822@ic.ac.uk>
+  - Junrong Chen <jc4922@ic.ac.uk>
+  - Edwin Fernando <ef322@ic.ac.uk>
+
+dependencies:
+  - base >= 4.7 && < 5
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wmissing-export-lists
+  - -Wmissing-home-modules
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+executables:
+  compile:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - wacc
+
+tests:
+  wacc-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - wacc

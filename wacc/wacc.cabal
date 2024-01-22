@@ -1,0 +1,54 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           wacc
+version:        0.1.0.0
+author:         Daniel Trowbridge <dt222@ic.ac.uk>,
+                Manav Sankriti <ms3822@ic.ac.uk>,
+                Junrong Chen <jc4922@ic.ac.uk>,
+                Edwin Fernando <ef322@ic.ac.uk>
+maintainer:     Daniel Trowbridge <dt222@ic.ac.uk>,
+                Manav Sankriti <ms3822@ic.ac.uk>,
+                Junrong Chen <jc4922@ic.ac.uk>,
+                Edwin Fernando <ef322@ic.ac.uk>
+build-type:     Simple
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_wacc
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable compile
+  main-is: Main.hs
+  other-modules:
+      Paths_wacc
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , wacc
+  default-language: Haskell2010
+
+test-suite wacc-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_wacc
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , wacc
+  default-language: Haskell2010

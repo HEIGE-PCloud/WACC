@@ -1,6 +1,2 @@
-.bsp/
-.metals/
-.scala-build/
-.vscode/
-.idea/
-wacc-compiler
+.stack-work/
+*~
