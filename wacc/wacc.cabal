@@ -42,7 +42,7 @@ executable compile
 
 test-suite wacc-test
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: Main.hs
   other-modules:
       Paths_wacc
   hs-source-dirs:
@@ -50,5 +50,9 @@ test-suite wacc-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , tasty
+    , tasty-discover
+    , tasty-hspec
+    , tasty-quickcheck
     , wacc
   default-language: Haskell2010
