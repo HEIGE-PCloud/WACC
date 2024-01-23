@@ -5,6 +5,7 @@ workflow:
 
 stages:
   - build
+  - lint
   - test
 
 default:
@@ -18,6 +19,13 @@ build:
   script:
     - make
   stage: build
+
+lint:
+  image: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
+  needs: []
+  script:
+    - fourmolu --mode check wacc
+  stage: lint
 
 test:
   needs:
