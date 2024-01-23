@@ -22,7 +22,7 @@ build:
 
 lint:
   image:
-    entrypoint: ""
+    entrypoint: [""]
     name: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
   needs: []
   script:
