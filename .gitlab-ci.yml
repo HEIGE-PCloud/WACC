@@ -21,7 +21,9 @@ build:
   stage: build
 
 lint:
-  image: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
+  image:
+    entrypoint: ""
+    name: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
   needs: []
   script:
     - fourmolu --mode check wacc
