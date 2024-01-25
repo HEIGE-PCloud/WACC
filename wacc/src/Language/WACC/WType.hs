@@ -2,7 +2,9 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeData #-}
 
--- | WACC types.
+{- |
+WACC types.
+-}
 module Language.WACC.WType
   ( WType (..)
   , Erasure (..)
