@@ -1,5 +1,7 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeData #-}
 
 {- |
@@ -8,6 +10,7 @@ WACC types.
 module Language.WACC.WType
   ( WType (..)
   , Erasure (..)
+  , Ordered
   )
 where
 
@@ -40,3 +43,12 @@ data WType (erasure :: Erasure) where
   WKnownPair :: WType Erased -> WType Erased -> WType erasure
   -- | @t[]@
   WArray :: WType Known -> WType erasure
+
+{- |
+WACC types which can be compared using @>@, @>=@, @<@ and @<=@.
+-}
+class Ordered (wtype :: WType erasure)
+
+instance Ordered WChar
+
+instance Ordered WInt

@@ -18,6 +18,8 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Language.WACC.Annotation
+      Language.WACC.Expr
       Language.WACC.WType
       Lib
   other-modules:
