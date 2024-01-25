@@ -10,6 +10,7 @@ WACC types.
 module Language.WACC.WType
   ( WType (..)
   , Erasure (..)
+  , HeapAllocated
   , Ordered
   )
 where
@@ -52,3 +53,14 @@ class Ordered (wtype :: WType erasure)
 instance Ordered WChar
 
 instance Ordered WInt
+
+{- |
+WACC type which are allocated on the heap.
+-}
+class HeapAllocated (wtype :: WType erasure)
+
+instance HeapAllocated (WArray t)
+
+instance HeapAllocated WErasedPair
+
+instance HeapAllocated (WKnownPair t1 t2)
