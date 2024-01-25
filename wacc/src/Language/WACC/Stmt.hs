@@ -21,6 +21,9 @@ import Data.Kind (Type)
 import Language.WACC.Annotation (Ann)
 import Language.WACC.WType (Erasure, HeapAllocated, WType (..))
 
+{- |
+The @fst@ or @snd@ element of a WACC @pair@.
+-}
 data
   PairElem
     ( value
