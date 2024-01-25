@@ -39,9 +39,9 @@ data WType (erasure :: Erasure) where
   WString :: WType erasure
   -- | @pair@
   WErasedPair :: WType Erased
-  -- | @pair(t1, t2)@
+  -- | @pair(\<type\>, \<type\>)@
   WKnownPair :: WType Erased -> WType Erased -> WType erasure
-  -- | @t[]@
+  -- | @\<type\>[]@
   WArray :: WType Known -> WType erasure
 
 {- |
