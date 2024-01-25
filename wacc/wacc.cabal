@@ -28,6 +28,7 @@ library
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
       Language.WACC.Expr
+      Language.WACC.Lit
       Language.WACC.Parser.Token
       Language.WACC.Stmt
       Language.WACC.WType
