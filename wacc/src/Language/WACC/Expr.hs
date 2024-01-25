@@ -15,60 +15,60 @@ import Language.WACC.WType (Ordered, WType (..))
 Unary WACC expressions.
 -}
 class UnExpr (expr :: WType erasure -> Type) where
-  -- | @!x@
+  -- | @!\<expr\>@
   not :: Ann UnExpr expr (expr WBool -> expr WBool)
 
-  -- | @-x@
+  -- | @-\<expr\>@
   negate :: Ann UnExpr expr (expr WInt -> expr WInt)
 
-  -- | @len x@
+  -- | @len \<expr\>@
   len :: Ann UnExpr expr (expr (WArray t) -> expr WInt)
 
-  -- | @ord x@
+  -- | @ord \<expr\>@
   ord :: Ann UnExpr expr (expr WChar -> expr WInt)
 
-  -- | @chr x@
+  -- | @chr \<expr\>@
   chr :: Ann UnExpr expr (expr WInt -> expr WChar)
 
 {- |
 Binary WACC expressions.
 -}
 class BinExpr (expr :: WType erasure -> Type) where
-  -- | @x * y@
+  -- | @\<expr\> * \<expr\>@
   mul :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
 
-  -- | @x / y@
+  -- | @\<expr\> / \<expr\>@
   div :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
 
-  -- | @x % y@
+  -- | @\<expr\> % \<expr\>@
   mod :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
 
-  -- | @x + y@
+  -- | @\<expr\> + \<expr\>@
   add :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
 
-  -- | @x - y@
+  -- | @\<expr\> - \<expr\>@
   sub :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
 
-  -- | @x > y@
+  -- | @\<expr\> > \<expr\>@
   gt :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
 
-  -- | @x >= y@
+  -- | @\<expr\> >= \<expr\>@
   gte :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
 
-  -- | @x < y@
+  -- | @\<expr\> \< \<expr\>@
   lt :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
 
-  -- | @x <= y@
+  -- | @\<expr\> \<= \<expr\>@
   lte :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
 
-  -- | @x == y@
+  -- | @\<expr\> == \<expr\>@
   eq :: Ann BinExpr expr (expr t -> expr t -> expr WBool)
 
-  -- | @x != y@
+  -- | @\<expr\> != \<expr\>@
   ineq :: Ann BinExpr expr (expr t -> expr t -> expr WBool)
 
-  -- | @x && y@
+  -- | @\<expr\> && \<expr\>@
   and :: Ann BinExpr expr (expr WBool -> expr WBool -> expr WBool)
 
-  -- | @x || y@
+  -- | @\<expr\> || \<expr\>@
   or :: Ann BinExpr expr (expr WBool -> expr WBool -> expr WBool)
