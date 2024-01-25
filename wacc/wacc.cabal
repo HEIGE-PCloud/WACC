@@ -27,6 +27,7 @@ library
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
       Language.WACC.Parser.Token
+      Language.WACC.WType
       Lib
   other-modules:
       Paths_wacc
