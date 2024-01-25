@@ -19,6 +19,7 @@ where
 
 import Data.Kind (Type)
 import Language.WACC.Annotation (Ann)
+import Language.WACC.Expr (ArrayElem)
 import Language.WACC.WType (Erasure, HeapAllocated, WType (..))
 
 {- |
@@ -52,8 +53,8 @@ data
   where
   -- | > <ident>
   LVIdent :: ident t -> LValue expr ident t
-  -- | > <ident>[<expr>]
-  LVArrayElem :: ident (WArray t) -> expr WInt -> LValue expr ident t
+  -- | > <ident>[<expr>]...
+  LVArrayElem :: ArrayElem expr ident t -> LValue expr ident t
   -- |
   -- > fst <lvalue>
   --

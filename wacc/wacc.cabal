@@ -20,7 +20,6 @@ library
   exposed-modules:
       Language.WACC.Annotation
       Language.WACC.Expr
-      Language.WACC.Lit
       Language.WACC.Stmt
       Language.WACC.WType
       Lib
