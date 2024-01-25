@@ -33,9 +33,9 @@ data
     (ident :: WType erasure -> Type)
     (t :: WType erasure)
   where
-  -- | @fst \<value\>@
+  -- | > fst <value>
   FstElem :: value expr ident (WKnownPair t1 t2) -> PairElem value expr ident t1
-  -- | @snd \<value\>@
+  -- | > snd <value>
   SndElem :: value expr ident (WKnownPair t1 t2) -> PairElem value expr ident t2
 
 {- |
@@ -47,11 +47,16 @@ data
     (ident :: WType erasure -> Type)
     (t :: WType erasure)
   where
-  -- | @\<ident\>@
+  -- | > <ident>
   LVIdent :: ident t -> LValue expr ident t
-  -- | @\<ident\>[\<expr\>]@
+  -- | > <ident>[<expr>]
   LVArrayElem :: ident (WArray t) -> expr WInt -> LValue expr ident t
-  -- | @fst \<lvalue\>@ or @snd \<lvalue\>@
+  -- |
+  -- > fst <lvalue>
+  --
+  -- or
+  --
+  -- > snd <lvalue>
   LVPairElem :: PairElem LValue expr ident t -> LValue expr ident t
 
 type LValue' erasure stmt = LValue (Expr erasure stmt) (Ident erasure stmt)
@@ -65,15 +70,20 @@ data
     (ident :: WType erasure -> Type)
     (t :: WType erasure)
   where
-  -- | @\<expr\>@
+  -- | > <expr>
   RVExpr :: expr t -> RValue expr ident t
-  -- | @[\<expr\>, ...]@
+  -- | > [<expr>, ...]
   RVArrayLit :: [expr t] -> RValue expr ident (WArray t)
-  -- | @newpair(\<expr\>, \<expr\>)@
+  -- | > newpair(<expr>, <expr>)
   RVNewPair :: expr t1 -> expr t2 -> RValue expr ident (WKnownPair t1 t2)
-  -- | @fst \<rvalue\>@ or @snd \<rvalue\>@
+  -- |
+  -- > fst <rvalue>
+  --
+  -- or
+  --
+  -- > snd <rvalue>
   RVPairElem :: PairElem RValue expr ident t -> RValue expr ident t
-  -- | @call \<ident\>(\<expr\>, ...)@
+  -- | > call <ident>(<expr>, ...)
   RVCall :: ident t -> [expr t] -> RValue expr ident t
 
 type RValue' erasure stmt = RValue (Expr erasure stmt) (Ident erasure stmt)
@@ -101,53 +111,53 @@ class Stmt (stmt :: RetType erasure -> Type) where
     Ident (erasure :: Erasure) (stmt :: RetType erasure -> Type)
       :: WType erasure -> Type
 
-  -- | @skip@
+  -- | > skip
   skip :: Ann Stmt stmt (stmt ret)
 
-  -- | @\<type\> \<ident\> = \<rvalue\>@
+  -- | > <type> <ident> = <rvalue>
   decl
     :: Ann
         Stmt
         stmt
         (Ident erasure stmt t -> RValue' erasure stmt t -> stmt ret)
 
-  -- | @\<lvalue\> = \<rvalue\>@
+  -- | > <lvalue> = <rvalue>
   asgn
     :: Ann
         Stmt
         stmt
         (LValue' erasure stmt t -> RValue' erasure stmt t -> stmt ret)
 
-  -- | @read \<lvalue\>@
+  -- | > read <lvalue>
   read :: Ann Stmt stmt (LValue' erasure stmt t -> stmt ret)
 
-  -- | @free \<expr\>@
+  -- | > free <expr>
   free :: (HeapAllocated t) => Ann Stmt stmt (Expr erasure stmt t -> stmt ret)
 
-  -- | @return \<expr\>@
+  -- | > return <expr>
   return :: Ann Stmt stmt (Expr erasure stmt t -> stmt (Ret t))
 
-  -- | @exit \<expr\>@
+  -- | > exit <expr>
   exit :: Ann Stmt stmt (Expr erasure stmt WInt -> stmt Main)
 
-  -- | @print \<expr\>@
+  -- | > print <expr>
   print :: Ann Stmt stmt (Expr erasure stmt t -> stmt ret)
 
-  -- | @println \<expr\>@
+  -- | > println <expr>
   println :: Ann Stmt stmt (Expr erasure stmt t -> stmt ret)
 
-  -- | @if \<expr\> then \<stmt\> else \<stmt\> fi@
+  -- | > if <expr> then <stmt> else <stmt> fi
   ifElse
     :: Ann
         Stmt
         stmt
         (Expr erasure stmt WBool -> stmt ret -> stmt ret -> stmt ret)
 
-  -- | @while \<expr\> do \<stmt\> done@
+  -- | > while <expr> do <stmt> done
   while :: Ann Stmt stmt (Expr erasure stmt WBool -> stmt ret -> stmt ret)
 
-  -- | @begin \<stmt\> end@
+  -- | > begin <stmt> end
   beginEnd :: Ann Stmt stmt (stmt ret -> stmt ret)
 
-  -- | @\<stmt\>; \<stmt\>@
+  -- | > <stmt>; <stmt>
   seq :: Ann Stmt stmt (stmt ret -> stmt ret -> stmt ret)
