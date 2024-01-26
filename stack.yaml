@@ -3,3 +3,8 @@ resolver:
 
 packages:
   - wacc/
+
+extra-deps:
+  - gigaparsec-0.2.2.0
+
+compiler: ghc-9.6.3

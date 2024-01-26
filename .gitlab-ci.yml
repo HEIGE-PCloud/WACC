@@ -9,7 +9,7 @@ stages:
   - test
 
 default:
-  image: haskell:9.6.4
+  image: haskell:9.6.3
 
 build:
   artifacts:
