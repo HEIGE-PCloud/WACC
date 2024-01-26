@@ -4,6 +4,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeData #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 {- |
 WACC statements.
@@ -13,6 +14,7 @@ module Language.WACC.Stmt
   , LValue (..)
   , RValue (..)
   , PairElem (..)
+  , FnCall (..)
   , RetType (..)
   )
 where
@@ -66,31 +68,51 @@ data
 type LValue' erasure stmt = LValue (Expr erasure stmt) (Ident erasure stmt)
 
 {- |
+An invocation of a WACC function.
+-}
+data
+  FnCall
+    (expr :: WType erasure -> Type)
+    (args :: [WType erasure])
+    (ret :: WType erasure)
+  where
+  -- | > <ident>()
+  Call :: FnCall expr '[] ret
+  -- |
+  -- > <ident>(<expr>, ...)
+  -- >         ^^^^^^^^^^^
+  Arg :: FnCall expr args ret -> expr arg -> FnCall expr (arg : args) ret
+
+{- |
 A WACC @rvalue@, which is the source of an assignment statement.
 -}
 data
   RValue
+    (fnident :: [WType erasure] -> WType erasure -> Type)
     (expr :: WType erasure -> Type)
     (ident :: WType erasure -> Type)
     (t :: WType erasure)
   where
   -- | > <expr>
-  RVExpr :: expr t -> RValue expr ident t
+  RVExpr :: expr t -> RValue fnident expr ident t
   -- | > [<expr>, ...]
-  RVArrayLit :: [expr t] -> RValue expr ident (WArray t)
+  RVArrayLit :: [expr t] -> RValue fnident expr ident (WArray t)
   -- | > newpair(<expr>, <expr>)
-  RVNewPair :: expr t1 -> expr t2 -> RValue expr ident (WKnownPair t1 t2)
+  RVNewPair
+    :: expr t1 -> expr t2 -> RValue fnident expr ident (WKnownPair t1 t2)
   -- |
   -- > fst <rvalue>
   --
   -- or
   --
   -- > snd <rvalue>
-  RVPairElem :: PairElem RValue expr ident t -> RValue expr ident t
+  RVPairElem
+    :: PairElem (RValue fnident) expr ident t -> RValue fnident expr ident t
   -- | > call <ident>(<expr>, ...)
-  RVCall :: ident t -> [expr t] -> RValue expr ident t
+  RVCall :: fnident args t -> FnCall expr args t -> RValue fnident expr ident t
 
-type RValue' erasure stmt = RValue (Expr erasure stmt) (Ident erasure stmt)
+type RValue' erasure stmt =
+  RValue (FnIdent erasure stmt) (Expr erasure stmt) (Ident erasure stmt)
 
 {- |
 Return type kind.
@@ -114,6 +136,13 @@ class Stmt (stmt :: RetType erasure -> Type) where
   type
     Ident (erasure :: Erasure) (stmt :: RetType erasure -> Type)
       :: WType erasure -> Type
+
+  -- | Function identifier type.
+  type
+    FnIdent
+      (erasure :: Erasure)
+      (stmt :: RetType erasure -> Type)
+      :: [WType erasure] -> WType erasure -> Type
 
   -- | > skip
   skip :: Ann Stmt stmt (stmt ret)
