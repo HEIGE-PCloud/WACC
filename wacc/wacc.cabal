@@ -18,8 +18,10 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Data.HList
       Language.WACC.Annotation
       Language.WACC.Expr
+      Language.WACC.Prog
       Language.WACC.Stmt
       Language.WACC.WType
       Lib
