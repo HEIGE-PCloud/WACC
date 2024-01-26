@@ -7,7 +7,7 @@
 {- |
 WACC types.
 -}
-module Language.WACC.WType
+module Language.WACC.AST.WType
   ( WType (..)
   , Erasure (..)
   , HeapAllocated

@@ -9,7 +9,7 @@
 {- |
 WACC statements.
 -}
-module Language.WACC.Stmt
+module Language.WACC.AST.Stmt
   ( Stmt (..)
   , LValue (..)
   , RValue (..)
@@ -20,9 +20,9 @@ module Language.WACC.Stmt
 where
 
 import Data.Kind (Type)
-import Language.WACC.Annotation (Ann)
-import Language.WACC.Expr (ArrayElem)
-import Language.WACC.WType (Erasure, HeapAllocated, WType (..))
+import Language.WACC.AST.Annotation (Ann)
+import Language.WACC.AST.Expr (ArrayElem)
+import Language.WACC.AST.WType (Erasure, HeapAllocated, WType (..))
 
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.

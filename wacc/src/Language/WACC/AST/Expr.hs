@@ -7,7 +7,7 @@
 {- |
 WACC expressions.
 -}
-module Language.WACC.Expr
+module Language.WACC.AST.Expr
   ( AtomExpr (..)
   , UnExpr (..)
   , BinExpr (..)
@@ -16,8 +16,8 @@ module Language.WACC.Expr
 where
 
 import Data.Kind (Type)
-import Language.WACC.Annotation (Ann)
-import Language.WACC.WType (Erasure, Ordered, WType (..))
+import Language.WACC.AST.Annotation (Ann)
+import Language.WACC.AST.WType (Erasure, Ordered, WType (..))
 
 {- |
 WACC array elements.
