@@ -4,7 +4,7 @@
 {- |
 Annotation functor family.
 -}
-module Language.WACC.Annotation (Ann) where
+module Language.WACC.AST.Annotation (Ann) where
 
 import Data.Kind (Constraint, Type)
 

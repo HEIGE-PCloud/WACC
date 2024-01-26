@@ -7,12 +7,12 @@
 {- |
 WACC programs.
 -}
-module Language.WACC.Prog (Prog (..), FnArgs) where
+module Language.WACC.AST.Prog (Prog (..), FnArgs) where
 
 import Data.HList (HList (..))
 import Data.Kind (Type)
-import Language.WACC.Stmt (RetType (..))
-import Language.WACC.WType (WType (..))
+import Language.WACC.AST.Stmt (RetType (..))
+import Language.WACC.AST.WType (WType (..))
 
 {- |
 Identifiers for WACC function arguments.
