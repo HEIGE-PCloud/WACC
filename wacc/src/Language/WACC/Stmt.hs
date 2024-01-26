@@ -142,7 +142,7 @@ class Stmt (stmt :: RetType erasure -> Type) where
   return :: Ann Stmt stmt (Expr erasure stmt t -> stmt (Ret t))
 
   -- | > exit <expr>
-  exit :: Ann Stmt stmt (Expr erasure stmt WInt -> stmt Main)
+  exit :: Ann Stmt stmt (Expr erasure stmt WInt -> stmt ret)
 
   -- | > print <expr>
   print :: Ann Stmt stmt (Expr erasure stmt t -> stmt ret)
