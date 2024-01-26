@@ -2,8 +2,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeData #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -24,8 +22,7 @@ where
 import Data.Kind (Type)
 import Language.WACC.AST.Annotation (Ann)
 import Language.WACC.AST.Expr (ArrayElem)
-import Language.WACC.AST.Ident (Ident)
-import Language.WACC.AST.WType (Erasure (Erased), HeapAllocated, WType (..))
+import Language.WACC.AST.WType (Erasure, HeapAllocated, WType (..))
 
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
@@ -40,23 +37,12 @@ data
     )
     (expr :: WType erasure -> Type)
     (ident :: WType erasure -> Type)
-    (t :: WType Erased)
-  = -- | > fst <value>
-    forall t'. FstElem (value expr ident (WKnownPair t t'))
-  | -- | > snd <value>
-    forall t'. SndElem (value expr ident (WKnownPair t' t))
-
-{- |
-This instance can only test constructor equality as both constructors use
-existentially quantified type variables.
--}
-instance Eq (PairElem value expr ident t) where
-  FstElem _ == FstElem _ = True
-  SndElem _ == SndElem _ = True
-  _ == _ = False
-
-deriving instance
-  (forall t'. Show (value expr ident t')) => Show (PairElem value expr ident t)
+    (t :: WType erasure)
+  where
+  -- | > fst <value>
+  FstElem :: value expr ident (WKnownPair t1 t2) -> PairElem value expr ident t1
+  -- | > snd <value>
+  SndElem :: value expr ident (WKnownPair t1 t2) -> PairElem value expr ident t2
 
 {- |
 A WACC @lvalue@, which is the target of an assignment statement.
@@ -79,13 +65,7 @@ data
   -- > snd <lvalue>
   LVPairElem :: PairElem LValue expr ident t -> LValue expr ident t
 
-deriving instance
-  (Eq (expr WInt), forall t'. Eq (ident t')) => Eq (LValue expr ident t)
-
-deriving instance
-  (Show (expr WInt), forall t'. Show (ident t')) => Show (LValue expr ident t)
-
-type LValue' erasure stmt = LValue (Expr erasure stmt) (Ident Stmt stmt)
+type LValue' erasure stmt = LValue (Expr erasure stmt) (Ident erasure stmt)
 
 {- |
 An invocation of a WACC function.
@@ -102,10 +82,6 @@ data
   -- > <ident>(<expr>, ...)
   -- >         ^^^^^^^^^^^
   Arg :: FnCall expr args ret -> expr arg -> FnCall expr (arg : args) ret
-
-deriving instance (forall t. Eq (expr t)) => Eq (FnCall expr args ret)
-
-deriving instance (forall t. Show (expr t)) => Show (FnCall expr args ret)
 
 {- |
 A WACC @rvalue@, which is the source of an assignment statement.
@@ -135,12 +111,8 @@ data
   -- | > call <ident>(<expr>, ...)
   RVCall :: fnident args t -> FnCall expr args t -> RValue fnident expr ident t
 
-deriving instance
-  (forall args t'. Show (fnident args t'), forall t'. Show (expr t'))
-  => Show (RValue fnident expr ident t)
-
 type RValue' erasure stmt =
-  RValue (FnIdent erasure stmt) (Expr erasure stmt) (Ident Stmt stmt)
+  RValue (FnIdent erasure stmt) (Expr erasure stmt) (Ident erasure stmt)
 
 {- |
 Return type kind.
@@ -160,6 +132,11 @@ class Stmt (stmt :: RetType erasure -> Type) where
     Expr (erasure :: Erasure) (stmt :: RetType erasure -> Type)
       :: WType erasure -> Type
 
+  -- | Identifier type.
+  type
+    Ident (erasure :: Erasure) (stmt :: RetType erasure -> Type)
+      :: WType erasure -> Type
+
   -- | Function identifier type.
   type
     FnIdent
@@ -175,7 +152,7 @@ class Stmt (stmt :: RetType erasure -> Type) where
     :: Ann
         Stmt
         stmt
-        (Ident Stmt stmt t -> RValue' erasure stmt t -> stmt ret)
+        (Ident erasure stmt t -> RValue' erasure stmt t -> stmt ret)
 
   -- | > <lvalue> = <rvalue>
   asgn

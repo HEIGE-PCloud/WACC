@@ -19,7 +19,6 @@ build-type:     Simple
 library
   exposed-modules:
       Data.HList
-      Language.WACC.Annotation
       Language.WACC.AST
       Language.WACC.AST.Annotation
       Language.WACC.AST.Expr
@@ -27,11 +26,7 @@ library
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
-      Language.WACC.Expr
       Language.WACC.Parser.Token
-      Language.WACC.Prog
-      Language.WACC.Stmt
-      Language.WACC.WType
       Lib
   other-modules:
       Paths_wacc
