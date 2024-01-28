@@ -21,6 +21,7 @@ library
       Data.HList
       Language.WACC.AST.Annotation
       Language.WACC.AST.Expr
+      Language.WACC.AST.Ident
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
