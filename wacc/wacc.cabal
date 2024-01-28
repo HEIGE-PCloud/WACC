@@ -19,6 +19,7 @@ build-type:     Simple
 library
   exposed-modules:
       Data.HList
+      Language.WACC.AST
       Language.WACC.AST.Annotation
       Language.WACC.AST.Expr
       Language.WACC.AST.Ident
