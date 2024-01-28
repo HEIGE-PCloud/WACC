@@ -22,6 +22,7 @@ where
 import Data.Kind (Type)
 import Language.WACC.AST.Annotation (Ann)
 import Language.WACC.AST.Expr (ArrayElem)
+import Language.WACC.AST.Ident (Ident)
 import Language.WACC.AST.WType (Erasure, HeapAllocated, WType (..))
 
 {- |
@@ -65,7 +66,7 @@ data
   -- > snd <lvalue>
   LVPairElem :: PairElem LValue expr ident t -> LValue expr ident t
 
-type LValue' erasure stmt = LValue (Expr erasure stmt) (Ident erasure stmt)
+type LValue' erasure stmt = LValue (Expr erasure stmt) (Ident Stmt stmt)
 
 {- |
 An invocation of a WACC function.
@@ -112,7 +113,7 @@ data
   RVCall :: fnident args t -> FnCall expr args t -> RValue fnident expr ident t
 
 type RValue' erasure stmt =
-  RValue (FnIdent erasure stmt) (Expr erasure stmt) (Ident erasure stmt)
+  RValue (FnIdent erasure stmt) (Expr erasure stmt) (Ident Stmt stmt)
 
 {- |
 Return type kind.
@@ -132,11 +133,6 @@ class Stmt (stmt :: RetType erasure -> Type) where
     Expr (erasure :: Erasure) (stmt :: RetType erasure -> Type)
       :: WType erasure -> Type
 
-  -- | Identifier type.
-  type
-    Ident (erasure :: Erasure) (stmt :: RetType erasure -> Type)
-      :: WType erasure -> Type
-
   -- | Function identifier type.
   type
     FnIdent
@@ -152,7 +148,7 @@ class Stmt (stmt :: RetType erasure -> Type) where
     :: Ann
         Stmt
         stmt
-        (Ident erasure stmt t -> RValue' erasure stmt t -> stmt ret)
+        (Ident Stmt stmt t -> RValue' erasure stmt t -> stmt ret)
 
   -- | > <lvalue> = <rvalue>
   asgn
