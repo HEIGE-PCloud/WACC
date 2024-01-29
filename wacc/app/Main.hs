@@ -8,8 +8,10 @@ import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
 import Text.Gigaparsec
 import Text.Gigaparsec.Char
-import Text.Gigaparsec.Token.Descriptions (LexicalDesc (LexicalDesc, nameDesc, numericDesc, spaceDesc, symbolDesc, textDesc), plainName, plainNumeric, plainSpace, plainSymbol, plainText)
-import Text.Gigaparsec.Token.Lexer (Lexer, fully, mkLexer)
+import Text.Gigaparsec.Token.Descriptions (BreakCharDesc (NoBreakChar), LexicalDesc (LexicalDesc, nameDesc, numericDesc, spaceDesc, symbolDesc, textDesc), NumericDesc (integerNumbersCanBeBinary, integerNumbersCanBeHexadecimal, integerNumbersCanBeOctal, leadingDotAllowed, leadingZerosAllowed, literalBreakChar, realNumbersCanBeBinary, realNumbersCanBeHexadecimal, realNumbersCanBeOctal, trailingDotAllowed), PlusSignPresence (PlusOptional), plainName, plainNumeric, plainSpace, plainSymbol, plainText, positiveSign)
+import Text.Gigaparsec.Token.Lexer (Lexeme (names, integer), Lexer (lexeme), fully, mkLexer, IntegerParsers (decimal), TextParsers (ascii))
+import qualified Data.Set as Set
+import Text.Gigaparsec.Internal.Token.Lexer
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
@@ -40,15 +42,59 @@ compile filename = do
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
 
-lexer :: Lexer
+lexer :: Text.Gigaparsec.Token.Lexer.Lexer
 lexer =
-  mkLexer $
+  Text.Gigaparsec.Token.Lexer.mkLexer $
     LexicalDesc
       { nameDesc = plainName,
         symbolDesc = plainSymbol,
-        numericDesc = plainNumeric,
+        numericDesc =
+          plainNumeric
+            { literalBreakChar = NoBreakChar,
+              leadingDotAllowed = True,
+              trailingDotAllowed = True,
+              leadingZerosAllowed = True,
+              positiveSign = PlusOptional,
+              integerNumbersCanBeHexadecimal = False,
+              integerNumbersCanBeOctal = False,
+              integerNumbersCanBeBinary = False,
+              realNumbersCanBeHexadecimal = False,
+              realNumbersCanBeOctal = False,
+              realNumbersCanBeBinary = False
+            },
         textDesc = plainText,
         spaceDesc = plainSpace
       }
 
-parser = fully lexer item
+parser :: Parsec Integer
+parser = fully lexer intliter
+
+
+mylexeme :: Text.Gigaparsec.Token.Lexer.Lexeme
+mylexeme = lexeme lexer
+myinteger = integer mylexeme
+
+myStringLiteral = stringLiteral mylexeme
+myCharLiteral = charLiteral mylexeme
+
+charliter :: Parsec Char
+charliter = ascii myCharLiteral
+stringliter :: Parsec String
+stringliter = ascii myStringLiteral
+
+intliter :: Parsec Integer
+intliter = decimal myinteger
+
+pairliter :: Parsec String
+pairliter = string "null"
+
+intsign :: Parsec Char
+intsign = char '+' <|> char '-'
+
+digit :: Parsec Char
+digit = oneOf (Set.fromList ['0'..'9'])
+
+
+boolliter :: Parsec Bool
+boolliter = (string "true" $> True) <|> (string "false" $> False)
+
