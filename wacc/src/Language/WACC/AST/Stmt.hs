@@ -85,7 +85,7 @@ deriving instance
 deriving instance
   (Show (expr WInt), forall t'. Show (ident t')) => Show (LValue expr ident t)
 
-type LValue' erasure stmt = LValue (Expr erasure stmt) (Ident Stmt stmt)
+type LValue' erasure stmt = LValue (StmtExpr erasure stmt) (Ident Stmt stmt)
 
 {- |
 An invocation of a WACC function.
@@ -140,7 +140,7 @@ deriving instance
   => Show (RValue fnident expr ident t)
 
 type RValue' erasure stmt =
-  RValue (FnIdent erasure stmt) (Expr erasure stmt) (Ident Stmt stmt)
+  RValue (FnIdent erasure stmt) (StmtExpr erasure stmt) (Ident Stmt stmt)
 
 {- |
 Return type kind.
@@ -157,7 +157,7 @@ WACC statements indexed by function return type.
 class Stmt (stmt :: RetType erasure -> Type) where
   -- | Expression type.
   type
-    Expr (erasure :: Erasure) (stmt :: RetType erasure -> Type)
+    StmtExpr (erasure :: Erasure) (stmt :: RetType erasure -> Type)
       :: WType erasure -> Type
 
   -- | Function identifier type.
@@ -188,29 +188,29 @@ class Stmt (stmt :: RetType erasure -> Type) where
   read :: Ann Stmt stmt (LValue' erasure stmt t -> stmt ret)
 
   -- | > free <expr>
-  free :: (HeapAllocated t) => Ann Stmt stmt (Expr erasure stmt t -> stmt ret)
+  free :: (HeapAllocated t) => Ann Stmt stmt (StmtExpr erasure stmt t -> stmt ret)
 
   -- | > return <expr>
-  return :: Ann Stmt stmt (Expr erasure stmt t -> stmt (Ret t))
+  return :: Ann Stmt stmt (StmtExpr erasure stmt t -> stmt (Ret t))
 
   -- | > exit <expr>
-  exit :: Ann Stmt stmt (Expr erasure stmt WInt -> stmt ret)
+  exit :: Ann Stmt stmt (StmtExpr erasure stmt WInt -> stmt ret)
 
   -- | > print <expr>
-  print :: Ann Stmt stmt (Expr erasure stmt t -> stmt ret)
+  print :: Ann Stmt stmt (StmtExpr erasure stmt t -> stmt ret)
 
   -- | > println <expr>
-  println :: Ann Stmt stmt (Expr erasure stmt t -> stmt ret)
+  println :: Ann Stmt stmt (StmtExpr erasure stmt t -> stmt ret)
 
   -- | > if <expr> then <stmt> else <stmt> fi
   ifElse
     :: Ann
         Stmt
         stmt
-        (Expr erasure stmt WBool -> stmt ret -> stmt ret -> stmt ret)
+        (StmtExpr erasure stmt WBool -> stmt ret -> stmt ret -> stmt ret)
 
   -- | > while <expr> do <stmt> done
-  while :: Ann Stmt stmt (Expr erasure stmt WBool -> stmt ret -> stmt ret)
+  while :: Ann Stmt stmt (StmtExpr erasure stmt WBool -> stmt ret -> stmt ret)
 
   -- | > begin <stmt> end
   beginEnd :: Ann Stmt stmt (stmt ret -> stmt ret)

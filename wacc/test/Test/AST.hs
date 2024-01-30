@@ -167,7 +167,7 @@ type instance AST.Ann cls TestAST = Identity
 
 type instance AST.Ident cls TestAST = TestIdent
 
-instance AST.AtomExpr TestAST where
+instance AST.Expr TestAST where
   intLit = Identity IntLit
   boolLit = Identity BoolLit
   charLit = Identity CharLit
@@ -176,15 +176,11 @@ instance AST.AtomExpr TestAST where
   ident = Identity Ident
   arrayElem = Identity ArrayElem
   parens = Identity Parens
-
-instance AST.UnExpr TestAST where
   not = Identity Not
   negate = Identity Negate
   len = Identity Len
   ord = Identity Ord
   chr = Identity Chr
-
-instance AST.BinExpr TestAST where
   mul = Identity Mul
   div = Identity Div
   mod = Identity Mod
@@ -201,7 +197,7 @@ instance AST.BinExpr TestAST where
 
 instance AST.Stmt TestAST where
   type FnIdent erasure TestAST = TestFnIdent
-  type Expr erasure TestAST = TestAST
+  type StmtExpr erasure TestAST = TestAST
   skip = Identity Skip
   decl = Identity Decl
   asgn = Identity Asgn
