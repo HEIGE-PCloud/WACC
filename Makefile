@@ -1,4 +1,5 @@
 compile:
+	stack update
 	stack install --local-bin-path . wacc:exe:compile
 
 .PHONY: clean check
