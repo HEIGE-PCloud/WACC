@@ -76,10 +76,10 @@ showBinOp :: String -> String -> String -> String
 showBinOp op x y = "(" ++ x ++ op ++ y ++ ")"
 
 binSig :: String -> Parsec (String -> String -> String)
-binSig op = string op $> showBinOp op
+binSig op = sym op $> showBinOp op
 
 unarySig :: String -> Parsec (String -> String)
-unarySig op = string op $> \x -> "(" ++ op ++ x ++ ")"
+unarySig op = sym op $> \x -> "(" ++ op ++ x ++ ")"
 
 expr :: Parsec String
 expr =
@@ -129,9 +129,9 @@ param :: Parsec String
 param = trace "param" $ liftA2 (++) typeParser ident
 
 stmt :: Parsec String
-stmt = trace "stmt" $ 
-      sym "skip"
-  <|> param <* sym "=" *> rvalue
+stmt = trace "stmt" $ liftA2 (++) (
+      atomic (sym "skip")
+  <|> atomic (param <* sym "=" *> rvalue)
   <|> lvalue <* sym "=" <* rvalue
   <|> sym "read" *> lvalue
   <|> sym "free" *> expr
@@ -142,7 +142,10 @@ stmt = trace "stmt" $
   <|> sym "if" *> expr <* sym "then" *> stmt <* sym "else" *> stmt <* sym "fi"
   <|> sym "while" *> expr <* sym "do" *> stmt <* sym "done"
   <|> sym "begin" *> stmt <* sym "end"
-  -- <|> stmt <* sym ";" *> stmt
+  ) stmtTail
+
+stmtTail :: Parsec String
+stmtTail = showMaybe <$> option (sym ";" *> stmt)
 
 lvalue :: Parsec String
 lvalue = trace "lvalue" $ ident <|> arrayElem <|> pairElem
