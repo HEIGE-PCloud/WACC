@@ -12,7 +12,6 @@ import Text.Gigaparsec
 import Text.Gigaparsec.Char
 import Text.Gigaparsec.Expr (Fixity (InfixL, InfixN, InfixR, Prefix), Prec (Atom), ops, precedence, (>+))
 import Text.Gigaparsec.Combinator
-import Debug.Trace
 import Language.WACC.Parser.Token
 
 
@@ -46,7 +45,7 @@ usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
 
 parser :: Parsec String
-parser = trace "parser" $ fully program
+parser = fully program
 
 intLiter :: Parsec String
 intLiter = show <$> decimal
@@ -94,42 +93,42 @@ expr =
       >+ ops InfixR [binSig "||"]
 
 typeParser :: Parsec String
-typeParser = trace "typeParser" $ baseOrArrayType <|> pairType
+typeParser = baseOrArrayType <|> pairType
 
 baseType :: Parsec String
-baseType = trace "baseType" $ sym "int" <|> sym "bool" <|> sym "char" <|> sym "string"
+baseType = sym "int" <|> sym "bool" <|> sym "char" <|> sym "string"
 
 -- arrayType :: Parsec String
--- arrayType = trace "arrayType" $ typeParser <* sym "[]"
+-- arrayType = typeParser <* sym "[]"
 
 baseOrArrayType :: Parsec String
-baseOrArrayType = trace "baseOrArrayType" $ liftA2 (++) baseType (showMaybe <$> option (sym "[]"))
+baseOrArrayType = liftA2 (++) baseType (showMaybe <$> option (sym "[]"))
 
 pairType :: Parsec String
-pairType = trace "pairType" $ sym "pair" *> sym "(" *> pairElemType <* sym "," *> pairElemType <* sym ")"
+pairType = sym "pair" *> sym "(" *> pairElemType <* sym "," *> pairElemType <* sym ")"
 
 pairElemType :: Parsec String
-pairElemType = trace "pairElemType" $ baseOrArrayType <|> sym "pair"
+pairElemType = baseOrArrayType <|> sym "pair"
 
 program :: Parsec String
--- program = trace "program" $ sym "begin" *> liftA2 (++) (concat <$> many func) stmt <* sym "end"
-program = trace "program" $ sym "begin" *>  stmt <* sym "end"
+-- program = sym "begin" *> liftA2 (++) (concat <$> many func) stmt <* sym "end"
+program = sym "begin" *>  stmt <* sym "end"
 
 showMaybe :: Maybe String -> String
 showMaybe Nothing = ""
 showMaybe (Just x) = x
 
 func :: Parsec String
-func = trace "func" $ param <* sym "(" *> (showMaybe <$> option paramList) <* sym ")" <* sym "is" *> stmt <* sym "end"
+func = param <* sym "(" *> (showMaybe <$> option paramList) <* sym ")" <* sym "is" *> stmt <* sym "end"
 
 paramList :: Parsec String
-paramList = trace "paramList" $ concat <$> (param <:> many (sym "," *> param))
+paramList = concat <$> (param <:> many (sym "," *> param))
 
 param :: Parsec String
-param = trace "param" $ liftA2 (++) typeParser ident
+param = liftA2 (++) typeParser ident
 
 stmt :: Parsec String
-stmt = trace "stmt" $ liftA2 (++) (
+stmt = liftA2 (++) (
       atomic (sym "skip")
   <|> atomic (param <* sym "=" *> rvalue)
   <|> lvalue <* sym "=" <* rvalue
@@ -148,21 +147,21 @@ stmtTail :: Parsec String
 stmtTail = showMaybe <$> option (sym ";" *> stmt)
 
 lvalue :: Parsec String
-lvalue = trace "lvalue" $ ident <|> arrayElem <|> pairElem
+lvalue = ident <|> arrayElem <|> pairElem
 
 rvalue :: Parsec String
-rvalue = trace "rvalue" $ expr 
+rvalue = expr 
   <|> arrayLiter 
   <|> (sym "newpair" *> sym "(" *> expr <* sym "," *> expr <* sym ")")
   <|> pairElem
   <|> sym "call" *> ident <* sym "(" *> (showMaybe <$> option argList) <* sym ")"
 
 argList :: Parsec String
-argList = trace "argList" $ concat <$> (expr <:> many (sym "," *> expr))
+argList = concat <$> (expr <:> many (sym "," *> expr))
 
 pairElem :: Parsec String
-pairElem = trace "pairElem" $ sym "fst" *> lvalue <|> sym "snd" *> lvalue
+pairElem = sym "fst" *> lvalue <|> sym "snd" *> lvalue
 
 arrayLiter :: Parsec String
-arrayLiter = trace "arrayLiter" $ sym "[" *> (showMaybe <$> option argList) <* sym "]"
+arrayLiter = sym "[" *> (showMaybe <$> option argList) <* sym "]"
 
