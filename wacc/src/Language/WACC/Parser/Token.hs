@@ -3,6 +3,7 @@ module Language.WACC.Parser.Token
     decimal,
     stringLiteral,
     charLiteral,
+    fully,
   )
 where
 
@@ -84,7 +85,7 @@ import Text.Gigaparsec.Token.Descriptions
       ),
   )
 import Text.Gigaparsec.Token.Lexer (CanHoldSigned, IntegerParsers, Lexeme, Lexer, Names, TextParsers (ascii), mkLexer)
-import qualified Text.Gigaparsec.Token.Lexer (IntegerParsers (decimal), Lexeme (charLiteral, integer, names, stringLiteral), Lexer (lexeme, nonlexeme), Names (identifier))
+import qualified Text.Gigaparsec.Token.Lexer (IntegerParsers (decimal), Lexeme (charLiteral, integer, names, stringLiteral), Lexer (fully, lexeme), Names (identifier))
 
 waccNameDesc :: NameDesc
 waccNameDesc =
@@ -214,7 +215,6 @@ lexer =
 lexeme :: Lexeme
 lexeme = Text.Gigaparsec.Token.Lexer.lexeme lexer
 
-
 names :: Names
 names = Text.Gigaparsec.Token.Lexer.names lexeme
 
@@ -232,3 +232,6 @@ stringLiteral = ascii $ Text.Gigaparsec.Token.Lexer.stringLiteral lexeme
 
 charLiteral :: Parsec Char
 charLiteral = ascii $ Text.Gigaparsec.Token.Lexer.charLiteral lexeme
+
+fully :: Parsec a -> Parsec a
+fully = Text.Gigaparsec.Token.Lexer.fully lexer
