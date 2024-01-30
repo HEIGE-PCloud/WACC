@@ -35,7 +35,7 @@ compile filename = do
   source <- readFile filename
   case parse parser source of
     Failure err -> putStrLn err >> exitWithSyntaxError
-    Success res -> print res >> exitSuccess
+    Success _   -> exitSuccess
 
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
@@ -65,7 +65,7 @@ arrayElem :: Parsec String
 arrayElem = concat <$> (ident <:> some (sym "[" *> expr <* sym "]"))
 
 atom :: Parsec String
-atom = intLiter <|> pairLiter <|> boolLiter <|> charLiter <|> stringLiteral <|> pairLiter <|> ident <|> arrayElem
+atom = intLiter <|> pairLiter <|> boolLiter <|> charLiter <|> stringLiteral <|> pairLiter <|> identOrArrayElem
 
 showBinOp :: String -> String -> String -> String
 showBinOp op x y = "(" ++ x ++ op ++ y ++ ")"
@@ -107,8 +107,8 @@ pairElemType :: Parsec String
 pairElemType = baseOrArrayType <|> sym "pair"
 
 program :: Parsec String
--- program = sym "begin" *> liftA2 (++) (concat <$> many func) stmt <* sym "end"
-program = sym "begin" *> stmt <* sym "end"
+program = sym "begin" *> many (atomic func) *> stmt <* sym "end"
+-- program = sym "begin" *> stmt <* sym "end"
 
 showMaybe :: Maybe String -> String
 showMaybe Nothing = ""
@@ -146,7 +146,10 @@ stmtTail :: Parsec String
 stmtTail = showMaybe <$> option (sym ";" *> stmt)
 
 lvalue :: Parsec String
-lvalue = ident <|> arrayElem <|> pairElem
+lvalue = identOrArrayElem <|> pairElem
+
+identOrArrayElem :: Parsec String
+identOrArrayElem = ident *> (many (sym "[" *> expr <* sym "]")) $> ""
 
 rvalue :: Parsec String
 rvalue =
