@@ -26,6 +26,7 @@ library
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
+      Language.WACC.Parser.Token
       Lib
   other-modules:
       Paths_wacc
@@ -34,6 +35,8 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , containers
+    , gigaparsec
   default-language: Haskell2010
 
 executable compile
@@ -61,6 +64,8 @@ test-suite wacc-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
+    , gigaparsec
     , tasty
     , tasty-discover
     , tasty-hspec
