@@ -2,6 +2,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -17,7 +19,8 @@ where
 
 import Data.Kind (Type)
 import Language.WACC.AST.Annotation (Ann)
-import Language.WACC.AST.WType (Erasure, Ordered, WType (..))
+import Language.WACC.AST.Ident (Ident)
+import Language.WACC.AST.WType (Ordered, WType (..))
 
 {- |
 WACC array elements.
@@ -41,15 +44,18 @@ data
   IndexN
     :: ArrayElem expr ident (WArray t) -> expr WInt -> ArrayElem expr ident t
 
+deriving instance
+  (Eq (expr WInt), forall t'. Eq (ident (WArray t')))
+  => Eq (ArrayElem expr ident t)
+
+deriving instance
+  (Show (expr WInt), forall t'. Show (ident (WArray t')))
+  => Show (ArrayElem expr ident t)
+
 {- |
 Atomic WACC expressions.
 -}
 class AtomExpr (expr :: WType erasure -> Type) where
-  -- | Identifier type.
-  type
-    Ident (erasure :: Erasure) (expr :: WType erasure -> Type)
-      :: WType erasure -> Type
-
   -- | @int@ literals.
   intLit :: Ann AtomExpr expr (Int -> expr WInt)
 
@@ -66,11 +72,11 @@ class AtomExpr (expr :: WType erasure -> Type) where
   null :: Ann AtomExpr expr (expr (WKnownPair t1 t2))
 
   -- | > <ident>
-  ident :: Ann AtomExpr expr (Ident erasure expr t -> expr t)
+  ident :: Ann AtomExpr expr (Ident AtomExpr expr t -> expr t)
 
   -- | > <ident>[<expr>]...
   arrayElem
-    :: Ann AtomExpr expr (ArrayElem expr (Ident erasure expr) t -> expr t)
+    :: Ann AtomExpr expr (ArrayElem expr (Ident AtomExpr expr) t -> expr t)
 
   -- | > (<expr>)
   parens :: Ann AtomExpr expr (expr t -> expr t)
