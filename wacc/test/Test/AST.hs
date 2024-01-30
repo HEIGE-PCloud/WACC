@@ -102,16 +102,6 @@ instance Eq (TestAST p) where
       astEq Skip Skip = True
       astEq (Decl i1 rv1) (Decl i2 rv2) = idEq i1 i2 && rvEq rv1 rv2
       astEq (Asgn lv1 rv1) (Asgn lv2 rv2) = lvEq lv1 lv2 && rvEq rv1 rv2
-      astEq (Read lv1) (Read lv2) = lvEq lv1 lv2
-      astEq (Free t1) (Free t2) = astEq t1 t2
-      astEq (Return t1) (Return t2) = astEq t1 t2
-      astEq (Exit t1) (Exit t2) = astEq t1 t2
-      astEq (Print t1) (Print t2) = astEq t1 t2
-      astEq (IfElse ct1 tt1 ft1) (IfElse ct2 tt2 ft2) =
-        astEq ct1 ct2 && astEq tt1 tt2 && astEq ft1 ft2
-      astEq (While ct1 tt1) (While ct2 tt2) = astEq ct1 ct2 && astEq tt1 tt2
-      astEq (BeginEnd t1) (BeginEnd t2) = astEq t1 t2
-      astEq (Seq lt1 rt1) (Seq lt2 rt2) = astEq lt1 lt2 && astEq rt1 rt2
       astEq _ _ = False
 
       aeEq
