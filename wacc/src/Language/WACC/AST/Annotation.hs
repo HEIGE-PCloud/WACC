@@ -11,4 +11,4 @@ import Data.Kind (Constraint, Type)
 {- |
 Annotation functors for each AST type class @cls@ and each instance type @ins@.
 -}
-type family Ann (cls :: k -> Constraint) (ins :: k) :: Type -> Type
+type family Ann (cls :: k -> Constraint) (ins :: k) (t :: k') :: Type -> Type
