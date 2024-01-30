@@ -4,13 +4,14 @@ module Language.WACC.Parser.Token
     stringLiteral,
     charLiteral,
     fully,
+    sym,
   )
 where
 
 import Data.Char (isAlpha, isAlphaNum, isAscii, isPrint, isSpace)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Text.Gigaparsec (Parsec)
+import Text.Gigaparsec (Parsec, ($>))
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar),
     EscapeDesc
@@ -85,7 +86,7 @@ import Text.Gigaparsec.Token.Descriptions
       ),
   )
 import Text.Gigaparsec.Token.Lexer (CanHoldSigned, IntegerParsers, Lexeme, Lexer, Names, TextParsers (ascii), mkLexer)
-import qualified Text.Gigaparsec.Token.Lexer (IntegerParsers (decimal), Lexeme (charLiteral, integer, names, stringLiteral), Lexer (fully, lexeme), Names (identifier))
+import qualified Text.Gigaparsec.Token.Lexer (IntegerParsers (decimal), Lexeme (charLiteral, integer, names, stringLiteral, sym), Lexer (fully, lexeme), Names (identifier))
 
 waccNameDesc :: NameDesc
 waccNameDesc =
@@ -235,3 +236,6 @@ charLiteral = ascii $ Text.Gigaparsec.Token.Lexer.charLiteral lexeme
 
 fully :: Parsec a -> Parsec a
 fully = Text.Gigaparsec.Token.Lexer.fully lexer
+
+sym :: String -> Parsec String
+sym s = Text.Gigaparsec.Token.Lexer.sym lexeme s $> s 
