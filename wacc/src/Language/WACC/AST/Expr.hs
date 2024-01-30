@@ -2,6 +2,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
@@ -41,6 +43,14 @@ data
   -- >                ^^^^^^^^^^^
   IndexN
     :: ArrayElem expr ident (WArray t) -> expr WInt -> ArrayElem expr ident t
+
+deriving instance
+  (Eq (expr WInt), forall t'. Eq (ident (WArray t')))
+  => Eq (ArrayElem expr ident t)
+
+deriving instance
+  (Show (expr WInt), forall t'. Show (ident (WArray t')))
+  => Show (ArrayElem expr ident t)
 
 {- |
 Atomic WACC expressions.
