@@ -1,13 +1,15 @@
 module Language.WACC.Parser.Token
-  ( lexer,
-    lexeme,
-    nonlexeme,
+  ( identifier,
+    decimal,
+    stringLiteral,
+    charLiteral,
   )
 where
 
 import Data.Char (isAlpha, isAlphaNum, isAscii, isPrint, isSpace)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Text.Gigaparsec (Parsec)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar),
     EscapeDesc
@@ -81,8 +83,8 @@ import Text.Gigaparsec.Token.Descriptions
         stringEnds
       ),
   )
-import Text.Gigaparsec.Token.Lexer (Lexeme, Lexer, mkLexer)
-import qualified Text.Gigaparsec.Token.Lexer (Lexer (lexeme, nonlexeme))
+import Text.Gigaparsec.Token.Lexer (CanHoldSigned, IntegerParsers, Lexeme, Lexer, Names, TextParsers (ascii), mkLexer)
+import qualified Text.Gigaparsec.Token.Lexer (IntegerParsers (decimal), Lexeme (charLiteral, integer, names, stringLiteral), Lexer (lexeme, nonlexeme), Names (identifier))
 
 waccNameDesc :: NameDesc
 waccNameDesc =
@@ -212,5 +214,21 @@ lexer =
 lexeme :: Lexeme
 lexeme = Text.Gigaparsec.Token.Lexer.lexeme lexer
 
-nonlexeme :: Lexeme
-nonlexeme = Text.Gigaparsec.Token.Lexer.nonlexeme lexer
+
+names :: Names
+names = Text.Gigaparsec.Token.Lexer.names lexeme
+
+identifier :: Parsec String
+identifier = Text.Gigaparsec.Token.Lexer.identifier names
+
+integer :: IntegerParsers CanHoldSigned
+integer = Text.Gigaparsec.Token.Lexer.integer lexeme
+
+decimal :: Parsec Integer
+decimal = Text.Gigaparsec.Token.Lexer.decimal integer
+
+stringLiteral :: Parsec String
+stringLiteral = ascii $ Text.Gigaparsec.Token.Lexer.stringLiteral lexeme
+
+charLiteral :: Parsec Char
+charLiteral = ascii $ Text.Gigaparsec.Token.Lexer.charLiteral lexeme
