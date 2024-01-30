@@ -10,9 +10,7 @@
 WACC expressions.
 -}
 module Language.WACC.AST.Expr
-  ( AtomExpr (..)
-  , UnExpr (..)
-  , BinExpr (..)
+  ( Expr (..)
   , ArrayElem (..)
   )
 where
@@ -53,92 +51,84 @@ deriving instance
   => Show (ArrayElem expr ident t)
 
 {- |
-Atomic WACC expressions.
+WACC expressions.
 -}
-class AtomExpr (expr :: WType erasure -> Type) where
+class Expr (expr :: WType erasure -> Type) where
   -- | @int@ literals.
-  intLit :: Ann AtomExpr expr (Int -> expr WInt)
+  intLit :: Ann Expr expr (Int -> expr WInt)
 
   -- | @bool@ literals.
-  boolLit :: Ann AtomExpr expr (Bool -> expr WBool)
+  boolLit :: Ann Expr expr (Bool -> expr WBool)
 
   -- | @char@ literals.
-  charLit :: Ann AtomExpr expr (Char -> expr WChar)
+  charLit :: Ann Expr expr (Char -> expr WChar)
 
   -- | @string@ literals.
-  stringLit :: Ann AtomExpr expr (String -> expr WString)
+  stringLit :: Ann Expr expr (String -> expr WString)
 
   -- | > null
-  null :: Ann AtomExpr expr (expr (WKnownPair t1 t2))
+  null :: Ann Expr expr (expr (WKnownPair t1 t2))
 
   -- | > <ident>
-  ident :: Ann AtomExpr expr (Ident AtomExpr expr t -> expr t)
+  ident :: Ann Expr expr (Ident Expr expr t -> expr t)
 
   -- | > <ident>[<expr>]...
   arrayElem
-    :: Ann AtomExpr expr (ArrayElem expr (Ident AtomExpr expr) t -> expr t)
+    :: Ann Expr expr (ArrayElem expr (Ident Expr expr) t -> expr t)
 
   -- | > (<expr>)
-  parens :: Ann AtomExpr expr (expr t -> expr t)
+  parens :: Ann Expr expr (expr t -> expr t)
 
-{- |
-Unary WACC expressions.
--}
-class UnExpr (expr :: WType erasure -> Type) where
   -- | > !<expr>
-  not :: Ann UnExpr expr (expr WBool -> expr WBool)
+  not :: Ann Expr expr (expr WBool -> expr WBool)
 
   -- | > -<expr>
-  negate :: Ann UnExpr expr (expr WInt -> expr WInt)
+  negate :: Ann Expr expr (expr WInt -> expr WInt)
 
   -- | > len <expr>
-  len :: Ann UnExpr expr (expr (WArray t) -> expr WInt)
+  len :: Ann Expr expr (expr (WArray t) -> expr WInt)
 
   -- | > ord <expr>
-  ord :: Ann UnExpr expr (expr WChar -> expr WInt)
+  ord :: Ann Expr expr (expr WChar -> expr WInt)
 
   -- | > chr <expr>
-  chr :: Ann UnExpr expr (expr WInt -> expr WChar)
+  chr :: Ann Expr expr (expr WInt -> expr WChar)
 
-{- |
-Binary WACC expressions.
--}
-class BinExpr (expr :: WType erasure -> Type) where
   -- | > <expr> * <expr>
-  mul :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
+  mul :: Ann Expr expr (expr WInt -> expr WInt -> expr WInt)
 
   -- | > <expr> / <expr>
-  div :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
+  div :: Ann Expr expr (expr WInt -> expr WInt -> expr WInt)
 
   -- | > <expr> % <expr>
-  mod :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
+  mod :: Ann Expr expr (expr WInt -> expr WInt -> expr WInt)
 
   -- | > <expr> + <expr>
-  add :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
+  add :: Ann Expr expr (expr WInt -> expr WInt -> expr WInt)
 
   -- | > <expr> - <expr>
-  sub :: Ann BinExpr expr (expr WInt -> expr WInt -> expr WInt)
+  sub :: Ann Expr expr (expr WInt -> expr WInt -> expr WInt)
 
   -- | > <expr> > <expr>
-  gt :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
+  gt :: (Ordered t) => Ann Expr expr (expr t -> expr t -> expr WBool)
 
   -- | > <expr> >= <expr>
-  gte :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
+  gte :: (Ordered t) => Ann Expr expr (expr t -> expr t -> expr WBool)
 
   -- | > <expr> < <expr>
-  lt :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
+  lt :: (Ordered t) => Ann Expr expr (expr t -> expr t -> expr WBool)
 
   -- | > <expr> <= <expr>
-  lte :: (Ordered t) => Ann BinExpr expr (expr t -> expr t -> expr WBool)
+  lte :: (Ordered t) => Ann Expr expr (expr t -> expr t -> expr WBool)
 
   -- | > <expr> == <expr>
-  eq :: Ann BinExpr expr (expr t -> expr t -> expr WBool)
+  eq :: Ann Expr expr (expr t -> expr t -> expr WBool)
 
   -- | > <expr> != <expr>
-  ineq :: Ann BinExpr expr (expr t -> expr t -> expr WBool)
+  ineq :: Ann Expr expr (expr t -> expr t -> expr WBool)
 
   -- | > <expr> && <expr>
-  and :: Ann BinExpr expr (expr WBool -> expr WBool -> expr WBool)
+  and :: Ann Expr expr (expr WBool -> expr WBool -> expr WBool)
 
   -- | > <expr> || <expr>
-  or :: Ann BinExpr expr (expr WBool -> expr WBool -> expr WBool)
+  or :: Ann Expr expr (expr WBool -> expr WBool -> expr WBool)
