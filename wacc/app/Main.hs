@@ -11,6 +11,8 @@ import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
 import Text.Gigaparsec
 import Text.Gigaparsec.Char
 import Text.Gigaparsec.Expr (Fixity (InfixL, InfixN, InfixR, Prefix), Prec (Atom), ops, precedence, (>+))
+import Text.Gigaparsec.Combinator
+import Debug.Trace
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
@@ -42,7 +44,7 @@ usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
 
 parser :: Parsec String
-parser = fully intLiter
+parser = trace "parser" $ fully program
 
 intLiter :: Parsec String
 intLiter = show <$> decimal
@@ -65,6 +67,7 @@ ident = identifier
 arrayElem :: Parsec String
 arrayElem = concat <$> (ident <:> some (string "[" *> expr <* string "]"))
 
+atom :: Parsec String
 atom = intLiter <|> pairLiter <|> boolLiter <|> charLiter <|> stringLiteral <|> pairLiter <|> ident <|> arrayElem
 
 showBinOp :: String -> String -> String -> String
@@ -87,3 +90,74 @@ expr =
       >+ ops InfixN [binSig "==", binSig "!="]
       >+ ops InfixR [binSig "&&"]
       >+ ops InfixR [binSig "||"]
+
+typeParser :: Parsec String
+typeParser = trace "typeParser" $ baseOrArrayType <|> pairType
+
+baseType :: Parsec String
+baseType = trace "baseType" $ string "int" <|> string "bool" <|> string "char" <|> string "string"
+
+-- arrayType :: Parsec String
+-- arrayType = trace "arrayType" $ typeParser <* string "[]"
+
+baseOrArrayType :: Parsec String
+baseOrArrayType = trace "baseOrArrayType" $ liftA2 (++) baseType (showMaybe <$> option (string "[]"))
+
+pairType :: Parsec String
+pairType = trace "pairType" $ string "pair" *> string "(" *> pairElemType <* string "," *> pairElemType <* string ")"
+
+pairElemType :: Parsec String
+pairElemType = trace "pairElemType" $ baseOrArrayType <|> string "pair"
+
+program :: Parsec String
+-- program = trace "program" $ string "begin" *> liftA2 (++) (concat <$> many func) stmt <* string "end"
+program = trace "program" $ string "begin" *>  stmt <* string "end"
+
+showMaybe :: Maybe String -> String
+showMaybe Nothing = ""
+showMaybe (Just x) = x
+
+func :: Parsec String
+func = trace "func" $ param <* string "(" *> (showMaybe <$> option paramList) <* string ")" <* string "is" *> stmt <* string "end"
+
+paramList :: Parsec String
+paramList = trace "paramList" $ concat <$> (param <:> many (string "," *> param))
+
+param :: Parsec String
+param = trace "param" $ liftA2 (++) typeParser ident
+
+stmt :: Parsec String
+stmt = trace "stmt" $ 
+      string "skip"
+  <|> param <* string "=" *> rvalue
+  <|> lvalue <* string "=" <* rvalue
+  <|> string "read" *> lvalue
+  <|> string "free" *> expr
+  <|> string "return" *> expr
+  <|> string "exit" *> expr
+  <|> string "print" *> expr
+  <|> string "println" *> expr
+  <|> string "if" *> expr <* string "then" *> stmt <* string "else" *> stmt <* string "fi"
+  <|> string "while" *> expr <* string "do" *> stmt <* string "done"
+  <|> string "begin" *> stmt <* string "end"
+  -- <|> stmt <* string ";" *> stmt
+
+lvalue :: Parsec String
+lvalue = trace "lvalue" $ ident <|> arrayElem <|> pairElem
+
+rvalue :: Parsec String
+rvalue = trace "rvalue" $ expr 
+  <|> arrayLiter 
+  <|> (string "newpair" *> string "(" *> expr <* string "," *> expr <* string ")")
+  <|> pairElem
+  <|> string "call" *> ident <* string "(" *> (showMaybe <$> option argList) <* string ")"
+
+argList :: Parsec String
+argList = trace "argList" $ concat <$> (expr <:> many (string "," *> expr))
+
+pairElem :: Parsec String
+pairElem = trace "pairElem" $ string "fst" *> lvalue <|> string "snd" *> lvalue
+
+arrayLiter :: Parsec String
+arrayLiter = trace "arrayLiter" $ string "[" *> (showMaybe <$> option argList) <* string "]"
+
