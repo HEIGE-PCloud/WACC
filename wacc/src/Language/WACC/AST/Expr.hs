@@ -27,7 +27,7 @@ data Atom ident
   | -- | > <ident>
     Ident ident
   | -- | > <ident>[<expr>]...
-    ArrayElem ident [Expr ident]
+    ArrayElem (ArrayIndex ident)
   | -- | > (<expr>)
     Parens (Expr ident)
   deriving (Eq, Show)
