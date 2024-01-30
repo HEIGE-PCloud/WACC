@@ -1,137 +1,98 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeData #-}
-{-# LANGUAGE TypeFamilies #-}
-
 {- |
 WACC statements.
 -}
 module Language.WACC.AST.Stmt
   ( Stmt (..)
+  , Stmts
   , LValue (..)
   , RValue (..)
   , PairElem (..)
-  , RetType (..)
   )
 where
 
-import Data.Kind (Type)
-import Language.WACC.AST.Annotation (Ann)
-import Language.WACC.AST.Expr (ArrayElem)
-import Language.WACC.AST.Ident (Ident)
-import Language.WACC.AST.WType (WType)
+import Data.List.NonEmpty (NonEmpty)
+import Language.WACC.AST.Expr (ArrayIndex, Expr)
+import Language.WACC.AST.WType (Erasure (Known), WType)
 
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
 -}
-data
-  PairElem
-    (value :: Type -> Type -> Type)
-    expr
-    ident
+data PairElem value ident
   = -- | > fst <value>
-    FstElem (value expr ident)
+    FstElem (value ident)
   | -- | > snd <value>
-    SndElem (value expr ident)
+    SndElem (value ident)
   deriving (Eq, Show)
 
 {- |
 A WACC @lvalue@, which is the target of an assignment statement.
 -}
-data LValue expr ident
+data LValue ident
   = -- | > <ident>
     LVIdent ident
   | -- | > <ident>[<expr>]...
-    LVArrayElem (ArrayElem expr ident)
+    LVArrayElem (ArrayIndex ident)
   | -- |
     -- > fst <lvalue>
     --
     -- or
     --
     -- > snd <lvalue>
-    LVPairElem (PairElem LValue expr ident)
+    LVPairElem (PairElem LValue ident)
   deriving (Eq, Show)
-
-type LValue' stmt = LValue (StmtExpr stmt) (Ident Stmt stmt)
 
 {- |
 A WACC @rvalue@, which is the source of an assignment statement.
 -}
-data RValue fnident expr ident
+data RValue fnident ident
   = -- | > <expr>
-    RVExpr expr
+    RVExpr (Expr ident)
   | -- | > [<expr>, ...]
-    RVArrayLit [expr]
+    RVArrayLit [Expr ident]
   | -- | > newpair(<expr>, <expr>)
-    RVNewPair expr expr
+    RVNewPair (Expr ident) (Expr ident)
   | -- |
     -- > fst <rvalue>
     --
     -- or
     --
     -- > snd <rvalue>
-    RVPairElem (PairElem (RValue fnident) expr ident)
+    RVPairElem (PairElem (RValue fnident) ident)
   | -- | > call <ident>(<expr>, ...)
-    RVCall fnident [expr]
+    RVCall fnident [Expr ident]
   deriving (Eq, Show)
 
-type RValue' stmt = RValue (FnIdent stmt) (StmtExpr stmt) (Ident Stmt stmt)
+{- |
+Individual WACC statements.
+-}
+data Stmt fnident ident
+  = -- | > skip
+    Skip
+  | -- | > <type> <ident> = <rvalue>
+    Decl (WType Known) ident (RValue fnident ident)
+  | -- | > <lvalue> = <rvalue>
+    Asgn (LValue ident) (RValue fnident ident)
+  | -- | > read <lvalue>
+    Read (LValue ident)
+  | -- | > free <expr>
+    Free (Expr ident)
+  | -- | > return <expr>
+    Return (Expr ident)
+  | -- | > exit <expr>
+    Exit (Expr ident)
+  | -- | > print <expr>
+    Print (Expr ident)
+  | -- | > println <expr>
+    PrintLn (Expr ident)
+  | -- | > if <expr> then <stmt> else <stmt> fi
+    IfElse (Expr ident) (Stmts fnident ident) (Stmts fnident ident)
+  | -- | > while <expr> do <stmt> done
+    While (Expr ident) (Stmts fnident ident)
+  | -- | > begin <stmt> end
+    BeginEnd (Stmts fnident ident)
+  deriving (Eq, Show)
 
 {- |
-Return type kind.
+Sequences of WACC statements separated by @;@.
 -}
-type data RetType erasure
-  = -- | Main program (not inside a function).
-    Main
-  | -- | Return value type.
-    Ret (WType erasure)
-
-{- |
-WACC statements.
--}
-class Stmt stmt where
-  -- | Expression type.
-  type StmtExpr stmt
-
-  -- | Function identifier type.
-  type FnIdent stmt
-
-  -- | > skip
-  skip :: Ann Stmt stmt ret stmt
-
-  -- | > <type> <ident> = <rvalue>
-  decl :: Ann Stmt stmt ret (Ident Stmt stmt -> RValue' stmt -> stmt)
-
-  -- | > <lvalue> = <rvalue>
-  asgn :: Ann Stmt stmt ret (LValue' stmt -> RValue' stmt -> stmt)
-
-  -- | > read <lvalue>
-  read :: Ann Stmt stmt ret (LValue' stmt -> stmt)
-
-  -- | > free <expr>
-  free :: Ann Stmt stmt ret (StmtExpr stmt -> stmt)
-
-  -- | > return <expr>
-  return :: Ann Stmt stmt (Ret t) (StmtExpr stmt -> stmt)
-
-  -- | > exit <expr>
-  exit :: Ann Stmt stmt ret (StmtExpr stmt -> stmt)
-
-  -- | > print <expr>
-  print :: Ann Stmt stmt ret (StmtExpr stmt -> stmt)
-
-  -- | > println <expr>
-  println :: Ann Stmt stmt ret (StmtExpr stmt -> stmt)
-
-  -- | > if <expr> then <stmt> else <stmt> fi
-  ifElse :: Ann Stmt stmt ret (StmtExpr stmt -> stmt -> stmt -> stmt)
-
-  -- | > while <expr> do <stmt> done
-  while :: Ann Stmt stmt ret (StmtExpr stmt -> stmt -> stmt)
-
-  -- | > begin <stmt> end
-  beginEnd :: Ann Stmt stmt ret (stmt -> stmt)
-
-  -- | > <stmt>; <stmt>
-  seq :: Ann Stmt stmt ret (stmt -> stmt -> stmt)
+type Stmts fnident ident = NonEmpty (Stmt fnident ident)

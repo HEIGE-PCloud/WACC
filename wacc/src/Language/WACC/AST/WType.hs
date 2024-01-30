@@ -1,7 +1,6 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeData #-}
 
 {- |
@@ -10,8 +9,6 @@ WACC types.
 module Language.WACC.AST.WType
   ( WType (..)
   , Erasure (..)
-  , HeapAllocated
-  , Ordered
   )
 where
 
@@ -45,22 +42,6 @@ data WType (erasure :: Erasure) where
   -- | > <type>[]
   WArray :: WType Known -> WType erasure
 
-{- |
-WACC types which can be compared using @>@, @>=@, @<@ and @<=@.
--}
-class Ordered (wtype :: WType erasure)
+deriving instance Eq (WType erasure)
 
-instance Ordered WChar
-
-instance Ordered WInt
-
-{- |
-WACC types which are allocated on the heap.
--}
-class HeapAllocated (wtype :: WType erasure)
-
-instance HeapAllocated (WArray t)
-
-instance HeapAllocated WErasedPair
-
-instance HeapAllocated (WKnownPair t1 t2)
+deriving instance Show (WType erasure)

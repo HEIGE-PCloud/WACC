@@ -18,11 +18,8 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Data.HList
       Language.WACC.AST
-      Language.WACC.AST.Annotation
       Language.WACC.AST.Expr
-      Language.WACC.AST.Ident
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
@@ -52,7 +49,6 @@ test-suite wacc-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Test.AST
       Paths_wacc
   hs-source-dirs:
       test
