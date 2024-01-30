@@ -1,7 +1,7 @@
 {- |
 WACC expressions.
 -}
-module Language.WACC.AST.Expr (Expr (..), ArrayIndex (..)) where
+module Language.WACC.AST.Expr (Atom (..), Expr (..), ArrayIndex (..)) where
 
 {- |
 WACC array indexing subexpressions.
@@ -11,9 +11,9 @@ WACC array indexing subexpressions.
 data ArrayIndex ident = ArrayIndex ident [Expr ident] deriving (Eq, Show)
 
 {- |
-WACC expressions.
+Atomic WACC expressions.
 -}
-data Expr ident
+data Atom ident
   = -- | @int@ literals.
     IntLit Int
   | -- | @bool@ literals.
@@ -30,6 +30,14 @@ data Expr ident
     ArrayElem ident [Expr ident]
   | -- | > (<expr>)
     Parens (Expr ident)
+  deriving (Eq, Show)
+
+{- |
+Composite WACC expressions.
+-}
+data Expr ident
+  = -- | > <atom>
+    Atom (Atom ident)
   | -- | > !<expr>
     Not (Expr ident)
   | -- | > -<expr>
