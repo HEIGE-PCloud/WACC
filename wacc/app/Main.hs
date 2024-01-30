@@ -2,14 +2,15 @@ module Main (main) where
 
 -- import Lib
 
+import qualified Data.Set as Set
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
+import Language.WACC.Parser.Token
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
-import Language.WACC.Parser.Token
 import Text.Gigaparsec
 import Text.Gigaparsec.Char
-import qualified Data.Set as Set
+import Text.Gigaparsec.Expr (Fixity (InfixL, InfixN, InfixR, Prefix), Prec (Atom), ops, precedence, (>+))
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
@@ -40,25 +41,49 @@ compile filename = do
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
 
-parser :: Parsec Integer
-parser = fully intliter
+parser :: Parsec String
+parser = fully intLiter
 
-charliter :: Parsec Char
-charliter = charLiteral
-stringliter :: Parsec String
-stringliter = stringLiteral
+intLiter :: Parsec String
+intLiter = show <$> decimal
 
-intliter :: Parsec Integer
-intliter = decimal
+boolLiter :: Parsec String
+boolLiter = string "true" <|> string "false"
 
-pairliter :: Parsec String
-pairliter = string "null"
+charLiter :: Parsec String
+charLiter = show <$> charLiteral
 
-intsign :: Parsec Char
-intsign = char '+' <|> char '-'
+stringLiter :: Parsec String
+stringLiter = stringLiteral
 
-digit :: Parsec Char
-digit = oneOf (Set.fromList ['0'..'9'])
+pairLiter :: Parsec String
+pairLiter = string "null"
 
-boolliter :: Parsec Bool
-boolliter = (string "true" $> True) <|> (string "false" $> False)
+ident :: Parsec String
+ident = identifier
+
+arrayElem :: Parsec String
+arrayElem = concat <$> (ident <:> some (string "[" *> expr <* string "]"))
+
+atom = intLiter <|> pairLiter <|> boolLiter <|> charLiter <|> stringLiteral <|> pairLiter <|> ident <|> arrayElem
+
+showBinOp :: String -> String -> String -> String
+showBinOp op x y = "(" ++ x ++ op ++ y ++ ")"
+
+binSig :: String -> Parsec (String -> String -> String)
+binSig op = string op $> showBinOp op
+
+unarySig :: String -> Parsec (String -> String)
+unarySig op = string op $> \x -> "(" ++ op ++ x ++ ")"
+
+expr :: Parsec String
+expr =
+  precedence $
+    Atom atom
+      >+ ops Prefix [unarySig "!", unarySig "-", unarySig "len", unarySig "ord", unarySig "chr"]
+      >+ ops InfixL [binSig "*", binSig "%", binSig "/"]
+      >+ ops InfixL [binSig "+", binSig "-"]
+      >+ ops InfixN [binSig "<", binSig "<=", binSig ">=", binSig ">"]
+      >+ ops InfixN [binSig "==", binSig "!="]
+      >+ ops InfixR [binSig "&&"]
+      >+ ops InfixR [binSig "||"]
