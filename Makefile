@@ -7,7 +7,8 @@ check: compile
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
 		--test-arguments --timeout=1s \
-		--test-arguments --num-threads=4
+		--test-arguments --num-threads=4 \
+		--test-arguments --xml=../rspec.xml
 
 clean:
 	$(RM) compile

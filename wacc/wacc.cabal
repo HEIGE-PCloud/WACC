@@ -64,6 +64,7 @@ test-suite wacc-test
     , directory
     , process
     , tasty
+    , tasty-ant-xml
     , tasty-discover
     , tasty-hspec
     , tasty-quickcheck
