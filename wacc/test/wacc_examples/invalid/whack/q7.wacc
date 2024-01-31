@@ -1,0 +1,13 @@
+# how much wacc could a whack wacc whack,
+# if a whack wacc could whack wacc
+
+begin
+    bool f(int a, int b) is
+        if x < y then return 0
+        else          return 1
+        fi;
+        println "dead code..."
+    end
+
+    println call f(5, 6)
+end

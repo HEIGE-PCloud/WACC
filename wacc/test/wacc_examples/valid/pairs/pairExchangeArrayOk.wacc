@@ -1,0 +1,12 @@
+# Assignment is legal when assigning array (even of unknown type) in nested pair extraction
+# Thanks to Kristina Zimina for catching this
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(4, 5);
+  pair(pair, int) q = newpair(p, 6);
+  fst fst q = []
+end

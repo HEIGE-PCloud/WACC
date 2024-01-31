@@ -1,0 +1,14 @@
+# Array was given wrong type.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int[] should_be_int_array = ['a', 'b', 'c']
+end

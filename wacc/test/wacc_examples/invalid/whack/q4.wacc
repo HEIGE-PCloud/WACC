@@ -1,0 +1,9 @@
+# how much wacc could a whack wacc whack,
+# if a whack wacc could whack wacc
+
+begin
+    read null;
+    if null == [1, 2, 3] then begin
+        println len "hello null"
+    end else skip fi
+end
