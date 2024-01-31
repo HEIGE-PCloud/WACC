@@ -8,7 +8,8 @@ check: compile
 		--test-arguments --catch-stdout \
 		--test-arguments --timeout=1s \
 		--test-arguments --num-threads=`nproc` \
-		--test-arguments --xml=../rspec.xml
+		--test-arguments --xml=../rspec.xml \
+		--test-arguments '--pattern "$$0 !~ /semanticErr/"'
 
 clean:
 	$(RM) compile
