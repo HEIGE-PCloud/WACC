@@ -11,6 +11,26 @@ stages:
 default:
   image: haskell:9.6.3
 
+.stack-cache:
+  variables:
+    STACK_ROOT: $CI_PROJECT_DIR/.stack
+  before_script:
+    - mkdir -p .stack
+  cache:
+    - key:
+        files:
+          - stack.yml
+          - stack.yml.lock
+      paths:
+        - .stack-work/
+        - .stack/
+    - key:
+        files:
+          - wacc/package.yaml
+          - wacc/wacc.cabal
+      paths:
+        - wacc/.stack-work/
+
 build:
   artifacts:
     paths:
@@ -19,20 +39,7 @@ build:
   script:
     - make
   stage: build
-  cache:
-    - key:
-        files:
-          - stack.yml
-          - stack.yml.lock
-      paths:
-        - .stack-work/
-        - /root/.stack/
-    - key:
-        files:
-          - wacc/package.yaml
-          - wacc/wacc.cabal
-      paths:
-        - wacc/.stack-work/
+  extends: .stack-cache
 
 lint:
   image:
@@ -56,17 +63,4 @@ integration-test:
       - rspec.xml
     reports:
       junit: rspec.xml
-  cache:
-    - key:
-        files:
-          - stack.yml
-          - stack.yml.lock
-      paths:
-        - .stack-work/
-        - /root/.stack/
-    - key:
-        files:
-          - wacc/package.yaml
-          - wacc/wacc.cabal
-      paths:
-        - wacc/.stack-work/
+  extends: .stack-cache
