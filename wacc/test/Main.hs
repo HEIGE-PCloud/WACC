@@ -6,13 +6,14 @@ where
 import System.Exit
 import Test.Program
 import Test.Tasty
+import Test.Tasty.Runners.AntXML (antXMLRunner)
 
 basePath :: FilePath
 basePath = "wacc/test/wacc_examples"
 
 main :: IO ()
 main =
-  defaultMain $
+  defaultMainWithIngredients [antXMLRunner] $
     testGroup
       "Integration Tests"
       [ validTests

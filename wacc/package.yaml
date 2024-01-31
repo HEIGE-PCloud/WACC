@@ -49,6 +49,7 @@ tests:
       - tasty-discover
       - tasty-hspec
       - tasty-quickcheck
+      - tasty-ant-xml
       - wacc
       - deepseq
       - directory
