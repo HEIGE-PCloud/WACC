@@ -19,6 +19,19 @@ build:
   script:
     - make
   stage: build
+  cache:
+    - key:
+        files:
+          - stack.yml
+          - stack.yml.lock
+      paths:
+        - .stack-work/
+    - key:
+        files:
+          - wacc/package.yaml
+          - wacc/wacc.cabal
+      paths:
+        - wacc/.stack-work/
 
 lint:
   image:
@@ -42,3 +55,16 @@ integration-test:
       - rspec.xml
     reports:
       junit: rspec.xml
+  cache:
+    - key:
+        files:
+          - stack.yml
+          - stack.yml.lock
+      paths:
+        - .stack-work/
+    - key:
+        files:
+          - wacc/package.yaml
+          - wacc/wacc.cabal
+      paths:
+        - wacc/.stack-work/
