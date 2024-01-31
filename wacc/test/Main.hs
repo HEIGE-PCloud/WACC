@@ -1,5 +1,5 @@
 module Main
-  ( main,
+  ( main
   )
 where
 
@@ -11,14 +11,16 @@ import Test.Tasty.Runners.AntXML (antXMLRunner)
 basePath :: FilePath
 basePath = "wacc/test/wacc_examples"
 
+-- TODO: Collect all test cases
+
 main :: IO ()
 main =
   defaultMainWithIngredients [antXMLRunner] $
     testGroup
       "Integration Tests"
       [ validTests
-        -- syntaxErrorTests,
-        -- semanticErrorTests
+      -- syntaxErrorTests,
+      -- semanticErrorTests
       ]
 
 validTests :: TestTree
@@ -47,27 +49,27 @@ semanticErrorTests =
 
 validArrays :: [String]
 validArrays =
-  [ "arrayLength",
-    "lenArrayIndex",
-    "arrayIndexMayBeArrayIndex",
-    "emptyArrayReplace",
-    "stringFromArray",
-    "arrayEmpty",
-    "array",
-    "arrayLookup",
-    "emptyArrayPrint",
-    "free",
-    "arrayOnHeap",
-    "modifyString",
-    "printRef",
-    "emptyArrayNextLine",
-    "arraySimple",
-    "charArrayInStringArray",
-    "arrayNested",
-    "arrayPrint",
-    "emptyArrayScope",
-    "arrayBasic",
-    "emptyArrayAloneIsFine"
+  [ "arrayLength"
+  , "lenArrayIndex"
+  , "arrayIndexMayBeArrayIndex"
+  , "emptyArrayReplace"
+  , "stringFromArray"
+  , "arrayEmpty"
+  , "array"
+  , "arrayLookup"
+  , "emptyArrayPrint"
+  , "free"
+  , "arrayOnHeap"
+  , "modifyString"
+  , "printRef"
+  , "emptyArrayNextLine"
+  , "arraySimple"
+  , "charArrayInStringArray"
+  , "arrayNested"
+  , "arrayPrint"
+  , "emptyArrayScope"
+  , "arrayBasic"
+  , "emptyArrayAloneIsFine"
   ]
 
 generateTestCase :: String -> String -> ExitCode -> TestTree
@@ -77,4 +79,12 @@ generateTestGroup :: String -> String -> [String] -> ExitCode -> TestTree
 generateTestGroup t st names exitCode =
   testGroup
     (t ++ "." ++ st)
-    (map (\name -> generateTestCase name (basePath ++ "/" ++ t ++ "/" ++ st ++ "/" ++ name ++ ".wacc") exitCode) names)
+    ( map
+        ( \name ->
+            generateTestCase
+              name
+              (basePath ++ "/" ++ t ++ "/" ++ st ++ "/" ++ name ++ ".wacc")
+              exitCode
+        )
+        names
+    )
