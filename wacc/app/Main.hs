@@ -9,7 +9,13 @@ import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
 import Text.Gigaparsec
 import Text.Gigaparsec.Combinator
-import Text.Gigaparsec.Expr (Fixity (InfixL, InfixN, InfixR, Prefix), Prec (Atom), ops, precedence, (>+))
+import Text.Gigaparsec.Expr
+  ( Fixity (InfixL, InfixN, InfixR, Prefix)
+  , Prec (Atom)
+  , ops
+  , precedence
+  , (>+)
+  )
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
@@ -35,7 +41,7 @@ compile filename = do
   source <- readFile filename
   case parse parser source of
     Failure err -> putStrLn err >> exitWithSyntaxError
-    Success _   -> exitSuccess
+    Success _ -> exitSuccess
 
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
@@ -65,7 +71,14 @@ arrayElem :: Parsec String
 arrayElem = concat <$> (ident <:> some (sym "[" *> expr <* sym "]"))
 
 atom :: Parsec String
-atom = intLiter <|> pairLiter <|> boolLiter <|> charLiter <|> stringLiteral <|> pairLiter <|> identOrArrayElem
+atom =
+  intLiter
+    <|> pairLiter
+    <|> boolLiter
+    <|> charLiter
+    <|> stringLiteral
+    <|> pairLiter
+    <|> identOrArrayElem
 
 showBinOp :: String -> String -> String -> String
 showBinOp op x y = "(" ++ x ++ op ++ y ++ ")"
@@ -80,7 +93,9 @@ expr :: Parsec String
 expr =
   precedence $
     Atom atom
-      >+ ops Prefix [unarySig "!", unarySig "-", unarySig "len", unarySig "ord", unarySig "chr"]
+      >+ ops
+        Prefix
+        [unarySig "!", unarySig "-", unarySig "len", unarySig "ord", unarySig "chr"]
       >+ ops InfixL [binSig "*", binSig "%", binSig "/"]
       >+ ops InfixL [binSig "+", binSig "-"]
       >+ ops InfixN [binSig "<", binSig "<=", binSig ">=", binSig ">"]
@@ -108,6 +123,7 @@ pairElemType = baseOrArrayType <|> sym "pair"
 
 program :: Parsec String
 program = sym "begin" *> many (atomic func) *> stmt <* sym "end"
+
 -- program = sym "begin" *> stmt <* sym "end"
 
 showMaybe :: Maybe String -> String
@@ -115,7 +131,14 @@ showMaybe Nothing = ""
 showMaybe (Just x) = x
 
 func :: Parsec String
-func = param <* sym "(" *> (showMaybe <$> option paramList) <* sym ")" <* sym "is" *> stmt <* sym "end"
+func =
+  param
+    <* sym "("
+    *> (showMaybe <$> option paramList)
+    <* sym ")"
+    <* sym "is"
+    *> stmt
+    <* sym "end"
 
 paramList :: Parsec String
 paramList = concat <$> (param <:> many (sym "," *> param))
