@@ -1,0 +1,9 @@
+# simple character variable declaration
+
+# Output:
+
+# Program:
+
+begin
+  char c = 'a'
+end

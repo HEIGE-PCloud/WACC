@@ -1,0 +1,19 @@
+# splits the first appearances of variables by a new scope to ensure proper grouping
+
+# Output:
+# 3
+# 2
+#
+
+# Program:
+
+begin
+  int x = 1 ;
+  begin
+    x = 3 ;
+    bool z = true
+  end ;
+  int y = 2 ;
+  println x ;
+  println y
+end

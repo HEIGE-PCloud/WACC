@@ -1,0 +1,17 @@
+# echo the user's input int
+
+# Input: -5
+
+# Output:
+# enter an integer to echo
+# -5
+#
+
+# Program:
+
+begin
+  int x = 1 ;
+  println "enter an integer to echo";
+  read x ;
+  println x
+end

@@ -1,0 +1,16 @@
+# Trying to assign non-matching pairs to eachother.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(int, int) p1 = newpair(0, 0);
+  pair(char, char) p2 = newpair('a', 'a');
+  p2 = p1
+end

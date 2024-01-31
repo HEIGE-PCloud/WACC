@@ -1,0 +1,13 @@
+# Tests that array length works on array indexes
+# Thanks to Nixon Enraght-Moony for his help in this test-case
+
+# Output:
+# 0
+
+# Program:
+
+begin
+  int[] arr = [];
+  int[][] arrs = [arr];
+  print len arrs[0]
+end

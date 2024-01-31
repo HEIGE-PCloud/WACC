@@ -1,0 +1,13 @@
+# newpair must match the underlying type of the pair
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(char, bool) x = newpair(10, 20)
+end

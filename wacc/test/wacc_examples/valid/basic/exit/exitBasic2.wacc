@@ -1,0 +1,12 @@
+# basic exit statement
+
+# Output:
+
+# Exit:
+# 42
+
+# Program:
+
+begin
+  exit 42
+end

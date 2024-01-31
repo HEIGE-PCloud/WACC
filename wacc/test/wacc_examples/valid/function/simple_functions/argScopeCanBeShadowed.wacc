@@ -1,0 +1,18 @@
+# Arguments can be shadowed by the function body
+
+# Output:
+# true
+#
+
+#Program:
+
+begin
+  bool f(int x) is
+    bool x = true ;
+    return x
+  end
+
+  bool x = call f(5);
+  println x
+
+end

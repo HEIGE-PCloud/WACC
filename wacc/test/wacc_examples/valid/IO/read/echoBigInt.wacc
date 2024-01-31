@@ -1,0 +1,17 @@
+# echo the user's input int
+
+# Input: 2147483647
+
+# Output:
+# enter an integer to echo
+# 2147483647
+#
+
+# Program:
+
+begin
+  int x = 1 ;
+  println "enter an integer to echo";
+  read x ;
+  println x
+end

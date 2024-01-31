@@ -1,0 +1,13 @@
+# it should be possible to reassign to an array
+
+# Output:
+# true
+#
+
+# Program:
+
+begin
+  int[] x = [] ;
+  x = [0] ;
+  println true
+end

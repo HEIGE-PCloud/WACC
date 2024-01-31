@@ -1,0 +1,10 @@
+# create a pair(int, char) with a second reference to it
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a') ;
+  pair(int, char) q = p
+end

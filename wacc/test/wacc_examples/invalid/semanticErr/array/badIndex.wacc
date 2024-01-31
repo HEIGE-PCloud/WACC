@@ -1,0 +1,15 @@
+# Too much indexing!
+# Thanks to David Pan
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int[] a = [1];
+  println a[1][2]
+end

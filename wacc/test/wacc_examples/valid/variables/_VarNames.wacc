@@ -1,0 +1,13 @@
+# variable can have _ in their names
+
+# Output:
+
+# Exit:
+# 19
+
+# Program:
+
+begin
+  int an_underscore = 19 ;
+  exit an_underscore
+end

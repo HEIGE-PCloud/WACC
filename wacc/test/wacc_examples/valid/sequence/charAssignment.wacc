@@ -1,0 +1,10 @@
+# simple character variable declaration and assignment
+
+# Output:
+
+# Program:
+
+begin
+  char c = 'a' ;
+  c = 'Z'
+end

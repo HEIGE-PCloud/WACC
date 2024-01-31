@@ -11,6 +11,26 @@ stages:
 default:
   image: haskell:9.6.3
 
+.stack-cache:
+  variables:
+    STACK_ROOT: $CI_PROJECT_DIR/.stack
+  before_script:
+    - mkdir -p .stack
+  cache:
+    - key:
+        files:
+          - stack.yml
+          - stack.yml.lock
+      paths:
+        - .stack-work/
+        - .stack/
+    - key:
+        files:
+          - wacc/package.yaml
+          - wacc/wacc.cabal
+      paths:
+        - wacc/.stack-work/
+
 build:
   artifacts:
     paths:
@@ -19,6 +39,7 @@ build:
   script:
     - make
   stage: build
+  extends: .stack-cache
 
 lint:
   image:
@@ -29,10 +50,17 @@ lint:
     - fourmolu --mode check wacc
   stage: lint
 
-test:
+integration-test:
   needs:
     - artifacts: false
       job: build
   script:
     - make check
   stage: test
+  artifacts:
+    when: always
+    paths:
+      - rspec.xml
+    reports:
+      junit: rspec.xml
+  extends: .stack-cache

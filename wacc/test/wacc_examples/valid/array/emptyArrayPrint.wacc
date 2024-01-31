@@ -1,0 +1,12 @@
+# basic array declaration and print after
+
+# Output:
+# true
+#
+
+# Program:
+
+begin
+  int[] x = [] ;
+  println true
+end

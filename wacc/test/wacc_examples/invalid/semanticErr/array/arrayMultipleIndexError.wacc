@@ -1,0 +1,20 @@
+# Indexing an array to get sub-arrays, but going too far.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int[] a = [1, 2];
+  int[] b = [3, 4];
+
+  int[][] ab = [a, b];
+
+  int[] sameAsA = ab[0];
+  int oops = sameAsA[0][1]
+end

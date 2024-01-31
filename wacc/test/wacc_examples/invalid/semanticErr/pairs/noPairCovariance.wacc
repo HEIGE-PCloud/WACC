@@ -1,0 +1,15 @@
+# Pairs should not be covariant
+# Thanks to Nathaniel Burke
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(char[], char[]) pcs = null ;
+  pair(string, string) bad = pcs
+end

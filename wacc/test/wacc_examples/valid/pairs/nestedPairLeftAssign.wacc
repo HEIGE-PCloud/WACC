@@ -1,0 +1,15 @@
+# nested pair assignments are legal as long as the right hand-side type is known
+
+# Output:
+# 7
+#
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(2, 3) ;
+  pair(int, pair) q = newpair(1, p) ;
+  fst snd q = 7 ;
+  int x = fst p ;
+  println x
+end

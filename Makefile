@@ -2,10 +2,15 @@ compile:
 	stack update
 	stack install --local-bin-path . wacc:exe:compile
 
-.PHONY: clean check
-
-check:
-	stack test wacc
+check: compile
+	stack test \
+		--test-arguments --catch-stderr \
+		--test-arguments --catch-stdout \
+		--test-arguments --timeout=1s \
+		--test-arguments --num-threads=4 \
+		--test-arguments --xml=../rspec.xml
 
 clean:
 	$(RM) compile
+
+.PHONY: clean check compile

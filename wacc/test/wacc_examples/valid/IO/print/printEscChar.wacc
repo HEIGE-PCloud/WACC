@@ -1,0 +1,12 @@
+# basic escaped character printing
+
+# Output:
+# An escaped character example is "
+#
+
+# Program:
+
+begin
+  print "An escaped character example is " ;
+  println '\"'
+end

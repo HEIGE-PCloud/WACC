@@ -1,0 +1,9 @@
+# carriage returns should be parsable, but their behaviour is non-portable, so the IO is not currently tested
+
+# Output:
+
+# Program:
+
+begin
+  string s = "Hello \r World!\n"
+end
