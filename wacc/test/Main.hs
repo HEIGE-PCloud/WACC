@@ -6,20 +6,22 @@ where
 import System.Exit
 import Test.Program
 import Test.Tasty
+import Test.Tasty.Ingredients (composeReporters)
+import Test.Tasty.Ingredients.ConsoleReporter (consoleTestReporter)
 import Test.Tasty.Runners.AntXML (antXMLRunner)
 
 basePath :: FilePath
 basePath = "wacc/test/wacc_examples"
 
--- TODO: Collect all test cases automatically from the wacc_examples folder
+-- TODO: Collect all test cases from the wacc_examples folder
 
 main :: IO ()
 main =
-  defaultMainWithIngredients [antXMLRunner] $
+  defaultMainWithIngredients [composeReporters consoleTestReporter antXMLRunner] $
     testGroup
       "integrationTests"
       [ validTests
-      -- syntaxErrorTests,
+      -- syntaxErrorTests
       -- semanticErrorTests
       ]
 
@@ -65,18 +67,18 @@ syntaxErrorTests :: TestTree
 syntaxErrorTests =
   testGroup
     "syntax"
-    [ testProgram "Foo2" "make" [] Nothing (ExitFailure 100)
+    [ testProgram "Foo2" "pwd" [] (Just "..") (ExitFailure 100)
     ]
 
 semanticErrorTests :: TestTree
 semanticErrorTests =
   testGroup
     "semantic"
-    [ testProgram "Foo3" "make" [] Nothing (ExitFailure 200)
+    [ testProgram "Foo3" "make" [] (Just "..") (ExitFailure 200)
     ]
 
 generateTestCase :: String -> String -> ExitCode -> TestTree
-generateTestCase name path = testProgram name "compile" [path] Nothing
+generateTestCase name path = testProgram name "./compile" [path] (Just "..")
 
 generateTestGroup :: [String] -> [String] -> ExitCode -> TestTree
 generateTestGroup testnames names exitCode =
