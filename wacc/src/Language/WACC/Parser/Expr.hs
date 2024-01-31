@@ -3,6 +3,8 @@
 
 module Language.WACC.Parser.Expr
   ( expr
+  , ident
+  , arrayElem
   )
 where
 
@@ -96,8 +98,11 @@ pairLiter = do
 ident :: Parsec (WAtom String)
 ident = mkIdent identifier
 
-arrayElem :: Parsec (WAtom String)
-arrayElem = mkArrayElem $ do
+arrayElemExpr :: Parsec (WAtom String)
+arrayElemExpr = mkArrayElem $ do arrayElem
+
+arrayElem :: Parsec (ArrayIndex String)
+arrayElem = do
   s <- identifier
   exprs <- some (sym "[" *> expr <* sym "]")
   pure (ArrayIndex s (toList exprs))
@@ -111,7 +116,7 @@ atom =
     , charLiter
     , stringLiter
     , pairLiter
-    , arrayElem
+    , arrayElemExpr
     , ident
     ]
 

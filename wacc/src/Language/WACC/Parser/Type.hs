@@ -6,7 +6,6 @@ module Language.WACC.Parser.Type where
 
 import Control.Applicative (many)
 import Data.Functor (void)
-import Language.WACC.AST (WType)
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Token (sym)
 import Text.Gigaparsec (Parsec, some, (<~>))

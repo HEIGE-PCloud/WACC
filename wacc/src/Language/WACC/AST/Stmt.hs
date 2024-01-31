@@ -48,7 +48,7 @@ data RValue fnident ident
   = -- | > <expr>
     RVExpr (Expr ident)
   | -- | > [<expr>, ...]
-    RVArrayLit [Expr ident] 
+    RVArrayLit [Expr ident]
   | -- | > newpair(<expr>, <expr>)
     RVNewPair (Expr ident) (Expr ident)
   | -- |
