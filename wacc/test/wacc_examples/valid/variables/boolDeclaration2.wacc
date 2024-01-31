@@ -1,0 +1,9 @@
+# simple true boolean variable declaration
+
+# Output:
+
+# Program:
+
+begin
+  bool b = true
+end

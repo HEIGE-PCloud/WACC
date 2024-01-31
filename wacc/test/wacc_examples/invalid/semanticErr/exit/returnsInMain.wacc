@@ -1,0 +1,26 @@
+# Returning from the main body is forbidden.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  while true do
+    return 3
+  done;
+
+  if true then
+    return 4
+  else
+    return 5
+  fi;
+
+  begin
+    return 6
+  end
+end

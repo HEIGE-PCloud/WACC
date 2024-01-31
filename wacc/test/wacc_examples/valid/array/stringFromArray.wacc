@@ -1,0 +1,10 @@
+# char[] can be directly assigned to string
+
+# Output:
+
+# Program:
+
+begin
+  string a = ['a', 'b'] ;
+  exit 0
+end

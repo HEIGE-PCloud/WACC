@@ -1,0 +1,20 @@
+# Stuff that follows a child scope is not part of the parent!
+# Thanks to Ollie Madine and Andrii Verveha
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int x = 5;
+  begin
+    begin
+      free x
+    end;
+    int[] x = [1]
+  end
+end

@@ -1,0 +1,14 @@
+# Calling an undefined identifier.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int result = call fib(5)
+end

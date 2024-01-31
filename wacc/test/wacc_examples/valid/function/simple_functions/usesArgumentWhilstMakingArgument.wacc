@@ -1,0 +1,25 @@
+# tests a function with more arguments than fit into registers
+
+# Output:
+# 12
+# -4
+# 32
+#
+
+# Program:
+
+begin
+  int f(int u, int v) is
+    int x = call g(u + v, u - v, u * v) ;
+    return x
+  end
+
+  int g(int x, int y, int z) is
+    println(x) ;
+    println(y) ;
+    println(z) ;
+    return 0
+  end
+
+  int r = call f(4, 8)
+end

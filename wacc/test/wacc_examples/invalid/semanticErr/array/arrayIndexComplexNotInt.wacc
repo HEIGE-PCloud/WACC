@@ -1,0 +1,16 @@
+# Attempting to access an array with an invalid complex expression
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int[] a = [1, 2];
+  int b = a[1 - "horse"];
+  int c = a[!false]
+end

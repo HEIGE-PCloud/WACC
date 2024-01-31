@@ -1,0 +1,18 @@
+# Trying to place an incorrect type into a parameterless pair.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int c = 5;
+  pair(int, int) p = newpair(c, c);
+  pair(pair, int) oops = newpair(p, 0);
+
+  fst oops = c
+end

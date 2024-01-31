@@ -1,0 +1,14 @@
+# If we are reading into a pair projection, the element must be readable
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(bool, bool) p = null;
+  read fst p
+end

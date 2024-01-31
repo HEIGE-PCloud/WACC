@@ -1,0 +1,32 @@
+# Functions with lots of local arguments should work ok
+# Thanks to Kristina Zimina for finding this
+
+# Output:
+# 5
+# 8
+#
+
+# Program:
+
+begin
+    int f (int a, int b, int c, int d, int e, int k) is
+        int x1 = 1;
+        int x2 = 2;
+        int x3 = 3;
+        int x4 = 4;
+        char x5 = '5';
+        char x6 = '6';
+        char x7 = '7';
+        int x8 = 8;
+        begin
+            char y1 = 'a';
+            char y2 = 'b';
+            int y = 5 ;
+            println y
+        end ;
+        return x8
+    end
+
+    int r = call f(1, 2, 3, 4, 5, 6);
+    println r
+end

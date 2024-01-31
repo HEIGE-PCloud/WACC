@@ -1,0 +1,12 @@
+# a simple function is declared, but not called
+
+# Output:
+
+# Program:
+
+begin
+  int f() is
+    return 0
+  end
+  skip
+end

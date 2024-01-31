@@ -1,0 +1,10 @@
+# simple skip program with comment line ended by EoF not EoL
+
+# Output:
+
+# Program:
+
+begin 
+  skip 
+end
+# I can end a file with a comment

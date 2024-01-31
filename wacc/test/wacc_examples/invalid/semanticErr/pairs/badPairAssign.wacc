@@ -1,0 +1,13 @@
+# newpair cannot be assigned to non-pair type
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int x = newpair(10, 20)
+end
