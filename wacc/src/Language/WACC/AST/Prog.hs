@@ -11,7 +11,7 @@ WACC programs.
 module Language.WACC.AST.Prog (Prog (..)) where
 
 import Language.WACC.AST.Stmt (Stmts)
-import Language.WACC.AST.WType (Erasure (Known), WType)
+import Language.WACC.AST.WType (WType)
 
 {- |
 WACC programs.
@@ -19,9 +19,9 @@ WACC programs.
 data Prog fnident ident
   = -- | > <type> <ident>(<type> <ident>, ...) is <stmt> end
     Func
-      (WType Known)
+      WType
       fnident
-      [(WType Known, ident)]
+      [(WType, ident)]
       (Stmts fnident ident)
       (Prog fnident ident)
   | -- | Main program.

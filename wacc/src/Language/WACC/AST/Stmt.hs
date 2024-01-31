@@ -12,7 +12,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
-import Language.WACC.AST.WType (Erasure (Known), WType)
+import Language.WACC.AST.WType (WType)
 
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
@@ -48,7 +48,7 @@ data RValue fnident ident
   = -- | > <expr>
     RVExpr (Expr ident)
   | -- | > [<expr>, ...]
-    RVArrayLit [Expr ident]
+    RVArrayLit [Expr ident] 
   | -- | > newpair(<expr>, <expr>)
     RVNewPair (Expr ident) (Expr ident)
   | -- |
@@ -69,7 +69,7 @@ data Stmt fnident ident
   = -- | > skip
     Skip
   | -- | > <type> <ident> = <rvalue>
-    Decl (WType Known) ident (RValue fnident ident)
+    Decl WType ident (RValue fnident ident)
   | -- | > <lvalue> = <rvalue>
     Asgn (LValue ident) (RValue fnident ident)
   | -- | > read <lvalue>
