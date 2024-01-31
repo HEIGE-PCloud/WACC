@@ -1,10 +1,10 @@
 module Main (main) where
 
-import GHC.IO.Handle.FD (stderr)
-import System.Environment (getArgs)
-import GHC.IO.Handle.Text (hPutStrLn)
-import System.Exit (exitFailure, exitWith, ExitCode (ExitFailure), exitSuccess)
 import Data.List (isInfixOf)
+import GHC.IO.Handle.FD (stderr)
+import GHC.IO.Handle.Text (hPutStrLn)
+import System.Environment (getArgs)
+import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
@@ -27,10 +27,9 @@ main = do
 
 compile :: String -> IO ()
 compile filename
-    | "syntaxErr" `isInfixOf` filename = exitWithSyntaxError
-    | "semanticErr" `isInfixOf` filename = exitWithSemanticError
-    | otherwise = exitSuccess
+  | "syntaxErr" `isInfixOf` filename = exitWithSyntaxError
+  | "semanticErr" `isInfixOf` filename = exitWithSemanticError
+  | otherwise = exitSuccess
 
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
-
