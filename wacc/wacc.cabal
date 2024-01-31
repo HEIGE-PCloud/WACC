@@ -58,6 +58,7 @@ test-suite wacc-test
   main-is: Main.hs
   other-modules:
       Test.AST
+      Test.Program
       Paths_wacc
   hs-source-dirs:
       test
@@ -65,7 +66,10 @@ test-suite wacc-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , deepseq
+    , directory
     , gigaparsec
+    , process
     , tasty
     , tasty-discover
     , tasty-hspec

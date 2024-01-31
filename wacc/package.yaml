@@ -50,3 +50,6 @@ tests:
       - tasty-hspec
       - tasty-quickcheck
       - wacc
+      - deepseq
+      - directory
+      - process
