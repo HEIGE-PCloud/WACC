@@ -53,13 +53,18 @@ test-suite wacc-test
   main-is: Main.hs
   other-modules:
       Test.AST
+      Test.Program
       Paths_wacc
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , deepseq
+    , directory
+    , process
     , tasty
+    , tasty-ant-xml
     , tasty-discover
     , tasty-hspec
     , tasty-quickcheck

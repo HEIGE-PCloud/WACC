@@ -1,0 +1,12 @@
+# common error exit statement
+
+# Output:
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  exit -1
+end

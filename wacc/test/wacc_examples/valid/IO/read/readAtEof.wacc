@@ -1,0 +1,19 @@
+# Read should not alter nothing if it can't read anything
+# Thanks for Nixon Moony-Enraght for catching this!
+
+# Input: X
+
+# Output:
+# XZ
+#
+
+# Program:
+begin
+    char c = 'Z';
+    read c;
+    print c;
+
+    char c2 = 'Z';
+    read c2;
+    println c2
+end

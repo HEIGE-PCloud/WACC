@@ -1,0 +1,14 @@
+# nested pair extractions are legal as long as the left hand-side type is known
+
+# Output:
+# 2
+#
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(2, 3) ;
+  pair(int, pair) q = newpair(1, p) ;
+  int x = fst snd q ;
+  println x
+end

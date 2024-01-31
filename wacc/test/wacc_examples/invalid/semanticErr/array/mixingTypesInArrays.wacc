@@ -1,0 +1,19 @@
+# Attempting to mix types in an array literal.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  char five() is
+    begin return '5' end
+  end
+
+  char f = call five();
+  int[] a = [1, f]
+end

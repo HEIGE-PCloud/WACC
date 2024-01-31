@@ -1,0 +1,27 @@
+# Trying to return two different types from a function.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f(bool b) is
+    if b then
+      return 'c';
+      while true do
+        return 'd'
+      done
+    else
+      skip
+    fi;
+
+    return 10
+  end
+
+  int a = call f(false)
+end

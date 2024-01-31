@@ -1,0 +1,10 @@
+# This should work just fine
+
+# Output:
+
+# Program:
+
+begin
+  int[] x = [] ;
+  bool y = true
+end

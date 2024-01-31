@@ -1,0 +1,15 @@
+# Assignment is not legal when both sides types are not known
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(4, 5);
+  pair(pair, int) q = newpair(p, 6);
+  fst fst q = snd fst q
+end

@@ -1,0 +1,9 @@
+# empty array declaration
+
+# Output:
+
+# Program:
+
+begin
+  int[] a = []
+end
