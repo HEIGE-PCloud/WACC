@@ -7,10 +7,13 @@ import System.Exit
 import Test.Program
 import Test.Tasty
 import Test.Tasty.Runners.AntXML (antXMLRunner)
+import Data.List (isPrefixOf)
+import Test.Tasty.Ingredients (composeReporters)
+import Test.Tasty.Ingredients.Basic (consoleTestReporter)
 
 main :: IO ()
 main =
-  defaultMainWithIngredients [antXMLRunner] $
+  defaultMainWithIngredients [composeReporters consoleTestReporter antXMLRunner] $
     testGroup
       "integrationTests"
       allIntegrationTests
@@ -23,11 +26,6 @@ data IntegrationTest = IntegrationTest
     testKind :: IntegrationTestKind
   }
 
-startsWith :: String -> String -> Bool
-startsWith _ "" = True
-startsWith "" _ = False
-startsWith (x : xs) (y : ys) = x == y && startsWith xs ys
-
 mkIntegrationTest :: FilePath -> IntegrationTest
 mkIntegrationTest rawPath =
   IntegrationTest
@@ -38,9 +36,9 @@ mkIntegrationTest rawPath =
   where
     basePath = "wacc/test/wacc_examples"
     path = basePath ++ "/" ++ rawPath
-    isValid = rawPath `startsWith` "valid"
-    isSemanticError = rawPath `startsWith` "invalid/semanticErr"
-    isSyntaxError = rawPath `startsWith` "invalid/syntaxErr"
+    isValid = "valid" `isPrefixOf` rawPath
+    isSemanticError = "invalid/semanticErr" `isPrefixOf` rawPath
+    isSyntaxError = "invalid/syntaxErr" `isPrefixOf` rawPath
     kind
       | isValid = Valid
       | isSemanticError = SemanticError
