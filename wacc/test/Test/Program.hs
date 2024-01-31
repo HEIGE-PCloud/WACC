@@ -58,10 +58,10 @@
 module Test.Program (
    testProgram
  , CatchStderr(..)
+ , CatchStdout(..)
  ) where
 
 import Control.DeepSeq      ( deepseq                                  )
-import Data.List            ( intercalate                              )
 import Data.Typeable        ( Typeable                                 )
 import Data.Proxy           ( Proxy (..)                               )
 import System.Directory     ( findExecutable                           )
@@ -73,7 +73,7 @@ import Test.Tasty.Providers ( IsTest (..), Result, TestName, TestTree,
 import Test.Tasty.Options   ( IsOption (..), OptionDescription(..),
                               safeRead, lookupOption, flagCLParser     )
 
-data TestProgram = TestProgram String [String] (Maybe FilePath)
+data TestProgram = TestProgram String [String] (Maybe FilePath) ExitCode
      deriving (Typeable)
 
 -- | Create test that runs a program with given options. Test succeeds
@@ -82,21 +82,23 @@ testProgram :: TestName        -- ^ Test name
             -> String          -- ^ Program name
             -> [String]        -- ^ Program options
             -> Maybe FilePath  -- ^ Optional working directory
+            -> ExitCode        -- ^ Expected exit code
             -> TestTree
-testProgram testName program opts workingDir =
-    singleTest testName (TestProgram program opts workingDir)
+testProgram testName program opts workingDir exitCode =
+    singleTest testName (TestProgram program opts workingDir exitCode)
 
 instance IsTest TestProgram where
-  run opts (TestProgram program args workingDir) _ = do
+  run opts (TestProgram program args workingDir exitCode) _ = do
     execFound <- findExecutable program
 
     let CatchStderr catchStderr = lookupOption opts
+    let CatchStdout catchStdout = lookupOption opts
 
     case execFound of
       Nothing       -> return $ execNotFoundFailure program
-      Just progPath -> runProgram progPath args workingDir catchStderr
+      Just progPath -> runProgram progPath args workingDir catchStderr catchStdout exitCode
 
-  testOptions = return [Option (Proxy :: Proxy CatchStderr)]
+  testOptions = return [Option (Proxy :: Proxy CatchStderr), Option (Proxy :: Proxy CatchStdout)]
 
 newtype CatchStderr = CatchStderr Bool deriving (Show, Typeable)
 
@@ -107,22 +109,37 @@ instance IsOption CatchStderr where
   optionHelp   = return "Catch standart error of programs"
   optionCLParser = flagCLParser (Just 'e') (CatchStderr True)
 
+newtype CatchStdout = CatchStdout Bool deriving (Show, Typeable)
+
+instance IsOption CatchStdout where
+  defaultValue = CatchStdout False
+  parseValue   = fmap CatchStdout . safeRead
+  optionName   = return "catch-stdout"
+  optionHelp   = return "Catch standart outor of programs"
+  optionCLParser = flagCLParser (Just 'o') (CatchStdout True)
+
+
+rawExitCode :: ExitCode -> Int
+rawExitCode ExitSuccess = 0
+rawExitCode (ExitFailure code) = code
 -- | Run a program with given options and optional working directory.
 -- Return success if program exits with success code.
 runProgram :: String          -- ^ Program name
            -> [String]        -- ^ Program options
            -> Maybe FilePath  -- ^ Optional working directory
            -> Bool            -- ^ Whether to print stderr on error
+           -> Bool            -- ^ Whether to print stdout on error
+           -> ExitCode        -- ^ Expected exit code
            -> IO Result
-runProgram program args workingDir catchStderr = do
-  (_, _, stderrH, pid) <- runInteractiveProcess program args workingDir Nothing
+runProgram program args workingDir catchStderr catchStdout exitCode = do
+  (_, stdoutH, stderrH, pid) <- runInteractiveProcess program args workingDir Nothing
 
   stderr <- if catchStderr then fmap Just (hGetContents stderrH) else return Nothing
+  stdout <- if catchStdout then fmap Just (hGetContents stdoutH) else return Nothing
   ecode  <- stderr `deepseq` waitForProcess pid
-
-  case ecode of
-    ExitSuccess      -> return success
-    ExitFailure code -> return $ exitFailure program args code stderr
+  if ecode == exitCode
+    then return success
+    else return $ exitFailure program args (rawExitCode ecode) stderr stdout
 
 -- | Indicates successful test
 success :: Result
@@ -134,11 +151,14 @@ execNotFoundFailure file =
   testFailed $ "Cannot locate program " ++ file ++ " in the PATH"
 
 -- | Indicates that program failed with an error code
-exitFailure :: String -> [String] -> Int -> Maybe String -> Result
-exitFailure file args code stderr =
-  testFailed $ "Program " ++ intercalate " " (file:args) ++
+exitFailure :: String -> [String] -> Int -> Maybe String -> Maybe String -> Result
+exitFailure file args code stderr stdout =
+  testFailed $ "Program " ++ unwords (file:args) ++
                " failed with code " ++ show code
                ++ case stderr of
                     Nothing -> ""
                     Just s  -> "\n Stderr was: \n" ++ s
+               ++ case stdout of
+                    Nothing -> ""
+                    Just s  -> "\n Stdout was: \n" ++ s
 
