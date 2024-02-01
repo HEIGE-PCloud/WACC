@@ -58,11 +58,15 @@ test-suite wacc-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Test.Ingredients
+      Test.Integration
       Test.Program
       Paths_wacc
   hs-source-dirs:
       test
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -F -pgmF=tasty-autocollect
+  build-tool-depends:
+      tasty-autocollect:tasty-autocollect
   build-depends:
       base >=4.7 && <5
     , containers
@@ -72,7 +76,7 @@ test-suite wacc-test
     , process
     , tasty
     , tasty-ant-xml
-    , tasty-discover
+    , tasty-autocollect
     , tasty-hspec
     , tasty-quickcheck
     , wacc
