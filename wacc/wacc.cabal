@@ -60,6 +60,7 @@ test-suite wacc-test
   other-modules:
       Test.Ingredients
       Test.Integration
+      Test.Parser.QuickCheck
       Test.Program
       Paths_wacc
   hs-source-dirs:

@@ -55,7 +55,7 @@ integration-test:
     - artifacts: false
       job: build
   script:
-    - make check
+    - make integration-test
   stage: test
   artifacts:
     when: always
