@@ -2,10 +2,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Language.WACC.Parser.Expr
-  ( expr
-  , ident
-  , arrayElem
-  )
 where
 
 import Data.Foldable (Foldable (toList))

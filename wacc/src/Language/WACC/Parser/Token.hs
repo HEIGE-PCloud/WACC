@@ -94,13 +94,7 @@ import Text.Gigaparsec.Token.Lexer
   , TextParsers (ascii)
   , mkLexer
   )
-import qualified Text.Gigaparsec.Token.Lexer
-  ( IntegerParsers (decimal)
-  , Lexeme (charLiteral, integer, names, stringLiteral, sym)
-  , Lexer (fully, lexeme)
-  , Names (identifier)
-  )
-
+import qualified Text.Gigaparsec.Token.Lexer as T
 waccNameDesc :: NameDesc
 waccNameDesc =
   NameDesc
@@ -227,28 +221,28 @@ lexer =
       }
 
 lexeme :: Lexeme
-lexeme = Text.Gigaparsec.Token.Lexer.lexeme lexer
+lexeme = T.lexeme lexer
 
 names :: Names
-names = Text.Gigaparsec.Token.Lexer.names lexeme
+names = T.names lexeme
 
 identifier :: Parsec String
-identifier = Text.Gigaparsec.Token.Lexer.identifier names
+identifier = T.identifier names
 
 integer :: IntegerParsers CanHoldSigned
-integer = Text.Gigaparsec.Token.Lexer.integer lexeme
+integer = T.integer lexeme
 
 decimal :: Parsec Integer
-decimal = Text.Gigaparsec.Token.Lexer.decimal integer
+decimal = T.decimal integer
 
 stringLiteral :: Parsec String
-stringLiteral = ascii $ Text.Gigaparsec.Token.Lexer.stringLiteral lexeme
+stringLiteral = ascii $ T.stringLiteral lexeme
 
 charLiteral :: Parsec Char
-charLiteral = ascii $ Text.Gigaparsec.Token.Lexer.charLiteral lexeme
+charLiteral = ascii $ T.charLiteral lexeme
 
 fully :: Parsec a -> Parsec a
-fully = Text.Gigaparsec.Token.Lexer.fully lexer
+fully = T.fully lexer
 
 sym :: String -> Parsec String
-sym s = Text.Gigaparsec.Token.Lexer.sym lexeme s $> s
+sym s = T.sym lexeme s $> s
