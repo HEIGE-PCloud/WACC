@@ -122,21 +122,23 @@ atom =
 
 expr :: Parsec (Expr String)
 expr =
-  precedence $
-    Atom (mkWAtom atom)
-      >+ ops
-        Prefix
-        [ mkNot <* sym "!"
-        , mkNegate <* sym "-"
-        , mkLen <* sym "len"
-        , mkOrd <* sym "ord"
-        , mkChr <* sym "chr"
-        ]
-      >+ ops InfixL [mkMul <* sym "*", mkMod <* sym "%", mkDiv <* sym "/"]
-      >+ ops InfixL [mkAdd <* sym "+", mkSub <* sym "-"]
-      >+ ops
-        InfixN
-        [mkGT <* sym ">", mkGTE <* sym ">=", mkLT <* sym "<", mkLTE <* sym "<="]
-      >+ ops InfixN [mkEq <* sym "==", mkIneq <* sym "!="]
-      >+ ops InfixR [sym "&&" *> mkAnd]
-      >+ ops InfixR [sym "||" *> mkOr]
+  precedence
+    ( Atom (mkWAtom atom)
+        >+ ops
+          Prefix
+          [ mkNot <* sym "!"
+          , mkNegate <* sym "-"
+          , mkLen <* sym "len"
+          , mkOrd <* sym "ord"
+          , mkChr <* sym "chr"
+          ]
+        >+ ops InfixL [mkMul <* sym "*", mkMod <* sym "%", mkDiv <* sym "/"]
+        >+ ops InfixL [mkAdd <* sym "+", mkSub <* sym "-"]
+        >+ ops
+          InfixN
+          [mkGT <* sym ">", mkGTE <* sym ">=", mkLT <* sym "<", mkLTE <* sym "<="]
+        >+ ops InfixN [mkEq <* sym "==", mkIneq <* sym "!="]
+        >+ ops InfixR [sym "&&" *> mkAnd]
+        >+ ops InfixR [sym "||" *> mkOr]
+    )
+    <|> (sym "(" *> expr <* sym ")")

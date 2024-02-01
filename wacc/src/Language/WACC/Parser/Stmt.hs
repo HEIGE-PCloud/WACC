@@ -58,18 +58,23 @@ $( deriveDeferredConstructors
     ['Decl, 'IfElse, 'While, 'BeginEnd]
  )
 
-pairElem :: Parsec (PairElem LValue String)
-pairElem = sym "fst" *> mkFstElem lValue <|> sym "snd" *> mkSndElem lValue
+pairElem ::Parsec (PairElem String)
+pairElem = sym "fst" *> mkFstElem lValue<|> sym "snd" *> mkSndElem lValue
 
 lValue :: Parsec (LValue String)
 lValue =
-  choice [mkLVIdent identifier, mkLVArrayElem arrayElem, mkLVPairElem pairElem]
+  choice
+    [mkLVIdent identifier, mkLVArrayElem arrayElem, mkLVPairElem pairElem]
 
--- TODO() Potentially alter the AST to allow for pairelem as rvalue
 rValue :: Parsec (RValue String String)
 rValue =
   choice
-    [mkRVExpr expr, mkRVArrayLit arrayLit, newPair, mkRVPairElem undefined, fnCall]
+    [ mkRVExpr expr
+    , mkRVArrayLit arrayLit
+    , newPair
+    , mkRVPairElem pairElem
+    , fnCall
+    ]
 
 arrayLit :: Parsec [Expr String]
 arrayLit = do
