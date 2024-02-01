@@ -2,10 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Language.WACC.Parser.Stmt
-  ( stmts
-  )
-where
+module Language.WACC.Parser.Stmt where
 
 import Control.Applicative (Alternative (many))
 import Data.List.NonEmpty (fromList)

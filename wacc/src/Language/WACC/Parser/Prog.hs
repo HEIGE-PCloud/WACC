@@ -1,10 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Language.WACC.Parser.Prog
-  ( prog
-  )
-where
+module Language.WACC.Parser.Prog where
 
 import Data.Maybe (fromMaybe)
 import Language.WACC.AST.Prog (Func (..), Prog (..))
