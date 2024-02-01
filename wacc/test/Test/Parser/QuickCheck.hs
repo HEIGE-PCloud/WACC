@@ -38,17 +38,16 @@ someN gen n = do
   k <- choose (1, max 1 n)
   concat <$> vectorOf k gen
 
+someSize :: Gen String -> Gen String
+someSize gen = sized $ \n -> someN gen n
+
+intMin :: Int
+intMin = minBound :: Int
+intMax :: Int
+intMax = maxBound :: Int
+
 genIntLiter :: Gen String
-genIntLiter = do
-  sign <- optional genIntSign
-  digits <- listOf1 genDigit
-  return $ sign ++ digits
-
-genDigit :: Gen Char
-genDigit = choose ('0', '9')
-
-genIntSign :: Gen String
-genIntSign = elements ["+", "-"]
+genIntLiter = choose (intMin, intMax) <&> show
 
 genBoolLiter :: Gen String
 genBoolLiter = elements ["true", "false"]
@@ -60,7 +59,7 @@ genCharLiter = do
 
 genStringLiter :: Gen String
 genStringLiter = do
-  c <- genCharacter
+  c <- someSize genCharacter
   return $ "\"" ++ c ++ "\""
 
 escapedChars :: [String]
@@ -80,15 +79,15 @@ genPairLiter = return "null"
 genIdent :: Gen String
 genIdent = genIdent' `suchThat` (`notElem` keywords)
   where
-    genIdent' = do
+    genIdent' = sized $ \k -> do
       c <- elements $ '_' : ['a' .. 'z'] ++ ['A' .. 'Z']
-      cs <- listOf $ elements $ '_' : ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9']
+      cs <- vectorOf k $ elements $ '_' : ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9']
       return $ c : cs
 
 genComment :: Gen String
-genComment = do
+genComment = sized $ \k -> do
   c <- elements ['#']
-  cs <- listOf1 $ elements $ graphicASCII ++ ['\n']
+  cs <- vectorOf k $ elements $ graphicASCII ++ ['\n']
   return $ c : cs
 
 genExpr :: Int -> Gen String
