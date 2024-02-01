@@ -150,16 +150,16 @@ check parser str = case parse' (fully parser) str of
 check' :: T.Parsec a -> Gen String -> Property
 check' parser gen = withMaxSuccess 100 $ forAll gen $ check parser
 
--- test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
+test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
 
--- test = testProperty "can parse boolLiter" $ check' boolLiter genBoolLiter
+test = testProperty "can parse boolLiter" $ check' boolLiter genBoolLiter
 
--- test = testProperty "can parse charLiter" $ check' charLiter genCharLiter
+test = testProperty "can parse charLiter" $ check' charLiter genCharLiter
 
--- test = testProperty "can parse stringLiter" $ check' stringLiter genStringLiter
+test = testProperty "can parse stringLiter" $ check' stringLiter genStringLiter
 
--- test = testProperty "can parse pairLiter" $ check' pairLiter genPairLiter
+test = testProperty "can parse pairLiter" $ check' pairLiter genPairLiter
 
--- test = testProperty "can parse ident" $ check' ident genIdent
+test = testProperty "can parse ident" $ check' ident genIdent
 
 test = testProperty "can parse expr" $ check' expr genExpr
