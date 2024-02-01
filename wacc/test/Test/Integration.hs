@@ -1,17 +1,17 @@
 {- AUTOCOLLECT.TEST -}
 
-module Test.Integration (
+module Test.Integration
+  (
   {- AUTOCOLLECT.TEST.export -}
-) where
+  )
+where
 
 import Data.List (isPrefixOf)
 import System.Exit
 import Test.Program
 import Test.Tasty
 
-
 test = testGroup "integrationTests" allIntegrationTests
-
 
 data IntegrationTestKind = Valid | SyntaxError | SemanticError
 

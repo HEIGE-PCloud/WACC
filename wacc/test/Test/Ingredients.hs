@@ -1,5 +1,5 @@
 module Test.Ingredients
-  ( testReporter,
+  ( testReporter
   )
 where
 
