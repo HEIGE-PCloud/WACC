@@ -12,7 +12,7 @@ import Language.WACC.Parser.Token
   , stringLiteral
   , sym
   )
-import Text.Gigaparsec (Parsec, (<|>))
+import Text.Gigaparsec (Parsec, (<|>), atomic)
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Combinator.NonEmpty (some)
 import Text.Gigaparsec.Expr
@@ -105,13 +105,13 @@ arrayElem = do
 atom :: Parsec (WAtom String)
 atom =
   choice
-    [ intLiter
-    , pairLiter
-    , boolLiter
-    , charLiter
-    , stringLiter
-    , pairLiter
-    , arrayElemExpr
+    [ atomic(intLiter)
+    , atomic(pairLiter)
+    , atomic(boolLiter)
+    , atomic(charLiter)
+    , atomic(stringLiter)
+    , atomic(pairLiter)
+    , atomic(arrayElemExpr)
     , ident
     ]
 
