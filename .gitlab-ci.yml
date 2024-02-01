@@ -64,3 +64,18 @@ integration-test:
     reports:
       junit: rspec.xml
   extends: .stack-cache
+
+unit-test:
+  needs:
+    - artifacts: false
+      job: build
+  script:
+    - make unit-test
+  stage: test
+  artifacts:
+    when: always
+    paths:
+      - rspec.xml
+    reports:
+      junit: rspec.xml
+  extends: .stack-cache
