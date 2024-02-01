@@ -17,13 +17,20 @@ import Language.WACC.AST.WType (Erasure (Known), WType)
 WACC programs.
 -}
 data Prog fnident ident
+  = -- | > 'begin' (func)* stmt 'end'
+    Funcs [Func fnident ident]
+  | -- | Main program.
+    Main (Stmts fnident ident)
+  deriving (Eq, Show)
+
+{- |
+WACC Function definition and body
+-}
+data Func fnident ident
   = -- | > <type> <ident>(<type> <ident>, ...) is <stmt> end
     Func
       (WType Known)
       fnident
       [(WType Known, ident)]
       (Stmts fnident ident)
-      (Prog fnident ident)
-  | -- | Main program.
-    Main (Stmts fnident ident)
   deriving (Eq, Show)
