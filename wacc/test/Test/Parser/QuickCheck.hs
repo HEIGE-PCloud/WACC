@@ -18,6 +18,10 @@ import Language.WACC.Parser.Type
 import qualified Test.QuickCheck.Property as P
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
+import qualified Text.Gigaparsec.Char as TC
+
+justParse :: T.Parsec [Char]
+justParse = T.many TC.item
 
 optional :: Gen String -> Gen String
 optional gen = frequency [(1, gen), (1, return "")]
