@@ -115,13 +115,13 @@ arrOrIdent = do
 atom :: Parsec (Expr String)
 atom =
   choice
-    [ WAtom <$> intLiter
+    [ WAtom <$> arrOrIdent
+    , WAtom <$> intLiter
     , WAtom <$> pairLiter
     , WAtom <$> boolLiter
     , WAtom <$> charLiter
     , WAtom <$> stringLiter
     , WAtom <$> pairLiter
-    , WAtom <$> arrOrIdent
     , sym "(" *> expr <* sym ")"
     ]
 
