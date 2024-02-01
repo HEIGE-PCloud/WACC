@@ -8,7 +8,7 @@
 {- |
 WACC programs.
 -}
-module Language.WACC.AST.Prog (Prog (..)) where
+module Language.WACC.AST.Prog (Prog (..), Func (..)) where
 
 import Language.WACC.AST.Stmt (Stmts)
 import Language.WACC.AST.WType (WType)
@@ -18,9 +18,7 @@ WACC programs.
 -}
 data Prog fnident ident
   = -- | > 'begin' (func)* stmt 'end'
-    Funcs [Func fnident ident]
-  | -- | Main program.
-    Main (Stmts fnident ident)
+    Main [Func fnident ident] (Stmts fnident ident)
   deriving (Eq, Show)
 
 {- |
