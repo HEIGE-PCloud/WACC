@@ -3,7 +3,7 @@ module Test.Ingredients
   )
 where
 
-import Test.Tasty.Ingredients (composeReporters, Ingredient)
+import Test.Tasty.Ingredients (Ingredient, composeReporters)
 import Test.Tasty.Ingredients.Basic (consoleTestReporter)
 import Test.Tasty.Runners.AntXML (antXMLRunner)
 

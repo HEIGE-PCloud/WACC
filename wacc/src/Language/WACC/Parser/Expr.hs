@@ -1,8 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Language.WACC.Parser.Expr
-where
+module Language.WACC.Parser.Expr where
 
 import Data.Foldable (Foldable (toList))
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))

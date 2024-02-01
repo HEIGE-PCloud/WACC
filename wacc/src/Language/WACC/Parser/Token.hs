@@ -87,6 +87,7 @@ import Text.Gigaparsec.Token.Lexer
   , mkLexer
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
+
 waccNameDesc :: NameDesc
 waccNameDesc =
   NameDesc
@@ -96,46 +97,49 @@ waccNameDesc =
     , operatorLetter = Nothing
     }
 
-keywords =           [ "begin"
-          , "end"
-          , "is"
-          , "skip"
-          , "read"
-          , "free"
-          , "return"
-          , "exit"
-          , "println"
-          , "print"
-          , "if"
-          , "else"
-          , "fi"
-          , "while"
-          , "done"
-          , "do"
-          , "newpair"
-          , "call"
-          , "fst"
-          , "snd"
-          ]
+keywords =
+  [ "begin"
+  , "end"
+  , "is"
+  , "skip"
+  , "read"
+  , "free"
+  , "return"
+  , "exit"
+  , "println"
+  , "print"
+  , "if"
+  , "else"
+  , "fi"
+  , "while"
+  , "done"
+  , "do"
+  , "newpair"
+  , "call"
+  , "fst"
+  , "snd"
+  ]
 
-operators = [ "!"
-          , "-"
-          , "len"
-          , "ord"
-          , "chr"
-          , "*"
-          , "/"
-          , "%"
-          , "+"
-          , ">"
-          , ">="
-          , "<"
-          , "<="
-          , "=="
-          , "!="
-          , "&&"
-          , "||"
-          ]
+operators =
+  [ "!"
+  , "-"
+  , "len"
+  , "ord"
+  , "chr"
+  , "*"
+  , "/"
+  , "%"
+  , "+"
+  , ">"
+  , ">="
+  , "<"
+  , "<="
+  , "=="
+  , "!="
+  , "&&"
+  , "||"
+  ]
+
 waccSymbolDesc :: SymbolDesc
 waccSymbolDesc =
   SymbolDesc

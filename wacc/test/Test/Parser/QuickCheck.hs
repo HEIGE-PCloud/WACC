@@ -6,14 +6,14 @@ module Test.Parser.QuickCheck
   )
 where
 
+import Data.Functor
 import Data.List ((\\))
+import Debug.Trace (trace)
 import Language.WACC.Parser.Expr
 import Language.WACC.Parser.Token (fully, keywords)
 import qualified Test.QuickCheck.Property as P
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
-import Data.Functor
-import Debug.Trace (trace)
 
 optional :: Gen String -> Gen String
 optional gen = frequency [(1, gen), (1, return "")]
@@ -65,7 +65,9 @@ graphicASCII :: [Char]
 graphicASCII = ['\32' .. '\126']
 
 genCharacter :: Gen String
-genCharacter = elements $ (map (: []) graphicASCII \\ escapedChars) ++ ["\\" ++ c | c <- escapedChars]
+genCharacter =
+  elements $
+    (map (: []) graphicASCII \\ escapedChars) ++ ["\\" ++ c | c <- escapedChars]
 
 genPairLiter :: Gen String
 genPairLiter = return "null"
@@ -87,9 +89,9 @@ genComment = do
 genExpr :: Gen String
 genExpr = sized $ \n ->
   frequency
-    [ (limit n, genExpr1),
-      (limit n, genExpr2),
-      (1, genExpr3)
+    [ (limit n, genExpr1)
+    , (limit n, genExpr2)
+    , (1, genExpr3)
     ]
   where
     genExpr1 = do
@@ -107,14 +109,14 @@ genExpr = sized $ \n ->
 genAtom :: Gen String
 genAtom = sized $ \n ->
   frequency
-    [ (1, genIntLiter),
-      (1, genBoolLiter),
-      (1, genCharLiter),
-      (1, genStringLiter),
-      (1, genPairLiter),
-      (1, genIdent),
-      (limit n, genArrayElem),
-      (limit n, genExpr')
+    [ (1, genIntLiter)
+    , (1, genBoolLiter)
+    , (1, genCharLiter)
+    , (1, genStringLiter)
+    , (1, genPairLiter)
+    , (1, genIdent)
+    , (limit n, genArrayElem)
+    , (limit n, genExpr')
     ]
   where
     genExpr' = do
@@ -125,7 +127,8 @@ genUnaryOper :: Gen String
 genUnaryOper = elements ["!", "-", "len", "ord", "chr"]
 
 genBinaryOper :: Gen String
-genBinaryOper = elements ["*", "/", "%", "+", "-", "<", "<=", ">", ">=", "==", "!=", "&&", "||"]
+genBinaryOper =
+  elements ["*", "/", "%", "+", "-", "<", "<=", ">", ">=", "==", "!=", "&&", "||"]
 
 genArrayElem :: Gen String
 genArrayElem = do
