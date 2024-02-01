@@ -17,11 +17,11 @@ import Language.WACC.AST.WType (WType)
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
 -}
-data PairElem value ident
+data PairElem ident
   = -- | > fst <value>
-    FstElem (value ident)
+    FstElem (LValue ident)
   | -- | > snd <value>
-    SndElem (value ident)
+    SndElem  (LValue ident)
   deriving (Eq, Show)
 
 {- |
@@ -38,7 +38,7 @@ data LValue ident
     -- or
     --
     -- > snd <lvalue>
-    LVPairElem (PairElem LValue ident)
+    LVPairElem (PairElem ident)
   deriving (Eq, Show)
 
 {- |
@@ -57,7 +57,7 @@ data RValue fnident ident
     -- or
     --
     -- > snd <rvalue>
-    RVPairElem (PairElem (RValue fnident) ident)
+    RVPairElem (PairElem ident)
   | -- | > call <ident>(<expr>, ...)
     RVCall fnident [Expr ident]
   deriving (Eq, Show)

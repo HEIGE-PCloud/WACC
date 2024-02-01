@@ -28,8 +28,6 @@ data WAtom ident
     Ident ident
   | -- | > <ident>[<expr>]...
     ArrayElem (ArrayIndex ident)
-  | -- | > (<expr>)
-    Parens (Expr ident)
   deriving (Eq, Show)
 
 {- |
