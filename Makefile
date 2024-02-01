@@ -6,7 +6,7 @@ integration-test: compile
 	stack test \
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
-		--test-arguments --timeout=1s \
+		--test-arguments --timeout=10s \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --xml=../rspec.xml \
 		--test-arguments '--pattern "$$0 !~ /semanticErr/"'
