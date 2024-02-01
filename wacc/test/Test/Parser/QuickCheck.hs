@@ -13,6 +13,8 @@ import Debug.Trace (trace, traceM)
 import Language.WACC.Parser.Expr
 import Language.WACC.Parser.Token (fully, keywords)
 import Language.WACC.Parser.Type
+import Language.WACC.Parser.Prog
+import Language.WACC.Parser.Stmt
 import qualified Test.QuickCheck.Property as P
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
@@ -223,6 +225,10 @@ genStmt depth
         , genExpr' "exit"
         , genExpr' "print"
         , genExpr' "println"
+        , genIf
+        , genWhile
+        , genBegin
+        , genSeq
         ]
   where
     genSkip = return "skip"
@@ -237,6 +243,22 @@ genStmt depth
     genExpr' str = do
       c1 <- genLvalue (depth - 1)
       return $ str ++ " " ++ c1
+    genIf = do
+      c1 <- genExpr (depth - 1)
+      c2 <- genStmt (depth - 1)
+      c3 <- genStmt (depth - 1)
+      return $ "if\n" ++ c1 ++ "\nthen\n" ++ c2 ++ "\nelse\n" ++ c3 ++ "\nfi"
+    genWhile = do
+      c1 <- genExpr (depth - 1)
+      c2 <- genStmt (depth - 1)
+      return $ "while\n" ++ c1 ++ "\ndo\n" ++ c2 ++ "\ndone"
+    genBegin = do
+      c1 <- genStmt (depth - 1)
+      return $ "begin\n" ++ c1 ++ "\nend"
+    genSeq = do
+      c1 <- genStmt (depth - 1)
+      c2 <- genStmt (depth - 1)
+      return $ c1 ++ "\n;\n" ++ c2
 
 genLvalue :: Int -> Gen String
 genLvalue depth
@@ -337,3 +359,19 @@ test_expectFail =
   testProperty "can parse pairElemType" $
     check' pairElemType $
       sized genPairElemType
+
+test = testProperty "can parse program" $ check' prog $ sized genProgram
+
+test = testProperty "can parse func" $ check' funcs $ sized genFunc
+
+-- test = testProperty "can parse paramList" $ check' paramList $ sized genParamList
+
+test = testProperty "can parse param" $ check' param $ sized genParam
+
+test = testProperty "can parse stmt" $ check' stmt $ sized genStmt
+
+test = testProperty "can parse lvalue" $ check' lValue $ sized genLvalue
+
+test = testProperty "can parse rvalue" $ check' rValue $ sized genRvalue
+
+test = testProperty "can parse arrayLiter" $ check' arrayLit $ sized genArrayLiter
