@@ -11,10 +11,10 @@ import Data.Functor
 import Data.List ((\\))
 import Debug.Trace (trace, traceM)
 import Language.WACC.Parser.Expr
-import Language.WACC.Parser.Token (fully, keywords)
-import Language.WACC.Parser.Type
 import Language.WACC.Parser.Prog
 import Language.WACC.Parser.Stmt
+import Language.WACC.Parser.Token (fully, keywords)
+import Language.WACC.Parser.Type
 import qualified Test.QuickCheck.Property as P
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
@@ -45,6 +45,7 @@ someSize gen = sized $ \n -> someN gen n
 
 intMin :: Int
 intMin = minBound :: Int
+
 intMax :: Int
 intMax = maxBound :: Int
 
