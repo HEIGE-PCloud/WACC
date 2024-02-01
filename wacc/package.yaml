@@ -8,6 +8,8 @@ author:
 
 dependencies:
   - base >= 4.7 && < 5
+  - containers
+  - gigaparsec
 
 ghc-options:
   - -Wall
@@ -42,9 +44,12 @@ tests:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+      - -F -pgmF=tasty-autocollect
+    build-tools:
+      - tasty-autocollect:tasty-autocollect
     dependencies:
       - tasty
-      - tasty-discover
+      - tasty-autocollect
       - tasty-hspec
       - tasty-quickcheck
       - tasty-ant-xml
@@ -52,3 +57,4 @@ tests:
       - deepseq
       - directory
       - process
+      - QuickCheck

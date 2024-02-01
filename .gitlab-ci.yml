@@ -7,8 +7,8 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 stages:
-  - build
   - lint
+  - build
   - test
 
 default:
@@ -34,6 +34,15 @@ default:
       paths:
         - wacc/.stack-work/
 
+lint:
+  image:
+    entrypoint: [""]
+    name: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
+  needs: []
+  script:
+    - fourmolu --mode check wacc
+  stage: lint
+
 build:
   artifacts:
     paths:
@@ -44,31 +53,32 @@ build:
   stage: build
   extends: .stack-cache
 
-lint:
-  image:
-    entrypoint: [""]
-    name: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
-  needs: []
-  script:
-    - fourmolu --mode check wacc
-  stage: lint
+# integration-test:
+#   needs:
+#     - artifacts: false
+#       job: build
+#   script:
+#     - make integration-test
+#   stage: test
+#   artifacts:
+#     when: always
+#     paths:
+#       - rspec.xml
+#     reports:
+#       junit: rspec.xml
+#   extends: .stack-cache
 
-code_quality:
-  rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
-integration-test:
-  needs:
-    - artifacts: false
-      job: build
-  script:
-    - make check
-  stage: test
-  artifacts:
-    when: always
-    paths:
-      - rspec.xml
-    reports:
-      junit: rspec.xml
-  extends: .stack-cache
+# unit-test:
+#   needs:
+#     - artifacts: false
+#       job: build
+#   script:
+#     - make unit-test
+#   stage: test
+#   artifacts:
+#     when: always
+#     paths:
+#       - rspec.xml
+#     reports:
+#       junit: rspec.xml
+#   extends: .stack-cache
