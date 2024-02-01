@@ -3,6 +3,7 @@
 
 module Language.WACC.Parser.Expr where
 
+import Control.Arrow (Arrow (arr))
 import Data.Foldable (Foldable (toList))
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
@@ -12,7 +13,7 @@ import Language.WACC.Parser.Token
   , stringLiteral
   , sym
   )
-import Text.Gigaparsec (Parsec, (<|>), atomic, many)
+import Text.Gigaparsec (Parsec, atomic, many, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Combinator.NonEmpty (some)
 import Text.Gigaparsec.Expr
@@ -27,7 +28,6 @@ import Text.Gigaparsec.Patterns
   , deriveLiftedConstructors
   )
 import Prelude hiding (GT, LT)
-import Control.Arrow (Arrow(arr))
 
 $( deriveLiftedConstructors
     "mk"
@@ -37,7 +37,7 @@ $( deriveLiftedConstructors
 $( deriveDeferredConstructors
     "mk"
     ['Ident, 'ArrayElem]
-  )
+ )
 
 $( deriveDeferredConstructors
     "mk"
@@ -100,11 +100,11 @@ arrayElem :: Parsec (ArrayIndex String)
 arrayElem = do
   s <- identifier
   exprs <- some (sym "[" *> expr <* sym "]")
-  pure (ArrayIndex s (toList exprs)) 
+  pure (ArrayIndex s (toList exprs))
 
 arrOrIdent :: Parsec (WAtom String)
 arrOrIdent = do
-  s <- identifier 
+  s <- identifier
   exprs <- many (sym "[" *> expr <* sym "]")
   f <- mkIdent
   g <- mkArrayElem
