@@ -1,12 +1,4 @@
-module Language.WACC.Parser.Token
-  ( identifier
-  , decimal
-  , stringLiteral
-  , charLiteral
-  , fully
-  , sym
-  )
-where
+module Language.WACC.Parser.Token where
 
 import Data.Char (isAlpha, isAlphaNum, isAscii, isPrint, isSpace)
 import qualified Data.Map as Map
@@ -104,12 +96,7 @@ waccNameDesc =
     , operatorLetter = Nothing
     }
 
-waccSymbolDesc :: SymbolDesc
-waccSymbolDesc =
-  SymbolDesc
-    { hardKeywords =
-        Set.fromList
-          [ "begin"
+keywords =           [ "begin"
           , "end"
           , "is"
           , "skip"
@@ -130,9 +117,8 @@ waccSymbolDesc =
           , "fst"
           , "snd"
           ]
-    , hardOperators =
-        Set.fromList
-          [ "!"
+
+operators = [ "!"
           , "-"
           , "len"
           , "ord"
@@ -150,6 +136,13 @@ waccSymbolDesc =
           , "&&"
           , "||"
           ]
+waccSymbolDesc :: SymbolDesc
+waccSymbolDesc =
+  SymbolDesc
+    { hardKeywords =
+        Set.fromList keywords
+    , hardOperators =
+        Set.fromList operators
     , caseSensitive = True
     }
 
