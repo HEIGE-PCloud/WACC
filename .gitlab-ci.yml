@@ -32,6 +32,8 @@ default:
         - wacc/.stack-work/
 
 build:
+  needs:
+    - lint
   artifacts:
     paths:
       - compile
