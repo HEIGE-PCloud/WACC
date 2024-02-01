@@ -60,6 +60,7 @@ test-suite wacc-test
   other-modules:
       Test.Ingredients
       Test.Integration
+      Test.Parser.QuickCheck
       Test.Program
       Paths_wacc
   hs-source-dirs:
@@ -68,7 +69,8 @@ test-suite wacc-test
   build-tool-depends:
       tasty-autocollect:tasty-autocollect
   build-depends:
-      base >=4.7 && <5
+      QuickCheck
+    , base >=4.7 && <5
     , containers
     , deepseq
     , directory
