@@ -6,8 +6,10 @@ module Test.Parser.QuickCheck
   )
 where
 
+import Control.Exception
 import Data.Functor
 import Data.List ((\\))
+import Debug.Trace (trace, traceM)
 import Language.WACC.Parser.Expr
 import Language.WACC.Parser.Token (fully, keywords)
 import qualified Test.QuickCheck.Property as P
@@ -86,13 +88,14 @@ genComment = do
   return $ c : cs
 
 genExpr :: Int -> Gen String
-genExpr (-1) = genAtom (-1)
-genExpr depth =
-  frequency
-    [ (1, genExpr1)
-    , (1, genExpr2)
-    , (1, genExpr3)
-    ]
+genExpr depth
+  | depth < 0 = genAtom depth
+  | otherwise =
+      frequency
+        [ (1, genExpr1)
+        , (1, genExpr2)
+        , (1, genExpr3)
+        ]
   where
     genExpr1 = do
       c1 <- genUnaryOper
@@ -107,29 +110,30 @@ genExpr depth =
       genAtom $ depth - 1
 
 genAtom :: Int -> Gen String
-genAtom (-1) =
-  oneof
-    [ genIntLiter
-    , genBoolLiter
-    , genCharLiter
-    , genStringLiter
-    , genPairLiter
-    , genIdent
-    ]
-genAtom depth =
-  frequency
-    [ (1, genIntLiter)
-    , (1, genBoolLiter)
-    , (1, genCharLiter)
-    , (1, genStringLiter)
-    , (1, genPairLiter)
-    , (1, genIdent)
-    , (1, genArrayElem $ depth - 1)
-    , (1, genExpr')
-    ]
+genAtom depth
+  | depth < 0 =
+      oneof
+        [ genIntLiter
+        , genBoolLiter
+        , genCharLiter
+        , genStringLiter
+        , genPairLiter
+        , genIdent
+        ]
+  | otherwise =
+      frequency
+        [ (1, genIntLiter)
+        , (1, genBoolLiter)
+        , (1, genCharLiter)
+        , (1, genStringLiter)
+        , (1, genPairLiter)
+        , (1, genIdent)
+        , (1, genArrayElem $ depth - 1)
+        , (1, genExpr')
+        ]
   where
     genExpr' = do
-      c1 <- genExpr $ depth - 1
+      c1 <- genExpr (depth - 1)
       return $ "(" ++ c1 ++ ")"
 
 genUnaryOper :: Gen String
@@ -140,7 +144,6 @@ genBinaryOper =
   elements ["*", "/", "%", "+", "-", "<", "<=", ">", ">=", "==", "!=", "&&", "||"]
 
 genArrayElem :: Int -> Gen String
-genArrayElem (-1) = return ""
 genArrayElem depth = do
   c1 <- genIdent
   c2 <- genBrackets
