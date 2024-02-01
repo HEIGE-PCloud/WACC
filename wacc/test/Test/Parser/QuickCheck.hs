@@ -15,6 +15,7 @@ import Language.WACC.Parser.Token (fully, keywords)
 import qualified Test.QuickCheck.Property as P
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
+import Language.WACC.Parser.Type
 
 optional :: Gen String -> Gen String
 optional gen = frequency [(1, gen), (1, return "")]
@@ -28,6 +29,8 @@ some gen = listOf1 gen <&> concat
 limit :: Int -> Int
 limit x = max 0 (1 - x)
 
+(-/-) :: Int -> Int
+(-/-) x = x - 1
 -- someN :: Gen String -> Int -> Gen String
 someN :: Gen String -> Int -> Gen String
 someN gen n = do
@@ -95,6 +98,7 @@ genExpr depth
         [ (1, genExpr1)
         , (1, genExpr2)
         , (1, genExpr3)
+
         ]
   where
     genExpr1 = do
@@ -105,7 +109,7 @@ genExpr depth
       c1 <- genExpr (depth - 1)
       c2 <- genBinaryOper
       c3 <- genExpr (depth - 1)
-      return $ c1 ++ " " ++ c2 ++ " " ++ c3
+      return $ "(" ++ c1 ++ " " ++ c2 ++ " " ++ c3 ++ ")"
     genExpr3 = do
       genAtom $ depth - 1
 
@@ -152,6 +156,142 @@ genArrayElem depth = do
     genBracket = do c <- genExpr $ depth - 1; return $ "[" ++ c ++ "]"
     genBrackets = someN genBracket 3
 
+genType :: Int -> Gen String
+genType depth
+  | depth < 0 = genBaseType
+  | otherwise = oneof [genBaseType, genArrayType (depth - 1), genPairType (depth - 1)]
+
+genBaseType :: Gen String
+genBaseType = elements ["int", "bool", "char", "string"]
+
+genArrayType :: Int -> Gen String
+genArrayType depth = do
+  c1 <- genType (depth - 1)
+  return $ c1 ++ "[]"
+
+genPairType :: Int -> Gen String
+genPairType depth = do
+  c1 <- genPairElemType (depth - 1)
+  c2 <- genPairElemType (depth - 1)
+  return $ "pair(" ++ c1 ++ "," ++ c2 ++ ")"
+
+genPairElemType :: Int -> Gen String
+genPairElemType depth
+  | depth < 0 = oneof [genBaseType, return "pair"]
+  | otherwise =  oneof [genBaseType, genArrayType (depth - 1), return "pair"]
+
+genProgram :: Int -> Gen String
+genProgram depth = do
+      c1 <- many (genFunc (depth - 1))
+      c2 <- unlines <$> listOf (genStmt (depth - 1))
+      return ("begin\n" ++ c1 ++ "\n" ++ c2 ++ "end")
+
+genFunc :: Int -> Gen String
+genFunc depth = do
+  c1 <- genParam (depth - 1)
+  c2 <- optional (genParamList (depth - 1))
+  c3 <- genStmt (depth - 1)
+  return (c1 ++ "(" ++ c2 ++ ")" ++ "is\n" ++ c3 ++ "end")
+
+genParamList :: Int -> Gen String
+genParamList depth = do
+  c1 <- genParam (depth - 1)
+  c2 <- many genParams
+  return $ c1 ++ c2
+  where
+    genParams = do
+      c1 <- genParam (depth - 1)
+      return ("," ++ c1)
+
+genParam :: Int -> Gen String
+genParam depth = do
+  c1 <- genType (depth - 1)
+  c2 <- genIdent
+  return $ c1 ++ " " ++ c2
+
+genStmt :: Int -> Gen String
+genStmt depth
+  | depth < 0 = genSkip
+  | otherwise = oneof
+    [ genSkip
+    , genDef
+    , genAssign
+    , genExpr' "read"
+    , genExpr' "free"
+    , genExpr' "return"
+    , genExpr' "exit"
+    , genExpr' "print"
+    , genExpr' "println"
+
+    ]
+  where
+    genSkip = return "skip"
+    genDef = do
+      c1 <- genParam (depth - 1)
+      c2 <- genRvalue (depth - 1)
+      return (c1 ++ "=" ++ c2)
+    genAssign = do
+      c1 <- genLvalue (depth - 1)
+      c2 <- genRvalue (depth - 1)
+      return $ c1 ++ "=" ++ c2
+    genExpr' str = do
+      c1 <- genLvalue (depth - 1)
+      return $ str ++ " " ++ c1
+
+
+genLvalue :: Int -> Gen String
+genLvalue depth
+  | depth < 0 = genIdent
+  | otherwise = oneof [genIdent, genArrayElem (depth - 1), genPairElem (depth - 1)]
+
+genRvalue :: Int -> Gen String
+genRvalue depth = oneof
+  [ genExpr (depth - 1)
+  , genArrayLiter (depth - 1)
+  , genNewpair
+  , genPairElem (depth - 1)
+  , genCall
+  ]
+  where
+    genNewpair = do
+      c1 <- genExpr (depth - 1)
+      c2 <- genExpr (depth - 1)
+      return $ "newpair(" ++ c1 ++ "," ++ c2 ++ ")"
+    genCall = do
+      c1 <- genIdent
+      c2 <- optional (genArgList (depth - 1))
+      return $ "call" ++ c1 ++ "(" ++ c2 ++ ")"
+
+genArgList :: Int -> Gen String
+genArgList depth = do
+  c1 <- genExpr (depth - 1)
+  c2 <- many (genArgs depth)
+  return $ c1 ++ c2
+
+genArgs :: Int -> Gen String
+genArgs depth = do
+  c1 <- genExpr (depth - 1)
+  return ("," ++ c1)
+
+
+genPairElem :: Int -> Gen String
+genPairElem depth = oneof
+  [ gen "fst"
+  , gen "snd"
+  ]
+  where
+    gen str = do
+      c1 <- genExpr (depth - 1)
+      return $ str ++ " " ++ c1
+
+genArrayLiter :: Int -> Gen String
+genArrayLiter depth = do
+  c1 <- many (genArgs depth)
+  c2 <- genExpr (depth - 1)
+  c3 <- optional (pure (c1 ++ c2))
+  return ("[" ++ c3 ++ "]")
+
+
 parse' :: T.Parsec a -> String -> T.Result String a
 parse' = T.parse
 
@@ -161,7 +301,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 100000 $ forAll gen $ check parser
 
 test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
 
@@ -178,4 +318,18 @@ test = testProperty "can parse ident" $ check' ident genIdent
 test =
   testProperty "can parse arrayElem" $ check' arrayElemExpr $ sized genArrayElem
 
+test = testProperty "can parse atom" $ check' atom $ sized genAtom
+
 test = testProperty "can parse expr" $ check' expr $ sized genExpr
+
+test = testProperty "can parse type" $ check' wType $ sized genType
+
+test = testProperty "can parse baseType" $ check' wBaseType genBaseType
+
+test =
+  testProperty "can parse arrayType" $ check' (wTypeWithArray wBaseType) $ sized genArrayType
+
+test = testProperty "can parse pairType" $ check' wPairType $ sized genPairType
+
+test =
+  testProperty "can parse pairElemType" $ check' pairElemType $ sized genPairElemType
