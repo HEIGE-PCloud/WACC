@@ -15,6 +15,7 @@ import Language.WACC.Parser.Token (fully, keywords)
 import qualified Test.QuickCheck.Property as P
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
+import Language.WACC.Parser.Type
 
 optional :: Gen String -> Gen String
 optional gen = frequency [(1, gen), (1, return "")]
@@ -152,6 +153,28 @@ genArrayElem depth = do
     genBracket = do c <- genExpr $ depth - 1; return $ "[" ++ c ++ "]"
     genBrackets = someN genBracket 3
 
+genType :: Int -> Gen String
+genType depth
+  | depth < 0 = genBaseType
+  | otherwise = oneof [genBaseType, genArrayType (depth - 1), genPairType (depth - 1)]
+
+genBaseType :: Gen String
+genBaseType = elements ["int", "bool", "char", "string"]
+
+genArrayType :: Int -> Gen String
+genArrayType depth = do
+  c1 <- genType (depth - 1)
+  return $ c1 ++ "[]"
+
+genPairType :: Int -> Gen String
+genPairType depth = do
+  c1 <- genPairElemType (depth - 1)
+  c2 <- genPairElemType (depth - 1)
+  return $ "pair(" ++ c1 ++ "," ++ c2 ++ ")"
+
+genPairElemType :: Int -> Gen String
+genPairElemType depth = oneof [genBaseType, genArrayType (depth - 1), return "pair"]
+
 parse' :: T.Parsec a -> String -> T.Result String a
 parse' = T.parse
 
@@ -161,7 +184,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 100000 $ forAll gen $ check parser
 
 test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
 
@@ -178,4 +201,18 @@ test = testProperty "can parse ident" $ check' ident genIdent
 test =
   testProperty "can parse arrayElem" $ check' arrayElemExpr $ sized genArrayElem
 
+test = testProperty "can parse atom" $ check' atom $ sized genAtom
+
 test = testProperty "can parse expr" $ check' expr $ sized genExpr
+
+test = testProperty "can parse type" $ check' wType $ sized genType
+
+test = testProperty "can parse baseType" $ check' wBaseType genBaseType
+
+test =
+  testProperty "can parse arrayType" $ check' (wTypeWithArray wBaseType) $ sized genArrayType
+
+test = testProperty "can parse pairType" $ check' wPairType $ sized genPairType
+
+test =
+  testProperty "can parse pairElemType" $ check' pairElemType $ sized genPairElemType
