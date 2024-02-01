@@ -58,8 +58,8 @@ $( deriveDeferredConstructors
     ['Decl, 'IfElse, 'While, 'BeginEnd]
  )
 
-pairElem ::Parsec (PairElem String)
-pairElem = sym "fst" *> mkFstElem lValue<|> sym "snd" *> mkSndElem lValue
+pairElem :: Parsec (PairElem String)
+pairElem = sym "fst" *> mkFstElem lValue <|> sym "snd" *> mkSndElem lValue
 
 lValue :: Parsec (LValue String)
 lValue =

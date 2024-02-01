@@ -21,7 +21,7 @@ data PairElem ident
   = -- | > fst <value>
     FstElem (LValue ident)
   | -- | > snd <value>
-    SndElem  (LValue ident)
+    SndElem (LValue ident)
   deriving (Eq, Show)
 
 {- |
