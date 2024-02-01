@@ -53,6 +53,11 @@ lint:
     - fourmolu --mode check wacc
   stage: lint
 
+code_quality:
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
 integration-test:
   needs:
     - artifacts: false
