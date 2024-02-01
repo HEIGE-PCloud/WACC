@@ -3,6 +3,7 @@
 
 module Language.WACC.Parser.Expr where
 
+import Control.Arrow (Arrow (arr))
 import Data.Foldable (Foldable (toList))
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
@@ -12,7 +13,7 @@ import Language.WACC.Parser.Token
   , stringLiteral
   , sym
   )
-import Text.Gigaparsec (Parsec, (<|>))
+import Text.Gigaparsec (Parsec, atomic, many, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Combinator.NonEmpty (some)
 import Text.Gigaparsec.Expr
@@ -30,7 +31,12 @@ import Prelude hiding (GT, LT)
 
 $( deriveLiftedConstructors
     "mk"
-    ['IntLit, 'BoolLit, 'CharLit, 'StringLit, 'Null, 'Ident, 'ArrayElem]
+    ['IntLit, 'BoolLit, 'CharLit, 'StringLit, 'Null]
+ )
+
+$( deriveDeferredConstructors
+    "mk"
+    ['Ident, 'ArrayElem]
  )
 
 $( deriveDeferredConstructors
@@ -90,35 +96,39 @@ pairLiter = do
   sym "null"
   mkNull
 
-ident :: Parsec (WAtom String)
-ident = mkIdent identifier
-
-arrayElemExpr :: Parsec (WAtom String)
-arrayElemExpr = mkArrayElem $ do arrayElem
-
 arrayElem :: Parsec (ArrayIndex String)
 arrayElem = do
   s <- identifier
   exprs <- some (sym "[" *> expr <* sym "]")
   pure (ArrayIndex s (toList exprs))
 
-atom :: Parsec (WAtom String)
+arrOrIdent :: Parsec (WAtom String)
+arrOrIdent = do
+  s <- identifier
+  exprs <- many (sym "[" *> expr <* sym "]")
+  f <- mkIdent
+  g <- mkArrayElem
+  case exprs of
+    [] -> pure (f s)
+    _ -> pure (g (ArrayIndex s (toList exprs)))
+
+atom :: Parsec (Expr String)
 atom =
   choice
-    [ intLiter
-    , pairLiter
-    , boolLiter
-    , charLiter
-    , stringLiter
-    , pairLiter
-    , arrayElemExpr
-    , ident
+    [ WAtom <$> arrOrIdent
+    , WAtom <$> intLiter
+    , WAtom <$> pairLiter
+    , WAtom <$> boolLiter
+    , WAtom <$> charLiter
+    , WAtom <$> stringLiter
+    , WAtom <$> pairLiter
+    , sym "(" *> expr <* sym ")"
     ]
 
 expr :: Parsec (Expr String)
 expr =
   precedence
-    ( Atom (mkWAtom atom)
+    ( Atom atom
         >+ ops
           Prefix
           [ mkNot <* sym "!"
@@ -131,9 +141,8 @@ expr =
         >+ ops InfixL [mkAdd <* sym "+", mkSub <* sym "-"]
         >+ ops
           InfixN
-          [mkGT <* sym ">", mkGTE <* sym ">=", mkLT <* sym "<", mkLTE <* sym "<="]
+          [mkGTE <* sym ">=", mkGT <* sym ">", mkLTE <* sym "<=", mkLT <* sym "<"]
         >+ ops InfixN [mkEq <* sym "==", mkIneq <* sym "!="]
         >+ ops InfixR [sym "&&" *> mkAnd]
         >+ ops InfixR [sym "||" *> mkOr]
     )
-    <|> (sym "(" *> expr <* sym ")")

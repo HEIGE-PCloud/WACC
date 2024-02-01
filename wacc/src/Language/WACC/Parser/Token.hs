@@ -118,14 +118,14 @@ keywords =
   , "call"
   , "fst"
   , "snd"
+  , "len"
+  , "ord"
+  , "chr"
   ]
 
 operators =
   [ "!"
   , "-"
-  , "len"
-  , "ord"
-  , "chr"
   , "*"
   , "/"
   , "%"

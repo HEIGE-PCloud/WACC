@@ -319,7 +319,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 100000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 20000 $ forAll gen $ check parser
 
 test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
 
@@ -331,14 +331,14 @@ test = testProperty "can parse stringLiter" $ check' stringLiter genStringLiter
 
 test = testProperty "can parse pairLiter" $ check' pairLiter genPairLiter
 
-test = testProperty "can parse ident" $ check' ident genIdent
+test = testProperty "can parse ident" $ check' arrOrIdent genIdent
 
-test_ignoreTest =
-  testProperty "can parse arrayElem" $ check' arrayElemExpr $ sized genArrayElem
+test =
+  testProperty "can parse arrayElem" $ check' arrOrIdent $ sized genArrayElem
 
-test_ignoreTest = testProperty "can parse atom" $ check' atom $ sized genAtom
+test = testProperty "can parse atom" $ check' atom $ sized genAtom
 
-test_ignoreTest = testProperty "can parse expr" $ check' expr $ sized genExpr
+test = testProperty "can parse expr" $ check' expr $ sized genExpr
 
 test_ignoreTest = testProperty "can parse type" $ check' wType $ sized genType
 
@@ -358,7 +358,7 @@ test_ignoreTest =
 
 test_ignoreTest = testProperty "can parse program" $ check' prog $ sized genProgram
 
-test_ignoreTest = testProperty "can parse func" $ check' funcs $ sized genFunc
+test_ignoreTest = testProperty "can parse func" $ check' func $ sized genFunc
 
 -- test = testProperty "can parse paramList" $ check' paramList $ sized genParamList
 

@@ -3,12 +3,14 @@
 
 module Language.WACC.Parser.Prog where
 
-import Language.WACC.AST.Prog (Prog (..))
+import Data.Maybe (fromMaybe)
+import Language.WACC.AST.Prog (Func (..), Prog (..))
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Parser.Stmt (stmts)
 import Language.WACC.Parser.Token (identifier, sym)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, many, (<|>))
+import Text.Gigaparsec (Parsec, atomic, many)
+import Text.Gigaparsec.Combinator (option)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
@@ -18,28 +20,31 @@ $(deriveDeferredConstructors "mk" ['Func])
 $(deriveLiftedConstructors "mk" ['Main])
 
 prog :: Parsec (Prog String String)
-prog = sym "begin" *> progInner <* sym "end"
+prog = sym "begin" *> mkMain (many func) stmts <* sym "end"
 
-progInner :: Parsec (Prog String String)
-progInner = funcs <|> mkMain stmts
-
-funcs :: Parsec (Prog String String)
-funcs = do
+func :: Parsec (Func String String)
+func = do
   wt <- wType
   i <- identifier
   sym "("
-  p <- param
-  ps <- many (sym "," *> param)
+  mps <- option (atomic params)
   sym ")"
   sym "is"
   ss <- stmts
   sym "end"
+
   f <- mkFunc
 
-  f wt i (p : ps) ss <$> progInner
+  pure $ f wt i (fromMaybe [] mps) ss
 
 param :: Parsec (WType, String)
 param = do
   wt <- wType
   i <- identifier
   pure (wt, i)
+
+params :: Parsec [(WType, String)]
+params = do
+  p <- param
+  ps <- many (sym "," *> param)
+  pure (p : ps)

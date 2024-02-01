@@ -15,7 +15,7 @@ import Language.WACC.AST.Stmt
   , Stmt (..)
   , Stmts
   )
-import Language.WACC.Parser.Expr (arrayElem, expr, ident)
+import Language.WACC.Parser.Expr (arrayElem, expr)
 import Language.WACC.Parser.Token (identifier, sym)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, atomic, (<|>))
