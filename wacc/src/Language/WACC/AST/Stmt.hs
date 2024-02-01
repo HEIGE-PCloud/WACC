@@ -12,16 +12,16 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
-import Language.WACC.AST.WType (Erasure (Known), WType)
+import Language.WACC.AST.WType (WType)
 
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
 -}
-data PairElem value ident
+data PairElem ident
   = -- | > fst <value>
-    FstElem (value ident)
+    FstElem (LValue ident)
   | -- | > snd <value>
-    SndElem (value ident)
+    SndElem (LValue ident)
   deriving (Eq, Show)
 
 {- |
@@ -38,7 +38,7 @@ data LValue ident
     -- or
     --
     -- > snd <lvalue>
-    LVPairElem (PairElem LValue ident)
+    LVPairElem (PairElem ident)
   deriving (Eq, Show)
 
 {- |
@@ -57,7 +57,7 @@ data RValue fnident ident
     -- or
     --
     -- > snd <rvalue>
-    RVPairElem (PairElem (RValue fnident) ident)
+    RVPairElem (PairElem ident)
   | -- | > call <ident>(<expr>, ...)
     RVCall fnident [Expr ident]
   deriving (Eq, Show)
@@ -69,7 +69,7 @@ data Stmt fnident ident
   = -- | > skip
     Skip
   | -- | > <type> <ident> = <rvalue>
-    Decl (WType Known) ident (RValue fnident ident)
+    Decl WType ident (RValue fnident ident)
   | -- | > <lvalue> = <rvalue>
     Asgn (LValue ident) (RValue fnident ident)
   | -- | > read <lvalue>

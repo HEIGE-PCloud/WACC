@@ -1,4 +1,5 @@
 .stack-work/
 *~
 compile
+test.wacc
 rspec.xml
