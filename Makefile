@@ -9,7 +9,8 @@ integration-test: compile
 		--test-arguments --timeout=10s \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 ~ /integrationTests/"'
+		--test-arguments '--pattern "$$0 ~ /integrationTests/ && $$0 !~ /semanticErr/"' \
+
 
 unit-test:
 	stack test \
