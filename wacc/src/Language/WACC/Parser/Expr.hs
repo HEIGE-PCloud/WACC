@@ -2,9 +2,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Language.WACC.Parser.Expr where
-
-import Control.Arrow (Arrow (arr))
-import Data.Foldable (Foldable (toList))
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
   ( charLiteral
@@ -13,9 +10,8 @@ import Language.WACC.Parser.Token
   , stringLiteral
   , sym
   )
-import Text.Gigaparsec (Parsec, atomic, many, (<|>))
+import Text.Gigaparsec (Parsec, many, (<|>))
 import Text.Gigaparsec.Combinator (choice)
-import Text.Gigaparsec.Combinator.NonEmpty (some)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -32,6 +28,11 @@ import Prelude hiding (GT, LT)
 $( deriveLiftedConstructors
     "mk"
     ['IntLit, 'BoolLit, 'CharLit, 'StringLit, 'Null]
+ )
+
+$( deriveDeferredConstructors
+    "mkD"
+    ['WAtom]
  )
 
 $( deriveDeferredConstructors
@@ -82,6 +83,11 @@ $( deriveLiftedConstructors
 intLiter :: Parsec (WAtom i)
 intLiter = mkIntLit decimal
 
+mkNegLit :: Parsec (Expr String -> Expr String)
+mkNegLit = do
+  g <- mkNegate
+  pure (\x -> case x of WAtom (IntLit i) -> WAtom (IntLit (-i)); _ -> g x)
+
 boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit $ (== "true") <$> (sym "true" <|> sym "false")
 
@@ -96,12 +102,6 @@ pairLiter = do
   sym "null"
   mkNull
 
-arrayElem :: Parsec (ArrayIndex String)
-arrayElem = do
-  s <- identifier
-  exprs <- some (sym "[" *> expr <* sym "]")
-  pure (ArrayIndex s (toList exprs))
-
 arrOrIdent :: Parsec (WAtom String)
 arrOrIdent = do
   s <- identifier
@@ -110,7 +110,7 @@ arrOrIdent = do
   g <- mkArrayElem
   case exprs of
     [] -> pure (f s)
-    _ -> pure (g (ArrayIndex s (toList exprs)))
+    _ -> pure (g (ArrayIndex s  exprs))
 
 atom :: Parsec (Expr String)
 atom =
@@ -132,7 +132,7 @@ expr =
         >+ ops
           Prefix
           [ mkNot <* sym "!"
-          , mkNegate <* sym "-"
+          , mkNegLit <* sym "-"
           , mkLen <* sym "len"
           , mkOrd <* sym "ord"
           , mkChr <* sym "chr"

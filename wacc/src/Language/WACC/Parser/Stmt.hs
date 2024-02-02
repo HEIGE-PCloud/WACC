@@ -7,7 +7,7 @@ module Language.WACC.Parser.Stmt where
 import Control.Applicative (Alternative (many))
 import Data.List.NonEmpty (fromList)
 import qualified Data.Maybe
-import Language.WACC.AST.Expr (Expr)
+import Language.WACC.AST.Expr (Expr, ArrayIndex (..))
 import Language.WACC.AST.Stmt
   ( LValue (..)
   , PairElem (..)
@@ -15,7 +15,7 @@ import Language.WACC.AST.Stmt
   , Stmt (..)
   , Stmts
   )
-import Language.WACC.Parser.Expr (arrayElem, expr)
+import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier, sym)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, atomic, (<|>))
@@ -27,7 +27,12 @@ import Text.Gigaparsec.Patterns
 
 $( deriveLiftedConstructors
     "mk"
-    ['LVIdent, 'LVArrayElem, 'LVPairElem]
+    ['LVPairElem]
+ )
+
+$( deriveDeferredConstructors
+    "mk"
+    ['LVIdent, 'LVArrayElem]
  )
 
 $( deriveLiftedConstructors
@@ -47,12 +52,12 @@ $( deriveDeferredConstructors
 
 $( deriveLiftedConstructors
     "mk"
-    ['Skip, 'Asgn, 'Read, 'Free, 'Return, 'Exit, 'Print, 'PrintLn]
+    ['Skip, 'Read, 'Free, 'Return, 'Exit, 'Print, 'PrintLn]
  )
 
 $( deriveDeferredConstructors
     "mk"
-    ['Decl, 'IfElse, 'While, 'BeginEnd]
+    ['Decl, 'IfElse, 'While, 'BeginEnd, 'Asgn]
  )
 
 pairElem :: Parsec (PairElem String)
@@ -61,7 +66,17 @@ pairElem = sym "fst" *> mkFstElem lValue <|> sym "snd" *> mkSndElem lValue
 lValue :: Parsec (LValue String)
 lValue =
   choice
-    [mkLVIdent identifier, mkLVArrayElem arrayElem, mkLVPairElem pairElem]
+    [lVArrOrIdent, mkLVPairElem pairElem]
+
+lVArrOrIdent :: Parsec (LValue String)
+lVArrOrIdent = do 
+  s <- identifier
+  exprs <- many (sym "[" *> expr <* sym "]")
+  f <- mkLVIdent
+  g <- mkLVArrayElem
+  case exprs of
+    [] -> pure (f s)
+    _ -> pure (g (ArrayIndex s exprs))
 
 rValue :: Parsec (RValue String String)
 rValue =
@@ -120,6 +135,7 @@ stmt =
   choice
     [ sym "skip" *> mkSkip
     , decl
+    , asgn
     , sym "read" *> mkRead lValue
     , sym "free" *> mkFree expr
     , sym "return" *> mkReturn expr
@@ -139,6 +155,14 @@ decl = do
   r <- rValue
   f <- mkDecl
   pure $ f wt i r
+
+asgn :: Parsec (Stmt String String)
+asgn = do 
+  lv <- lValue
+  sym "="
+  rv <- rValue
+  f <- mkAsgn 
+  pure $ f lv rv
 
 stmts :: Parsec (Stmts String String)
 stmts = do

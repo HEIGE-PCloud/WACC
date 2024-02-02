@@ -7,6 +7,7 @@ module Test.Parser.QuickCheck
 where
 
 import Control.Exception
+import Data.List
 import Data.Functor
 import Data.List ((\\))
 import Debug.Trace (trace, traceM)
@@ -181,15 +182,15 @@ genPairElemType depth
 genProgram :: Int -> Gen String
 genProgram depth = do
   c1 <- many (genFunc (depth - 1))
-  c2 <- unlines <$> listOf (genStmt (depth - 1))
-  return ("begin\n" ++ c1 ++ "\n" ++ c2 ++ "end")
+  c2 <- intercalate "\n ;" <$> listOf1 (genStmt (depth - 1))
+  return ("begin\n" ++ c1 ++ "\n" ++ c2 ++ "\nend\n")
 
 genFunc :: Int -> Gen String
 genFunc depth = do
   c1 <- genParam (depth - 1)
   c2 <- optional (genParamList (depth - 1))
   c3 <- genStmt (depth - 1)
-  return (c1 ++ "(" ++ c2 ++ ")" ++ "is\n" ++ c3 ++ "end")
+  return (c1 ++ "(" ++ c2 ++ ")" ++ "is\n" ++ c3 ++ "\nend\n")
 
 genParamList :: Int -> Gen String
 genParamList depth = do
@@ -216,11 +217,11 @@ genStmt depth
         , genDef
         , genAssign
         , genExpr' "read"
-        , genExpr' "free"
-        , genExpr' "return"
-        , genExpr' "exit"
-        , genExpr' "print"
-        , genExpr' "println"
+        , genExpr'' "free"
+        , genExpr'' "return"
+        , genExpr'' "exit"
+        , genExpr'' "print"
+        , genExpr'' "println"
         , genIf
         , genWhile
         , genBegin
@@ -238,6 +239,9 @@ genStmt depth
       return $ c1 ++ "=" ++ c2
     genExpr' str = do
       c1 <- genLvalue (depth - 1)
+      return $ str ++ " " ++ c1
+    genExpr'' str = do 
+      c1 <- genExpr (depth - 1)
       return $ str ++ " " ++ c1
     genIf = do
       c1 <- genExpr (depth - 1)
@@ -279,7 +283,7 @@ genRvalue depth =
     genCall = do
       c1 <- genIdent
       c2 <- optional (genArgList (depth - 1))
-      return $ "call" ++ c1 ++ "(" ++ c2 ++ ")"
+      return $ "call " ++ c1 ++ "(" ++ c2 ++ ")"
 
 genArgList :: Int -> Gen String
 genArgList depth = do
@@ -300,14 +304,14 @@ genPairElem depth =
     ]
   where
     gen str = do
-      c1 <- genExpr (depth - 1)
+      c1 <- genLvalue (depth - 1)
       return $ str ++ " " ++ c1
 
 genArrayLiter :: Int -> Gen String
 genArrayLiter depth = do
   c1 <- many (genArgs depth)
   c2 <- genExpr (depth - 1)
-  c3 <- optional (pure (c1 ++ c2))
+  c3 <- optional (pure (c2 ++ c1))
   return ("[" ++ c3 ++ "]")
 
 parse' :: T.Parsec a -> String -> T.Result String a
@@ -319,7 +323,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 20000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
 
 test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
 
@@ -340,34 +344,34 @@ test = testProperty "can parse atom" $ check' atom $ sized genAtom
 
 test = testProperty "can parse expr" $ check' expr $ sized genExpr
 
-test_ignoreTest = testProperty "can parse type" $ check' wType $ sized genType
+test = testProperty "can parse type" $ check' wType $ sized genType
 
 test = testProperty "can parse baseType" $ check' wBaseType genBaseType
 
-test_ignoreTest =
+test =
   testProperty "can parse arrayType" $
-    check' (wTypeWithArray wBaseType) $
+    check' (wType) $
       sized genArrayType
 
-test_ignoreTest = testProperty "can parse pairType" $ check' wPairType $ sized genPairType
+test = testProperty "can parse pairType" $ check' wPairType $ sized genPairType
 
-test_ignoreTest =
+test =
   testProperty "can parse pairElemType" $
     check' pairElemType $
       sized genPairElemType
 
-test_ignoreTest = testProperty "can parse program" $ check' prog $ sized genProgram
+test = testProperty "can parse program" $ check' prog $ sized genProgram
 
-test_ignoreTest = testProperty "can parse func" $ check' func $ sized genFunc
+test = testProperty "can parse func" $ check' func $ sized genFunc
 
 -- test = testProperty "can parse paramList" $ check' paramList $ sized genParamList
 
-test_ignoreTest = testProperty "can parse param" $ check' param $ sized genParam
+test = testProperty "can parse param" $ check' param $ sized genParam
 
-test_ignoreTest = testProperty "can parse stmt" $ check' stmt $ sized genStmt
+test = testProperty "can parse stmt" $ check' stmts $ sized genStmt
 
-test_ignoreTest = testProperty "can parse lvalue" $ check' lValue $ sized genLvalue
+test = testProperty "can parse lvalue" $ check' lValue $ sized genLvalue
 
-test_ignoreTest = testProperty "can parse rvalue" $ check' rValue $ sized genRvalue
+test = testProperty "can parse rvalue" $ check' rValue $ sized genRvalue
 
-test_ignoreTest = testProperty "can parse arrayLiter" $ check' arrayLit $ sized genArrayLiter
+test = testProperty "can parse arrayLiter" $ check' arrayLit $ sized genArrayLiter

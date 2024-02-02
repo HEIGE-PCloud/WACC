@@ -8,7 +8,7 @@ import Control.Applicative (many)
 import Data.Functor (void)
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Token (sym)
-import Text.Gigaparsec (Parsec, some, (<~>))
+import Text.Gigaparsec (Parsec, atomic, notFollowedBy, some, (<~>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
@@ -50,4 +50,9 @@ wPairType = do
   pure $ constructor pet1 pet2
 
 pairElemType :: Parsec WType
-pairElemType = choice [wTypeWithArray wBaseType, sym "pair" *> mkWErasedPair]
+pairElemType =
+  choice
+    [ atomic (sym "pair" *> mkWErasedPair <* notFollowedBy (sym "("))
+    , wTypeWithArray wBaseType
+    , wTypeWithArray wPairType
+    ]
