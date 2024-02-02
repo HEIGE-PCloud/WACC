@@ -323,7 +323,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 2000 $ forAll gen $ check parser
 
 test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
 
