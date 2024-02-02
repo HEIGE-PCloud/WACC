@@ -2,6 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Language.WACC.Parser.Expr where
+
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
   ( charLiteral
@@ -110,7 +111,7 @@ arrOrIdent = do
   g <- mkArrayElem
   case exprs of
     [] -> pure (f s)
-    _ -> pure (g (ArrayIndex s  exprs))
+    _ -> pure (g (ArrayIndex s exprs))
 
 atom :: Parsec (Expr String)
 atom =

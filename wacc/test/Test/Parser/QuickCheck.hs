@@ -7,8 +7,8 @@ module Test.Parser.QuickCheck
 where
 
 import Control.Exception
-import Data.List
 import Data.Functor
+import Data.List
 import Data.List ((\\))
 import Debug.Trace (trace, traceM)
 import Language.WACC.Parser.Expr
@@ -240,7 +240,7 @@ genStmt depth
     genExpr' str = do
       c1 <- genLvalue (depth - 1)
       return $ str ++ " " ++ c1
-    genExpr'' str = do 
+    genExpr'' str = do
       c1 <- genExpr (depth - 1)
       return $ str ++ " " ++ c1
     genIf = do

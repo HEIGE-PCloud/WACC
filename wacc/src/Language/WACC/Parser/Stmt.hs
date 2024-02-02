@@ -7,7 +7,7 @@ module Language.WACC.Parser.Stmt where
 import Control.Applicative (Alternative (many))
 import Data.List.NonEmpty (fromList)
 import qualified Data.Maybe
-import Language.WACC.AST.Expr (Expr, ArrayIndex (..))
+import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
 import Language.WACC.AST.Stmt
   ( LValue (..)
   , PairElem (..)
@@ -69,7 +69,7 @@ lValue =
     [lVArrOrIdent, mkLVPairElem pairElem]
 
 lVArrOrIdent :: Parsec (LValue String)
-lVArrOrIdent = do 
+lVArrOrIdent = do
   s <- identifier
   exprs <- many (sym "[" *> expr <* sym "]")
   f <- mkLVIdent
@@ -157,11 +157,11 @@ decl = do
   pure $ f wt i r
 
 asgn :: Parsec (Stmt String String)
-asgn = do 
+asgn = do
   lv <- lValue
   sym "="
   rv <- rValue
-  f <- mkAsgn 
+  f <- mkAsgn
   pure $ f lv rv
 
 stmts :: Parsec (Stmts String String)

@@ -7,9 +7,9 @@ import Data.Maybe (fromMaybe)
 import Language.WACC.AST.Prog (Func (..), Prog (..))
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Parser.Stmt (stmts)
-import Language.WACC.Parser.Token (identifier, sym, fully)
+import Language.WACC.Parser.Token (fully, identifier, sym)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, atomic, many, (<|>), lookAhead)
+import Text.Gigaparsec (Parsec, atomic, lookAhead, many, (<|>))
 import Text.Gigaparsec.Combinator (option, optional)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
@@ -48,16 +48,18 @@ params = do
   ps <- many (sym "," *> param)
   pure (p : ps)
 
+funcStmtPre :: Parsec (WType, String, String)
 funcStmtPre = do
   wt <- wType
   i <- identifier
   c <- sym "(" <|> sym "="
   pure (wt, i, c)
 
+progInner :: Parsec (Prog String String)
 progInner = do
   m <- option $ lookAhead funcStmtPre
-  case m of 
+  case m of
     Nothing -> Main [] <$> stmts
-    Just (wt , ic, c) -> case c of
-                            "(" -> (do f <- func; (Main fs ss) <- progInner; pure (Main (f:fs) ss))
-                            "=" -> (do Main [] <$> stmts;)
+    Just (wt, ic, c) -> case c of
+      "(" -> (do f <- func; (Main fs ss) <- progInner; pure (Main (f : fs) ss))
+      "=" -> (do Main [] <$> stmts)
