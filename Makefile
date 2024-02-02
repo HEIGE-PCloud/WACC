@@ -1,9 +1,11 @@
+STACK=stack $(STACK_FLAGS)
+
 compile:
-	stack update
-	stack install --local-bin-path . wacc:exe:compile
+	$(STACK) update
+	$(STACK) install --local-bin-path . wacc:exe:compile
 
 integration-test: compile
-	stack test \
+	$(STACK) test \
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
 		--test-arguments --timeout=10s \
@@ -12,15 +14,15 @@ integration-test: compile
 		--test-arguments '--pattern "$$0 ~ /integrationTests/"'
 
 unit-test:
-	stack test \
+	$(STACK) test \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=10s \
 		--test-arguments --xml=../rspec.xml \
-	    --test-arguments '--pattern "$$0 !~ /integrationTests/"' \
+		--test-arguments '--pattern "$$0 !~ /integrationTests/"' \
 		--test-arguments --quickcheck-max-size=10
 
 ghci-test:
-	stack ghci --ghci-options -isrc --ghci-options -itest wacc:wacc-test
+	$(STACK) ghci --ghci-options -isrc --ghci-options -itest wacc:wacc-test
 
 clean:
 	$(RM) compile

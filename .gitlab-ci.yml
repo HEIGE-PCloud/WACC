@@ -49,7 +49,7 @@ build:
       - compile
   needs: []
   script:
-    - make
+    - make STACK_FLAGS=--system-ghc
   stage: build
   extends: .stack-cache
 
@@ -63,7 +63,7 @@ integration-test:
     - artifacts: false
       job: build
   script:
-    - make integration-test
+    - make integration-test STACK_FLAGS=--system-ghc
   stage: test
   artifacts:
     when: always
@@ -78,7 +78,7 @@ unit-test:
     - artifacts: false
       job: build
   script:
-    - make unit-test
+    - make unit-test STACK_FLAGS=--system-ghc
   stage: test
   artifacts:
     when: always
