@@ -121,6 +121,12 @@ keywords =
   , "len"
   , "ord"
   , "chr"
+  , "int"
+  , "bool"
+  , "char"
+  , "string"
+  , "pair"
+  , "null"
   ]
 
 operators =
