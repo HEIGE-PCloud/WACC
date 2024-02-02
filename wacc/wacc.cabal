@@ -38,6 +38,7 @@ library
       base >=4.7 && <5
     , containers
     , gigaparsec
+    , recursion-schemes
   default-language: Haskell2010
 
 executable compile
@@ -51,6 +52,7 @@ executable compile
       base >=4.7 && <5
     , containers
     , gigaparsec
+    , recursion-schemes
     , wacc
   default-language: Haskell2010
 
@@ -76,6 +78,7 @@ test-suite wacc-test
     , directory
     , gigaparsec
     , process
+    , recursion-schemes
     , tasty
     , tasty-ant-xml
     , tasty-autocollect
