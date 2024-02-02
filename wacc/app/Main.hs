@@ -1,7 +1,5 @@
 module Main (main) where
 
--- import Lib
-
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
 import Language.WACC.Parser.Token
