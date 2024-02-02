@@ -11,7 +11,7 @@ import System.Exit
 import Test.Program
 import Test.Tasty
 
-test_ignoreTest = testGroup "integrationTests" allIntegrationTests
+test = testGroup "integrationTests" allIntegrationTests
 
 data IntegrationTestKind = Valid | SyntaxError | SemanticError
 
