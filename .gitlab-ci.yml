@@ -86,3 +86,16 @@ unit-test:
     reports:
       junit: rspec.xml
   extends: .stack-cache
+
+golden-test:
+  needs: []
+  script:
+    - make golden-test
+  stage: test
+  artifacts:
+    when: always
+    paths:
+      - rspec.xml
+    reports:
+      junit: rspec.xml
+  extends: .stack-cache
