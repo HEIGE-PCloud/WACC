@@ -1,0 +1,7 @@
+(line 13, column 3):
+  unexpected "ski"
+  expected ";", end, or end of skip
+  >  skip
+  >  skip 
+     ^^^
+  >end

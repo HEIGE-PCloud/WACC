@@ -1,0 +1,7 @@
+(line 13, column 10):
+  unexpected "("
+  expected "="
+  >  begin
+  >    int f() is
+            ^
+  >      return 0 

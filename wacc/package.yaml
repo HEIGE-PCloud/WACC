@@ -57,8 +57,12 @@ tests:
       - tasty-hspec
       - tasty-quickcheck
       - tasty-ant-xml
+      - tasty-golden
       - wacc
       - deepseq
       - directory
       - process
       - QuickCheck
+      - bytestring
+      - utf8-string
+

@@ -1,0 +1,7 @@
+(line 12, column 14):
+  unexpected "0"
+  expected !=, ";", %, &&, *, +, -, /, <, <=, ==, >, >=, digit, end, or ||
+  >begin
+  >  int x = 22 0
+                ^
+  >end 

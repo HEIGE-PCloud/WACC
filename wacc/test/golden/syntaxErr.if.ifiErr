@@ -1,0 +1,7 @@
+(line 12, column 7):
+  unexpected "t"
+  expected "=" or "["
+  >begin
+  >  ifi true 
+         ^
+  >  then

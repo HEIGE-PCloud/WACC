@@ -1,0 +1,7 @@
+(line 13, column 1):
+  unexpected keyword end
+  expected !, """, "'", "(", "+", "-", "false", "true", %, *, /, chr, digit, identifier, len, null, or ord
+  >  int b = 2 - 
+  >end
+   ^^^
+  >

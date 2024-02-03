@@ -22,6 +22,15 @@ unit-test:
 	    --test-arguments '--pattern "$$0 !~ /integrationTests/"' \
 		--test-arguments --quickcheck-max-size=10
 
+golden-test:
+	stack test \
+		--test-arguments --num-threads=`nproc` \
+		--test-arguments --timeout=1s \
+		--test-arguments --xml=../rspec.xml \
+		--test-arguments '--pattern "$$0 ~ /goldenTests/"' \
+		$(if $(ACCEPT), --test-arguments --accept) \
+		--test-arguments --quickcheck-max-size=10
+		
 ghci-test:
 	stack ghci --ghci-options -isrc --ghci-options -itest wacc:wacc-test
 

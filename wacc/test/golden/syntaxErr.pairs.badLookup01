@@ -1,0 +1,7 @@
+(line 13, column 11):
+  unexpected keyword fst
+  expected !, """, "'", "(", "+", "-", "false", "true", chr, digit, identifier, len, null, or ord
+  >	pair(int, char) p = newpair(10, 'a') ;
+  >  println fst p
+             ^^^
+  >end

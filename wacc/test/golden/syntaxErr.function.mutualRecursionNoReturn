@@ -1,0 +1,6 @@
+(line 29, column 3):
+  Function must end with a return or exit statement
+  >
+  >  int x = 0 ;
+     ^
+  >  x = call r1(8)

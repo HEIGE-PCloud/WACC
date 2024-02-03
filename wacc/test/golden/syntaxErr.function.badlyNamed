@@ -1,0 +1,7 @@
+(line 12, column 7):
+  unexpected "("
+  expected "=" or "["
+  >begin
+  >  intf() is
+         ^
+  >    return 42

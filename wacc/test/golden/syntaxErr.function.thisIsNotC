@@ -1,0 +1,7 @@
+(line 12, column 13):
+  unexpected "*x"
+  expected "[]" or identifier
+  >begin
+  >  int f(int *x) is 
+               ^^
+  >    *x = *x + 1;
