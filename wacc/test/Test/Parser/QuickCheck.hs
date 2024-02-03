@@ -338,7 +338,7 @@ test =
     , testProperty "type" $ check' wType $ sized genType
     , testProperty "baseType" $ check' baseType genBaseType
     , testProperty "arrayType" $
-        check' (wType) $
+        check' arrayType $
           sized genArrayType
     , testProperty "pairType" $ check' pairType $ sized genPairType
     , testProperty "pairElemType" $

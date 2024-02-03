@@ -5,7 +5,7 @@ module Language.WACC.Parser.Type where
 
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Token (lexer)
-import Text.Gigaparsec (Parsec, atomic, (<|>))
+import Text.Gigaparsec (Parsec, atomic, many, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
@@ -27,7 +27,14 @@ $( deriveLiftedConstructors
 $(overloadedStrings [|lexer|])
 
 wType :: Parsec WType
-wType = atomic arrayType <|> baseType <|> pairType
+wType = mkWType (baseType <|> pairType) (many "[]")
+
+mkWType :: Parsec WType -> Parsec [()] -> Parsec WType
+mkWType = liftA2 mkWType'
+  where
+    mkWType' :: WType -> [()] -> WType
+    mkWType' t [] = t
+    mkWType' t ts = foldr (const WArray) t ts
 
 baseType :: Parsec WType
 baseType =
@@ -44,5 +51,11 @@ arrayType = postfix1 id (baseType <|> pairType) ("[]" >> pure WArray)
 pairType :: Parsec WType
 pairType = "pair" *> "(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")"
 
+erasedPairType :: Parsec WType
+erasedPairType = "pair" >> mkWErasedPair
+
 pairElemType :: Parsec WType
-pairElemType = atomic arrayType <|> baseType <|> ("pair" >> mkWErasedPair)
+pairElemType =
+  mkWType baseType (many "[]")
+    <|> atomic (mkWType pairType (some "[]"))
+    <|> erasedPairType
