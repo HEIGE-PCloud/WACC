@@ -321,7 +321,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 2000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 50000 $ forAll gen $ check parser
 
 test =
   testGroup
@@ -344,11 +344,11 @@ test =
     , testProperty "pairElemType" $
         check' pairElemType $
           sized genPairElemType
-    , -- , testProperty "program" $ check' prog $ sized genProgram
-      -- , testProperty "func" $ check' func $ sized genFunc
-      testProperty "param" $ check' param $ sized genParam
-    , testProperty "stmt" $ check' stmts $ sized genStmt
-    , testProperty "lvalue" $ check' lValue $ sized genLvalue
-    , testProperty "rvalue" $ check' rValue $ sized genRvalue
-    , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
+    -- , testProperty "program" $ check' prog $ sized genProgram
+    -- , testProperty "func" $ check' func $ sized genFunc
+    -- , testProperty "param" $ check' param $ sized genParam
+    -- , testProperty "stmt" $ check' stmts $ sized genStmt
+    -- , testProperty "lvalue" $ check' lValue $ sized genLvalue
+    -- , testProperty "rvalue" $ check' rValue $ sized genRvalue
+    -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
     ]

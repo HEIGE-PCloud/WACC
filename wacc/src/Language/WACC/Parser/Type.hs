@@ -51,11 +51,13 @@ arrayType = postfix1 id (baseType <|> pairType) ("[]" >> pure WArray)
 pairType :: Parsec WType
 pairType = "pair" *> "(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")"
 
-erasedPairType :: Parsec WType
-erasedPairType = "pair" >> mkWErasedPair
-
 pairElemType :: Parsec WType
 pairElemType =
   mkWType baseType (many "[]")
-    <|> atomic (mkWType pairType (some "[]"))
-    <|> erasedPairType
+    <|> ( "pair"
+            *> ( mkWType
+                  ("(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")")
+                  (some "[]")
+                  <|> mkWErasedPair
+               )
+        )
