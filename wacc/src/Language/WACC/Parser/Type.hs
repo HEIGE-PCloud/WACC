@@ -9,19 +9,19 @@ import Text.Gigaparsec (Parsec, atomic, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
-  ( deriveDeferredConstructors,
-    deriveLiftedConstructors,
+  ( deriveDeferredConstructors
+  , deriveLiftedConstructors
   )
 import Text.Gigaparsec.Token.Patterns (overloadedStrings)
 
 $( deriveDeferredConstructors
-     "mk"
-     ['WBool, 'WInt, 'WChar, 'WString, 'WErasedPair, 'WArray]
+    "mk"
+    ['WBool, 'WInt, 'WChar, 'WString, 'WErasedPair, 'WArray]
  )
 
 $( deriveLiftedConstructors
-     "mk"
-     ['WKnownPair]
+    "mk"
+    ['WKnownPair]
  )
 
 $(overloadedStrings [|lexer|])
@@ -32,10 +32,10 @@ wType = atomic arrayType <|> baseType <|> pairType
 baseType :: Parsec WType
 baseType =
   choice
-    [ "int" *> mkWInt,
-      "bool" *> mkWBool,
-      "char" *> mkWChar,
-      "string" *> mkWString
+    [ "int" *> mkWInt
+    , "bool" *> mkWBool
+    , "char" *> mkWChar
+    , "string" *> mkWString
     ]
 
 arrayType :: Parsec WType
