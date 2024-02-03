@@ -5,7 +5,7 @@ import GHC.IO.Handle.Text (hPutStrLn)
 import Language.WACC.Parser.Prog (prog)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
-import Text.Gigaparsec (Result (Failure, Success), parse, parseRepl)
+import Text.Gigaparsec
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100

@@ -40,6 +40,8 @@ default:
       policy: $BUILD_CACHE_POLICY
 
 lint:
+  except:
+    - schedules
   image:
     entrypoint: [""]
     name: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
@@ -49,6 +51,8 @@ lint:
   stage: lint
 
 build:
+  except:
+    - schedules
   artifacts:
     paths:
       - compile
@@ -71,6 +75,8 @@ build-cache:
   extends: .stack-cache
 
 integration-test:
+  except:
+    - schedules
   needs: []
   script:
     - make integration-test
@@ -84,6 +90,8 @@ integration-test:
   extends: .stack-cache
 
 unit-test:
+  except:
+    - schedules
   needs: []
   script:
     - make unit-test
@@ -97,6 +105,8 @@ unit-test:
   extends: .stack-cache
 
 golden-test:
+  except:
+    - schedules
   needs: []
   script:
     - make golden-test

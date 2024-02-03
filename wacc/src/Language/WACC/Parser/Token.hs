@@ -5,7 +5,7 @@ import Data.List ((\\))
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
-import Text.Gigaparsec.Char (char, digit, whitespaces)
+import Text.Gigaparsec.Char (char, digit)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
