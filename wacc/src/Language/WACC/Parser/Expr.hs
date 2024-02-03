@@ -90,11 +90,6 @@ $(overloadedStrings [|lexer|])
 intLiter :: Parsec (WAtom i)
 intLiter = mkIntLit decimal
 
-mkNegLit :: Parsec (Expr String -> Expr String)
-mkNegLit = do
-  g <- mkNegate
-  pure (\x -> case x of WAtom (IntLit i p) -> WAtom (IntLit (-i) p); _ -> g x)
-
 boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit (("true" $> True) <|> ("false" $> False))
 

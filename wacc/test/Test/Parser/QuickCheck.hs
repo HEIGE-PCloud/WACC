@@ -6,11 +6,9 @@ module Test.Parser.QuickCheck
   )
 where
 
-import Control.Exception
+
 import Data.Functor
 import Data.List
-import Data.List ((\\))
-import Debug.Trace (trace, traceM)
 import Language.WACC.Parser.Expr
 import Language.WACC.Parser.Prog
 import Language.WACC.Parser.Stmt
