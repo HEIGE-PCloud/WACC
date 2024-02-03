@@ -3,7 +3,7 @@ module Language.WACC.Parser.Token where
 import Data.Char (isAlpha, isAlphaNum, isAscii, isPrint, isSpace)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Text.Gigaparsec (Parsec, ($>))
+import Text.Gigaparsec (Parsec, atomic, notFollowedBy)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -87,6 +87,7 @@ import Text.Gigaparsec.Token.Lexer
   , mkLexer
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
+import Text.Gigaparsec.Char (digit)
 
 waccNameDesc :: NameDesc
 waccNameDesc =
@@ -254,3 +255,6 @@ fully = T.fully lexer
 
 sym :: String -> Parsec ()
 sym = T.sym lexeme
+
+negateOp :: Parsec ()
+negateOp = T.apply lexeme (atomic (sym "-" <* notFollowedBy digit))

@@ -6,7 +6,6 @@ module Test.Parser.QuickCheck
   )
 where
 
-
 import Data.Functor
 import Data.List
 import Language.WACC.Parser.Expr

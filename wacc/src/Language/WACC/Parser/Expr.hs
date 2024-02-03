@@ -7,6 +7,7 @@ module Language.WACC.Parser.Expr where
 import qualified Data.Set as Set
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
+import Language.WACC.Parser.Token
   ( decimal
   , escapeChars
   , identifier
@@ -27,6 +28,7 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
+import Text.Gigaparsec.Token.Lexer (Lexeme (apply))
 import Text.Gigaparsec.Token.Patterns (overloadedStrings)
 import Prelude hiding (GT, LT)
 
@@ -138,7 +140,7 @@ expr =
         >+ ops
           Prefix
           [ mkNot <* "!"
-          , mkNegate <* atomic (char '-' <* notFollowedBy digit <* whitespaces)
+          , mkNegate <* negateOp
           , mkLen <* "len"
           , mkOrd <* "ord"
           , mkChr <* "chr"
