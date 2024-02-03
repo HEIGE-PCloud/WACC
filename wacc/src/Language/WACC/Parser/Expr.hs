@@ -118,13 +118,15 @@ arrayElem = mkArrayElem (mkArrayIndex identifier (many ("[" *> expr <* "]")))
 -}
 atom :: Parsec (Expr String)
 atom =
-  mkWAtom intLiter
-    <|> mkWAtom boolLiter
-    <|> mkWAtom charLiter
-    <|> mkWAtom stringLiter
-    <|> mkWAtom pairLiter
-    <|> mkWAtom (mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]"))))
-    <|> ("(" *> expr <* ")")
+  choice
+    [ mkWAtom intLiter
+    , mkWAtom boolLiter
+    , mkWAtom charLiter
+    , mkWAtom stringLiter
+    , mkWAtom pairLiter
+    , mkWAtom (mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]"))))
+    , "(" *> expr <* ")"
+    ]
 
 mkIdentOrArrayElem
   :: Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (WAtom String)
