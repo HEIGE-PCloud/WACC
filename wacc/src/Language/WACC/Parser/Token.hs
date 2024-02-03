@@ -4,8 +4,8 @@ import Data.Char (isAlpha, isAlphaNum, isAscii, isPrint, isSpace)
 import Data.List ((\\))
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Text.Gigaparsec (Parsec, atomic, notFollowedBy)
-import Text.Gigaparsec.Char (digit)
+import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
+import Text.Gigaparsec.Char (char, digit, whitespaces)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -258,7 +258,7 @@ sym :: String -> Parsec ()
 sym = T.sym lexeme
 
 negateOp :: Parsec ()
-negateOp = T.apply lexeme (atomic (sym "-" <* notFollowedBy digit))
+negateOp = T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit)))
 
 graphicChars :: [String]
 graphicChars = map (: []) ['\32' .. '\126']
