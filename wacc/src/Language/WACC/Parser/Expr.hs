@@ -2,7 +2,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Language.WACC.Parser.Expr where
+module Language.WACC.Parser.Expr
+  ( intLiter
+  , boolLiter
+  , charLiter
+  , stringLiter
+  , pairLiter
+  , ident
+  , arrayElem
+  , atom
+  , expr
+  )
+where
 
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
