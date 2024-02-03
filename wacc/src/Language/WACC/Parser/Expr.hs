@@ -112,7 +112,7 @@ ident = mkIdent identifier
 
 -- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
 arrayElem :: Parsec (WAtom String)
-arrayElem = mkArrayElem $ mkArrayIndex identifier (many ("[" *> expr <* "]"))
+arrayElem = mkArrayElem (mkArrayIndex identifier (many ("[" *> expr <* "]")))
 
 {- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
  >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
@@ -132,7 +132,7 @@ mkIdentOrArrayElem
 mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem' :: String -> Maybe [Expr String] -> WAtom String
-    mkIdentOrArrayElem' str (Just e) = ArrayElem $ ArrayIndex str e
+    mkIdentOrArrayElem' str (Just e) = ArrayElem (ArrayIndex str e)
     mkIdentOrArrayElem' str Nothing = Ident str
 
 {- | > <expr> ::= <unary-oper> <expr>
