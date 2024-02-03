@@ -4,18 +4,16 @@
 
 module Language.WACC.Parser.Expr where
 
-import qualified Data.Set as Set
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
-import Language.WACC.Parser.Token
   ( decimal
-  , escapeChars
   , identifier
   , lexer
-  , stringLiteral
+  , negateOp
+  , validChars
   )
-import Text.Gigaparsec (Parsec, atomic, many, notFollowedBy, ($>), (<|>))
-import Text.Gigaparsec.Char (char, digit, noneOf, oneOf, whitespaces)
+import Text.Gigaparsec (Parsec, atomic, many, ($>), (<|>))
+import Text.Gigaparsec.Char (char, string)
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
@@ -28,7 +26,6 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
-import Text.Gigaparsec.Token.Lexer (Lexeme (apply))
 import Text.Gigaparsec.Token.Patterns (overloadedStrings)
 import Prelude hiding (GT, LT)
 
@@ -89,23 +86,26 @@ $( deriveLiftedConstructors
 
 $(overloadedStrings [|lexer|])
 
+-- | > <int-liter> ::= <int-sign>? <digit>+
 intLiter :: Parsec (WAtom i)
 intLiter = mkIntLit decimal
 
+-- | > <bool-liter> ::= "true" | "false"
 boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit (("true" $> True) <|> ("false" $> False))
 
+{- | > <character> ::= any-graphic-ASCII-character-except-'\'-'''-'"' (graphic 𝑔 ≥' ')
+  >              |  '\' ⟨escaped-char⟩
+-}
+character :: Parsec Char
+character = last <$> choice [atomic (string c) | c <- validChars]
+
+-- | > <char-liter> ::= ''' <character> '''
 charLiter :: Parsec (WAtom i)
-charLiter =
-  char '\''
-    *> mkCharLit
-      ( noneOf (Set.fromList ['\\', '\'', '"'])
-          <|> (char '\\' *> oneOf (Set.fromList escapeChars))
-      )
-    <* "'"
+charLiter = char '\'' *> mkCharLit character <* "'"
 
 stringLiter :: Parsec (WAtom i)
-stringLiter = mkStringLit stringLiteral
+stringLiter = mkStringLit (char '\"' *> many character <* "\"")
 
 pairLiter :: Parsec (WAtom i)
 pairLiter = "null" >> mkNull
