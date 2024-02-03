@@ -1,5 +1,8 @@
 module Test.Common where
 
+takeBaseName :: FilePath -> String
+takeBaseName path = map (\c -> if c == '/' then '.' else c) $ take (length path - 5) path
+
 validTests :: [FilePath]
 validTests =
   [ "valid/advanced/binarySortTree.wacc"

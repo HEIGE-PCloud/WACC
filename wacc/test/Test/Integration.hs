@@ -8,9 +8,9 @@ where
 
 import Data.List (isPrefixOf)
 import System.Exit
+import Test.Common (allTests, takeBaseName)
 import Test.Program
 import Test.Tasty
-import Test.Common (allTests)
 
 test = testGroup "integrationTests" allIntegrationTests
 
@@ -40,7 +40,7 @@ mkIntegrationTest rawPath =
       | isSemanticError = SemanticError
       | isSyntaxError = SyntaxError
       | otherwise = error $ "Unknown test kind for " ++ rawPath
-    name = map (\c -> if c == '/' then '.' else c) $ take (length rawPath - 5) rawPath
+    name = takeBaseName rawPath
 
 expectedExitCode :: IntegrationTestKind -> ExitCode
 expectedExitCode Valid = ExitSuccess

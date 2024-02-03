@@ -1,0 +1,7 @@
+(line 11, column 1):
+  unexpected "bgn"
+  expected begin
+  >
+  >bgn skip end
+   ^^^
+  >

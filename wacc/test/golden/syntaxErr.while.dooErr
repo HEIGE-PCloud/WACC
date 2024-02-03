@@ -1,0 +1,7 @@
+(line 12, column 17):
+  unexpected "o"
+  expected end of do
+  >begin
+  >  while false doo
+                   ^
+  >    skip

@@ -1,0 +1,7 @@
+(line 12, column 7):
+  unexpected ","
+  expected "=" or "["
+  >begin
+  >  oops, this is supposed to be a comment
+         ^
+  >  print "Hello World!\n"

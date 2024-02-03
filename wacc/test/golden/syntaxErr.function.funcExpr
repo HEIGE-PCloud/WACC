@@ -1,0 +1,7 @@
+(line 15, column 12):
+  unexpected "()"
+  expected !=, ";", "[", %, &&, *, +, -, /, <, <=, ==, >, >=, end, or ||
+  >  end
+  >  int x = f() + f()
+              ^^
+  >end

@@ -63,3 +63,6 @@ tests:
       - directory
       - process
       - QuickCheck
+      - bytestring
+      - utf8-string
+

@@ -1,0 +1,7 @@
+(line 14, column 3):
+  unexpected "dono"
+  expected ";", done, or end of skip
+  >    skip
+  >  dono
+     ^^^^
+  >end

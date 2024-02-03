@@ -1,0 +1,7 @@
+(line 15, column 15):
+  unexpected "(5"
+  expected fst, identifier, or snd
+  >  int b = fst a;
+  >  int c = snd (5 + 'a')
+                 ^^
+  >end

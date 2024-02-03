@@ -1,0 +1,7 @@
+(line 12, column 27):
+  unexpected ","
+  expected "[]" or end of string
+  >begin
+  >    pair(pair(int, string), char) p = null
+                             ^
+  >end

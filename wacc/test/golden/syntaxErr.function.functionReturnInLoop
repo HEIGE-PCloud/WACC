@@ -1,0 +1,6 @@
+(line 24, column 3):
+  Function must end with a return or exit statement
+  >  end
+  >  int x = call f(10) ;
+     ^
+  >  println x 

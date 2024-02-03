@@ -5,17 +5,35 @@ module Test.Golden
   )
 where
 
-import Test.Tasty.Golden (findByExtension, goldenVsFile, goldenVsString)
+import Data.ByteString.Lazy.UTF8 (fromString)
+import Language.WACC.Parser.Prog (prog)
+import Test.Common (syntaxErrTests, takeBaseName)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.Golden (goldenVsString)
+import Text.Gigaparsec (Result (Failure, Success), parse)
 
--- goldenTests = do
---   yamlFiles <- findByExtension [".yaml"] "."
---   return $
---     testGroup
---       "YamlToJson golden tests"
---       [ goldenVsString
---           (takeBaseName yamlFile) -- test name
---           jsonFile -- golden file path
---           (yamlToJson <$> LBS.readFile yamlFile) -- action whose result is tested
---         | yamlFile <- yamlFiles,
---           let jsonFile = replaceExtension yamlFile ".json"
---       ]
+
+goldenBasePath :: FilePath
+goldenBasePath = "test/golden"
+
+inputBasePath :: FilePath
+inputBasePath = "test/wacc_examples/"
+
+testNamePrefix :: String
+testNamePrefix = "test.wacc_examples.invalid."
+
+runSyntaxCheck :: FilePath -> TestTree
+runSyntaxCheck path = goldenVsString testname goldenPath testAction
+  where
+    testname = drop (length testNamePrefix) (takeBaseName path)
+    goldenPath = goldenBasePath ++ "/" ++ testname
+    testAction = do
+      input <- readFile path
+      return (fromString (syntaxCheck input))
+
+syntaxCheck :: String -> String
+syntaxCheck source = case parse prog source of
+  Success _ -> error "syntax check should fail but succeeded"
+  Failure err -> err
+
+test = testGroup "goldenTests" [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]

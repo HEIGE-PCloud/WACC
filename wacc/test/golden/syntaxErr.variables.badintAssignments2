@@ -1,0 +1,7 @@
+(line 12, column 12):
+  unexpected "A4"
+  expected !=, ";", %, &&, *, +, -, /, <, <=, ==, >, >=, digit, end, or ||
+  >begin
+  >  int y = 1A4
+              ^^
+  >end 

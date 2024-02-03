@@ -1,0 +1,7 @@
+(line 13, column 16):
+  unexpected "e"
+  expected "'"
+  >begin
+  >    char c = 'Hello Jamie'
+                  ^
+  >end

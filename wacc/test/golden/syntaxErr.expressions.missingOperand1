@@ -1,0 +1,7 @@
+(line 12, column 11):
+  unexpected "*"
+  expected !, """, "'", "(", "+", "-", "[", "false", "true", call, chr, digit, fst, identifier, len, newpair, null, ord, or snd
+  >begin
+  >  int b = * 6
+             ^
+  >end
