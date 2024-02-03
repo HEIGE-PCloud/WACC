@@ -54,9 +54,7 @@ build:
   extends: .stack-cache
 
 integration-test:
-  needs:
-    - artifacts: false
-      job: build
+  needs: []
   script:
     - make integration-test
   stage: test
@@ -69,9 +67,7 @@ integration-test:
   extends: .stack-cache
 
 unit-test:
-  needs:
-    - artifacts: false
-      job: build
+  needs: []
   script:
     - make unit-test
   stage: test

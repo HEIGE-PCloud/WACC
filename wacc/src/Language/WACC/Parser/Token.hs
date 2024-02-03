@@ -121,6 +121,12 @@ keywords =
   , "len"
   , "ord"
   , "chr"
+  , "int"
+  , "bool"
+  , "char"
+  , "string"
+  , "pair"
+  , "null"
   ]
 
 operators =
@@ -139,6 +145,9 @@ operators =
   , "&&"
   , "||"
   ]
+
+escapeChars :: [Char]
+escapeChars = ['0', 'b', 't', 'n', 'f', 'r', '"', '\'', '\\']
 
 waccSymbolDesc :: SymbolDesc
 waccSymbolDesc =
@@ -179,7 +188,7 @@ waccTextDesc =
     { escapeSequences =
         EscapeDesc
           { escBegin = '\\'
-          , literals = Set.fromList ['0', 'b', 't', 'n', 'f', 'r', '"', '\'', '\\']
+          , literals = Set.fromList escapeChars
           , mapping = Map.empty
           , decimalEscape = NumericIllegal
           , octalEscape = NumericIllegal
@@ -230,7 +239,7 @@ integer :: IntegerParsers CanHoldSigned
 integer = T.integer lexeme
 
 decimal :: Parsec Integer
-decimal = T.decimal integer
+decimal = T.decimal32 integer
 
 stringLiteral :: Parsec String
 stringLiteral = ascii $ T.stringLiteral lexeme

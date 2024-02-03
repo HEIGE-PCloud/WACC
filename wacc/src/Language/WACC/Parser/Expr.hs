@@ -3,19 +3,19 @@
 
 module Language.WACC.Parser.Expr where
 
-import Control.Arrow (Arrow (arr))
-import Data.Foldable (Foldable (toList))
+import qualified Data.Set as Set
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
   ( charLiteral
   , decimal
+  , escapeChars
   , identifier
   , stringLiteral
   , sym
   )
-import Text.Gigaparsec (Parsec, atomic, many, (<|>))
+import Text.Gigaparsec (Parsec, atomic, many, notFollowedBy, (<|>))
+import Text.Gigaparsec.Char (char, digit, noneOf, oneOf, whitespaces)
 import Text.Gigaparsec.Combinator (choice)
-import Text.Gigaparsec.Combinator.NonEmpty (some)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -32,6 +32,11 @@ import Prelude hiding (GT, LT)
 $( deriveLiftedConstructors
     "mk"
     ['IntLit, 'BoolLit, 'CharLit, 'StringLit, 'Null]
+ )
+
+$( deriveDeferredConstructors
+    "mkD"
+    ['WAtom]
  )
 
 $( deriveDeferredConstructors
@@ -82,11 +87,22 @@ $( deriveLiftedConstructors
 intLiter :: Parsec (WAtom i)
 intLiter = mkIntLit decimal
 
+mkNegLit :: Parsec (Expr String -> Expr String)
+mkNegLit = do
+  g <- mkNegate
+  pure (\x -> case x of WAtom (IntLit i p) -> WAtom (IntLit (-i) p); _ -> g x)
+
 boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit $ (== "true") <$> (sym "true" <|> sym "false")
 
 charLiter :: Parsec (WAtom i)
-charLiter = mkCharLit charLiteral
+charLiter =
+  char '\''
+    *> mkCharLit
+      ( noneOf (Set.fromList ['\\', '\'', '"'])
+          <|> (char '\\' *> oneOf (Set.fromList escapeChars))
+      )
+    <* sym "'"
 
 stringLiter :: Parsec (WAtom i)
 stringLiter = mkStringLit stringLiteral
@@ -96,12 +112,6 @@ pairLiter = do
   sym "null"
   mkNull
 
-arrayElem :: Parsec (ArrayIndex String)
-arrayElem = do
-  s <- identifier
-  exprs <- some (sym "[" *> expr <* sym "]")
-  pure (ArrayIndex s (toList exprs))
-
 arrOrIdent :: Parsec (WAtom String)
 arrOrIdent = do
   s <- identifier
@@ -110,7 +120,7 @@ arrOrIdent = do
   g <- mkArrayElem
   case exprs of
     [] -> pure (f s)
-    _ -> pure (g (ArrayIndex s (toList exprs)))
+    _ -> pure (g (ArrayIndex s exprs))
 
 atom :: Parsec (Expr String)
 atom =
@@ -132,7 +142,7 @@ expr =
         >+ ops
           Prefix
           [ mkNot <* sym "!"
-          , mkNegate <* sym "-"
+          , mkNegate <* atomic (char '-' <* notFollowedBy digit <* whitespaces)
           , mkLen <* sym "len"
           , mkOrd <* sym "ord"
           , mkChr <* sym "chr"
