@@ -50,6 +50,9 @@ build:
     BUILD_CACHE_POLICY: 'pull-push'
   extends: .stack-cache
 
+code_quality:
+  services:            # Shut off Docker-in-Docker
+
 integration-test:
   script:
     - make integration-test
