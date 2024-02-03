@@ -6,15 +6,21 @@ module Test.Parser.QuickCheck
   )
 where
 
-import Data.Functor
-import Data.List
+import Data.Functor ((<&>))
+import Data.List (intercalate, (\\))
 import Language.WACC.Parser.Expr
-import Language.WACC.Parser.Prog
-import Language.WACC.Parser.Stmt
+import Language.WACC.Parser.Prog ()
+import Language.WACC.Parser.Stmt ()
 import Language.WACC.Parser.Token (fully, keywords)
 import Language.WACC.Parser.Type
+  ( arrayType
+  , baseType
+  , pairElemType
+  , pairType
+  , wType
+  )
 import qualified Test.QuickCheck.Property as P
-import Test.Tasty
+import Test.Tasty (testGroup)
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
 import qualified Text.Gigaparsec.Char as TC

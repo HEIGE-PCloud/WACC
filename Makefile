@@ -13,7 +13,8 @@ test-all:
 		--test-arguments '--pattern "$$0 !~ /semanticErr/"' \
 		--test-arguments --quickcheck-max-size=10
 
-integration-test: compile
+integration-test:
+	stack install --local-bin-path . wacc:exe:compile
 	stack test \
 		--test-arguments --hide-successes \
 		--test-arguments --catch-stderr \
