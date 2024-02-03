@@ -8,9 +8,6 @@ workflow:
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      variables:
-        BUILD_CACHE_POLICY: 'push'
 
 stages:
   - lint
@@ -58,6 +55,18 @@ build:
   needs: []
   script:
     - make
+  stage: build
+  extends: .stack-cache
+
+build-cache:
+  only:
+    - schedules
+  needs: []
+  variables:
+    BUILD_CACHE_POLICY: 'push'
+  script:
+    - stack update
+    - stack build --test --no-run-tests
   stage: build
   extends: .stack-cache
 
