@@ -4,11 +4,6 @@ variables:
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-workflow:
-  rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
 stages:
   - lint
   - build
@@ -49,12 +44,14 @@ lint:
 
 build:
   script:
-    - stack update
     - stack build --test --no-run-tests
   stage: build
   variables:
     BUILD_CACHE_POLICY: 'pull-push'
   extends: .stack-cache
+
+code_quality:
+  services:            # Shut off Docker-in-Docker
 
 integration-test:
   script:

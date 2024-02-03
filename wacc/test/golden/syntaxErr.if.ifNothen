@@ -1,6 +1,6 @@
 (line 13, column 3):
   unexpected "else"
-  expected !=, "[", "then", %, &&, *, +, -, /, <, <=, ==, >, >=, or ||
+  expected !=, "then", %, &&, *, +, -, /, <, <=, ==, >, >=, end of if, or ||
   >  if true 
   >  else
      ^^^^

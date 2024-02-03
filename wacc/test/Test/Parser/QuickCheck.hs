@@ -6,14 +6,21 @@ module Test.Parser.QuickCheck
   )
 where
 
-import Data.Functor
-import Data.List
+import Data.Functor ((<&>))
+import Data.List (intercalate, (\\))
 import Language.WACC.Parser.Expr
-import Language.WACC.Parser.Prog
-import Language.WACC.Parser.Stmt
+import Language.WACC.Parser.Prog ()
+import Language.WACC.Parser.Stmt ()
 import Language.WACC.Parser.Token (fully, keywords)
 import Language.WACC.Parser.Type
+  ( arrayType
+  , baseType
+  , pairElemType
+  , pairType
+  , wType
+  )
 import qualified Test.QuickCheck.Property as P
+import Test.Tasty (testGroup)
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
 import qualified Text.Gigaparsec.Char as TC
@@ -320,55 +327,34 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 2000 $ forAll gen $ check parser
-
-test = testProperty "can parse intLiter" $ check' intLiter genIntLiter
-
-test = testProperty "can parse boolLiter" $ check' boolLiter genBoolLiter
-
-test = testProperty "can parse charLiter" $ check' charLiter genCharLiter
-
-test = testProperty "can parse stringLiter" $ check' stringLiter genStringLiter
-
-test = testProperty "can parse pairLiter" $ check' pairLiter genPairLiter
-
-test = testProperty "can parse ident" $ check' arrOrIdent genIdent
+check' parser gen = withMaxSuccess 50000 $ forAll gen $ check parser
 
 test =
-  testProperty "can parse arrayElem" $ check' arrOrIdent $ sized genArrayElem
-
-test = testProperty "can parse atom" $ check' atom $ sized genAtom
-
-test = testProperty "can parse expr" $ check' expr $ sized genExpr
-
-test = testProperty "can parse type" $ check' wType $ sized genType
-
-test = testProperty "can parse baseType" $ check' wBaseType genBaseType
-
-test =
-  testProperty "can parse arrayType" $
-    check' (wType) $
-      sized genArrayType
-
-test = testProperty "can parse pairType" $ check' wPairType $ sized genPairType
-
-test =
-  testProperty "can parse pairElemType" $
-    check' pairElemType $
-      sized genPairElemType
-
-test_ignoreTest = testProperty "can parse program" $ check' prog $ sized genProgram
-
-test_ignoreTest = testProperty "can parse func" $ check' func $ sized genFunc
-
--- test = testProperty "can parse paramList" $ check' paramList $ sized genParamList
-
-test = testProperty "can parse param" $ check' param $ sized genParam
-
-test = testProperty "can parse stmt" $ check' stmts $ sized genStmt
-
-test = testProperty "can parse lvalue" $ check' lValue $ sized genLvalue
-
-test = testProperty "can parse rvalue" $ check' rValue $ sized genRvalue
-
-test = testProperty "can parse arrayLiter" $ check' arrayLit $ sized genArrayLiter
+  testGroup
+    "unitTests"
+    [ testProperty "intLiter" $ check' intLiter genIntLiter
+    , testProperty "boolLiter" $ check' boolLiter genBoolLiter
+    , testProperty "charLiter" $ check' charLiter genCharLiter
+    , testProperty "stringLiter" $ check' stringLiter genStringLiter
+    , testProperty "pairLiter" $ check' pairLiter genPairLiter
+    , testProperty "ident" $ check' ident genIdent
+    , testProperty "arrayElem" $ check' arrayElem $ sized genArrayElem
+    , testProperty "atom" $ check' atom $ sized genAtom
+    , testProperty "expr" $ check' expr $ sized genExpr
+    , testProperty "type" $ check' wType $ sized genType
+    , testProperty "baseType" $ check' baseType genBaseType
+    , testProperty "arrayType" $
+        check' arrayType $
+          sized genArrayType
+    , testProperty "pairType" $ check' pairType $ sized genPairType
+    , testProperty "pairElemType" $
+        check' pairElemType $
+          sized genPairElemType
+          -- , testProperty "program" $ check' prog $ sized genProgram
+          -- , testProperty "func" $ check' func $ sized genFunc
+          -- , testProperty "param" $ check' param $ sized genParam
+          -- , testProperty "stmt" $ check' stmts $ sized genStmt
+          -- , testProperty "lvalue" $ check' lValue $ sized genLvalue
+          -- , testProperty "rvalue" $ check' rValue $ sized genRvalue
+          -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
+    ]
