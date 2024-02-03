@@ -5,7 +5,7 @@ module Language.WACC.Parser.Type where
 
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Token (lexer)
-import Text.Gigaparsec (Parsec, atomic, many, some, (<|>))
+import Text.Gigaparsec (Parsec, many, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
@@ -48,16 +48,13 @@ baseType =
 arrayType :: Parsec WType
 arrayType = postfix1 id (baseType <|> pairType) ("[]" >> pure WArray)
 
+pairBrackets :: Parsec WType
+pairBrackets = "(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")"
+
 pairType :: Parsec WType
-pairType = "pair" *> "(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")"
+pairType = "pair" *> pairBrackets
 
 pairElemType :: Parsec WType
 pairElemType =
   mkWType baseType (many "[]")
-    <|> ( "pair"
-            *> ( mkWType
-                  ("(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")")
-                  (some "[]")
-                  <|> mkWErasedPair
-               )
-        )
+    <|> ("pair" *> (mkWType pairBrackets (some "[]") <|> mkWErasedPair))
