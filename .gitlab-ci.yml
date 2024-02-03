@@ -4,11 +4,6 @@ variables:
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-workflow:
-  rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
 stages:
   - lint
   - build
