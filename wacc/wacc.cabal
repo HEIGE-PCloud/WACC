@@ -28,7 +28,6 @@ library
       Language.WACC.Parser.Stmt
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
-      Lib
   other-modules:
       Paths_wacc
   hs-source-dirs:
