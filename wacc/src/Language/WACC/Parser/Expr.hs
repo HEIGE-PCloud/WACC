@@ -76,8 +76,9 @@ intLiter = mkIntLit decimal
 boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit (("true" $> True) <|> ("false" $> False))
 
-{- | > <character> ::= any-graphic-ASCII-character-except-'\'-'''-'"' (graphic 𝑔 ≥' ')
- >              |  '\' ⟨escaped-char⟩
+{- | > <character> ::= any-graphic-ASCII-character-except-'\'-'''-'"'
+ > (graphic 𝑔 ≥' ')
+ >                   | '\' ⟨escaped-char⟩
 -}
 character :: Parsec Char
 character = last <$> choice [atomic (string c) | c <- validChars]
@@ -86,18 +87,25 @@ character = last <$> choice [atomic (string c) | c <- validChars]
 charLiter :: Parsec (WAtom i)
 charLiter = char '\'' *> mkCharLit character <* "'"
 
+-- | > <string-liter> ::= '"' <character>* '"'
 stringLiter :: Parsec (WAtom i)
 stringLiter = mkStringLit (char '\"' *> many character <* "\"")
 
+-- | > <null-liter> ::= "null"
 pairLiter :: Parsec (WAtom i)
 pairLiter = "null" >> mkNull
 
+-- | > <ident> ::= ('_'|'a'-'z'|'A'-'Z')('_'|'a'-'z'|'A'-'Z'|'0'-'9')*
 ident :: Parsec (WAtom String)
 ident = mkIdent identifier
 
+-- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
 arrayElem :: Parsec (WAtom String)
 arrayElem = mkArrayElem $ mkArrayIndex identifier (many ("[" *> expr <* "]"))
 
+{- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
+ >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
+-}
 atom :: Parsec (Expr String)
 atom =
   mkWAtom intLiter
@@ -116,6 +124,10 @@ mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
     mkIdentOrArrayElem' str (Just e) = ArrayElem $ ArrayIndex str e
     mkIdentOrArrayElem' str Nothing = Ident str
 
+{- | > <expr> ::= <unary-oper> <expr>
+ >              | <expr> <binary-oper> <expr>
+ >              | <atom>
+-}
 expr :: Parsec (Expr String)
 expr =
   precedence
