@@ -40,44 +40,23 @@ default:
       policy: $BUILD_CACHE_POLICY
 
 lint:
-  except:
-    - schedules
   image:
     entrypoint: [""]
     name: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
-  needs: []
   script:
     - fourmolu --mode check wacc
   stage: lint
 
 build:
-  except:
-    - schedules
-  artifacts:
-    paths:
-      - compile
-  needs: []
-  script:
-    - make
-  stage: build
-  extends: .stack-cache
-
-build-cache:
-  only:
-    - schedules
-  needs: []
-  variables:
-    BUILD_CACHE_POLICY: 'push'
   script:
     - stack update
     - stack build --test --no-run-tests
   stage: build
+  variables:
+    BUILD_CACHE_POLICY: 'pull-push'
   extends: .stack-cache
 
 integration-test:
-  except:
-    - schedules
-  needs: []
   script:
     - make integration-test
   stage: test
@@ -90,9 +69,6 @@ integration-test:
   extends: .stack-cache
 
 unit-test:
-  except:
-    - schedules
-  needs: []
   script:
     - make unit-test
   stage: test
@@ -105,9 +81,6 @@ unit-test:
   extends: .stack-cache
 
 golden-test:
-  except:
-    - schedules
-  needs: []
   script:
     - make golden-test
   stage: test
