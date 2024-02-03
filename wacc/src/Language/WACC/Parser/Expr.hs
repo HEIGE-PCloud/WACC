@@ -4,7 +4,7 @@
 
 module Language.WACC.Parser.Expr where
 
-import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
+import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
   ( decimal
   , identifier
@@ -14,7 +14,7 @@ import Language.WACC.Parser.Token
   )
 import Text.Gigaparsec (Parsec, atomic, many, ($>), (<|>))
 import Text.Gigaparsec.Char (char, string)
-import Text.Gigaparsec.Combinator (choice)
+import Text.Gigaparsec.Combinator (choice, option)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -31,57 +31,39 @@ import Prelude hiding (GT, LT)
 
 $( deriveLiftedConstructors
     "mk"
-    ['IntLit, 'BoolLit, 'CharLit, 'StringLit, 'Null]
- )
-
-$( deriveDeferredConstructors
-    "mkD"
-    ['WAtom]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['Ident, 'ArrayElem]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['Not, 'Negate, 'Len, 'Ord, 'Chr]
+    [ 'IntLit
+    , 'BoolLit
+    , 'CharLit
+    , 'StringLit
+    , 'Null
+    , 'Ident
+    , 'ArrayIndex
+    , 'ArrayElem
+    , 'WAtom
+    ]
  )
 
 $( deriveDeferredConstructors
     "mk"
-    ['Mul, 'Div, 'Mod]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['Add, 'Sub]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['GT, 'GTE, 'LT, 'LTE]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['Eq, 'Ineq]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['And]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['Or]
- )
-
-$( deriveLiftedConstructors
-    "mk"
-    ['WAtom]
+    [ 'Not
+    , 'Negate
+    , 'Len
+    , 'Ord
+    , 'Chr
+    , 'Mul
+    , 'Div
+    , 'Mod
+    , 'Add
+    , 'Sub
+    , 'GT
+    , 'GTE
+    , 'LT
+    , 'LTE
+    , 'Eq
+    , 'Ineq
+    , 'And
+    , 'Or
+    ]
  )
 
 $(overloadedStrings [|lexer|])
@@ -95,7 +77,7 @@ boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit (("true" $> True) <|> ("false" $> False))
 
 {- | > <character> ::= any-graphic-ASCII-character-except-'\'-'''-'"' (graphic 𝑔 ≥' ')
-  >              |  '\' ⟨escaped-char⟩
+ >              |  '\' ⟨escaped-char⟩
 -}
 character :: Parsec Char
 character = last <$> choice [atomic (string c) | c <- validChars]
@@ -110,28 +92,29 @@ stringLiter = mkStringLit (char '\"' *> many character <* "\"")
 pairLiter :: Parsec (WAtom i)
 pairLiter = "null" >> mkNull
 
-arrOrIdent :: Parsec (WAtom String)
-arrOrIdent = do
-  s <- identifier
-  exprs <- many ("[" *> expr <* "]")
-  f <- mkIdent
-  g <- mkArrayElem
-  case exprs of
-    [] -> pure (f s)
-    _ -> pure (g (ArrayIndex s exprs))
+ident :: Parsec (WAtom String)
+ident = mkIdent identifier
+
+arrayElem :: Parsec (WAtom String)
+arrayElem = mkArrayElem $ mkArrayIndex identifier (many ("[" *> expr <* "]"))
 
 atom :: Parsec (Expr String)
 atom =
-  choice
-    [ WAtom <$> arrOrIdent
-    , WAtom <$> intLiter
-    , WAtom <$> pairLiter
-    , WAtom <$> boolLiter
-    , WAtom <$> charLiter
-    , WAtom <$> stringLiter
-    , WAtom <$> pairLiter
-    , "(" *> expr <* ")"
-    ]
+  mkWAtom intLiter
+    <|> mkWAtom boolLiter
+    <|> mkWAtom charLiter
+    <|> mkWAtom stringLiter
+    <|> mkWAtom pairLiter
+    <|> mkWAtom (mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]"))))
+    <|> ("(" *> expr <* ")")
+
+mkIdentOrArrayElem
+  :: Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (WAtom String)
+mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
+  where
+    mkIdentOrArrayElem' :: String -> Maybe [Expr String] -> WAtom String
+    mkIdentOrArrayElem' str (Just e) = ArrayElem $ ArrayIndex str e
+    mkIdentOrArrayElem' str Nothing = Ident str
 
 expr :: Parsec (Expr String)
 expr =

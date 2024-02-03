@@ -19,7 +19,7 @@ unit-test:
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=10s \
 		--test-arguments --xml=../rspec.xml \
-	    --test-arguments '--pattern "$$0 !~ /integrationTests/"' \
+	    --test-arguments '--pattern "$$0 ~ /unitTests/"' \
 		--test-arguments --quickcheck-max-size=10
 
 # Use `ACCEPT=1 make golden-test` to accept the changes

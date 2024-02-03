@@ -39,6 +39,9 @@ default:
         - wacc/.stack-work/
       policy: $BUILD_CACHE_POLICY
 
+code_quality:
+  stage: lint
+
 lint:
   image:
     entrypoint: [""]
