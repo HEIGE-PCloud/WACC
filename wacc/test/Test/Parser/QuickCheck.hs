@@ -6,11 +6,8 @@ module Test.Parser.QuickCheck
   )
 where
 
-import Control.Exception
 import Data.Functor
 import Data.List
-import Data.List ((\\))
-import Debug.Trace (trace, traceM)
 import Language.WACC.Parser.Expr
 import Language.WACC.Parser.Prog
 import Language.WACC.Parser.Stmt
@@ -40,10 +37,10 @@ someSize :: Gen String -> Gen String
 someSize gen = sized $ \n -> someN gen n
 
 intMin :: Int
-intMin = -(2 ^ 31)
+intMin = -2147483648
 
 intMax :: Int
-intMax = 2 ^ 31 - 1
+intMax = 2147483647
 
 genIntLiter :: Gen String
 genIntLiter = choose (intMin, intMax) <&> show
@@ -61,8 +58,8 @@ genStringLiter = do
   c <- someSize genCharacter
   return $ "\"" ++ c ++ "\""
 
-escapedChars :: [String]
-escapedChars = ["0", "b", "t", "n", "f", "r", "\"", "'", "\\"]
+escapedChar :: [String]
+escapedChar = ["0", "b", "t", "n", "f", "r", "\"", "'", "\\"]
 
 graphicASCII :: [Char]
 graphicASCII = ['\32' .. '\126']
@@ -70,7 +67,7 @@ graphicASCII = ['\32' .. '\126']
 genCharacter :: Gen String
 genCharacter =
   elements $
-    (map (: []) graphicASCII \\ escapedChars) ++ ["\\" ++ c | c <- escapedChars]
+    (map (: []) graphicASCII \\ escapedChar) ++ ["\\" ++ c | c <- escapedChar]
 
 genPairLiter :: Gen String
 genPairLiter = return "null"
@@ -83,11 +80,11 @@ genIdent = genIdent' `suchThat` (`notElem` keywords)
       cs <- vectorOf k $ elements $ '_' : ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9']
       return $ c : cs
 
-genComment :: Gen String
-genComment = sized $ \k -> do
-  c <- elements ['#']
-  cs <- vectorOf k $ elements $ graphicASCII ++ ['\n']
-  return $ c : cs
+-- genComment :: Gen String
+-- genComment = sized $ \k -> do
+--   c <- elements ['#']
+--   cs <- vectorOf k $ elements $ graphicASCII ++ ['\n']
+--   return $ c : cs
 
 genExpr :: Int -> Gen String
 genExpr depth

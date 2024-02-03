@@ -1,3 +1,6 @@
+variables:
+  BUILD_CACHE_POLICY: 'pull'
+
 include:
   - template: Code-Quality.gitlab-ci.yml
 
@@ -5,6 +8,9 @@ workflow:
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      variables:
+        BUILD_CACHE_POLICY: 'push'
 
 stages:
   - lint
@@ -27,12 +33,14 @@ default:
       paths:
         - .stack-work/
         - .stack/
+      policy: $BUILD_CACHE_POLICY
     - key:
         files:
           - wacc/package.yaml
           - wacc/wacc.cabal
       paths:
         - wacc/.stack-work/
+      policy: $BUILD_CACHE_POLICY
 
 lint:
   image:

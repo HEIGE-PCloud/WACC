@@ -4,6 +4,7 @@ compile:
 
 integration-test: compile
 	stack test \
+		--test-arguments --hide-successes \
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
 		--test-arguments --timeout=10s \
@@ -14,6 +15,7 @@ integration-test: compile
 
 unit-test:
 	stack test \
+		--test-arguments --hide-successes \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=10s \
 		--test-arguments --xml=../rspec.xml \

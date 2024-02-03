@@ -9,11 +9,10 @@ import Data.Functor (void)
 import Data.Maybe (isNothing)
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Token (sym)
-import Text.Gigaparsec (Parsec, atomic, lookAhead, notFollowedBy, some, (<~>))
+import Text.Gigaparsec (Parsec, atomic, lookAhead, some, (<~>))
 import Text.Gigaparsec.Combinator (choice, option)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
-  , deriveLiftedConstructors
   )
 
 $( deriveDeferredConstructors
@@ -26,6 +25,7 @@ wTypeWithArray p = do
   (t, ln) <- p <~> many (void (sym "[]"))
   pure $ foldr (const WArray) t ln
 
+wTypeWithArray1 :: Parsec WType -> Parsec WType
 wTypeWithArray1 p = do
   (t, ln) <- p <~> some (void (sym "[]"))
   pure $ foldr (const WArray) t ln
