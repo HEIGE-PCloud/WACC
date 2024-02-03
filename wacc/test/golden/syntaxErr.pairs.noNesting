@@ -1,7 +1,7 @@
-(line 12, column 27):
-  unexpected ","
-  expected "[]" or end of string
+(line 12, column 14):
+  unexpected "("
+  expected ","
   >begin
   >    pair(pair(int, string), char) p = null
-                             ^
+                ^
   >end

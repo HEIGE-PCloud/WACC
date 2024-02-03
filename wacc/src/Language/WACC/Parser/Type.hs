@@ -1,69 +1,48 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Language.WACC.Parser.Type where
 
-import Control.Applicative (many)
-import Data.Functor (void)
-import Data.Maybe (isNothing)
 import Language.WACC.AST.WType (WType (..))
-import Language.WACC.Parser.Token (sym)
-import Text.Gigaparsec (Parsec, atomic, lookAhead, some, (<~>))
-import Text.Gigaparsec.Combinator (choice, option)
+import Language.WACC.Parser.Token (lexer)
+import Text.Gigaparsec (Parsec, atomic, (<|>))
+import Text.Gigaparsec.Combinator (choice)
+import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
-  ( deriveDeferredConstructors
+  ( deriveDeferredConstructors,
+    deriveLiftedConstructors,
   )
+import Text.Gigaparsec.Token.Patterns (overloadedStrings)
 
 $( deriveDeferredConstructors
-    "mk"
-    ['WBool, 'WInt, 'WChar, 'WString, 'WErasedPair, 'WKnownPair, 'WArray]
+     "mk"
+     ['WBool, 'WInt, 'WChar, 'WString, 'WErasedPair, 'WArray]
  )
 
-wTypeWithArray :: Parsec WType -> Parsec WType
-wTypeWithArray p = do
-  (t, ln) <- p <~> many (void (sym "[]"))
-  pure $ foldr (const WArray) t ln
+$( deriveLiftedConstructors
+     "mk"
+     ['WKnownPair]
+ )
 
-wTypeWithArray1 :: Parsec WType -> Parsec WType
-wTypeWithArray1 p = do
-  (t, ln) <- p <~> some (void (sym "[]"))
-  pure $ foldr (const WArray) t ln
+$(overloadedStrings [|lexer|])
 
 wType :: Parsec WType
-wType = wTypeWithArray (choice [wBaseType, wPairType])
+wType = atomic arrayType <|> baseType <|> pairType
 
-wBaseType :: Parsec WType
-wBaseType =
+baseType :: Parsec WType
+baseType =
   choice
-    [ sym "int" *> mkWInt
-    , sym "bool" *> mkWBool
-    , sym "char" *> mkWChar
-    , sym "string" *> mkWString
+    [ "int" *> mkWInt,
+      "bool" *> mkWBool,
+      "char" *> mkWChar,
+      "string" *> mkWString
     ]
 
-wPairType :: Parsec WType
-wPairType = do
-  sym "pair"
-  sym "("
-  pet1 <- pairElemType
-  sym ","
-  pet2 <- pairElemType
-  sym ")"
+arrayType :: Parsec WType
+arrayType = postfix1 id (baseType <|> pairType) ("[]" >> pure WArray)
 
-  constructor <- mkWKnownPair
-  pure $ constructor pet1 pet2
-
-pairTypeOrErased :: Parsec WType
-pairTypeOrErased = do
-  m <- option (atomic $ lookAhead (sym "pair" *> sym "("))
-  if isNothing m
-    then sym "pair" *> mkWErasedPair
-    else wTypeWithArray1 wPairType
+pairType :: Parsec WType
+pairType = "pair" *> "(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")"
 
 pairElemType :: Parsec WType
-pairElemType =
-  choice
-    [ lookAhead (sym "pair") *> pairTypeOrErased
-    , wTypeWithArray wBaseType
-    ]
+pairElemType = atomic arrayType <|> baseType <|> ("pair" >> mkWErasedPair)

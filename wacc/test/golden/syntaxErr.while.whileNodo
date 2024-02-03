@@ -1,6 +1,6 @@
 (line 13, column 5):
   unexpected "sk"
-  expected !=, "[", %, &&, *, +, -, /, <, <=, ==, >, >=, do, or ||
+  expected !=, %, &&, *, +, -, /, <, <=, ==, >, >=, do, end of while, or ||
   >  while false
   >    skip
        ^^

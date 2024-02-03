@@ -336,11 +336,11 @@ test =
     , testProperty "atom" $ check' atom $ sized genAtom
     , testProperty "expr" $ check' expr $ sized genExpr
     , testProperty "type" $ check' wType $ sized genType
-    , testProperty "baseType" $ check' wBaseType genBaseType
+    , testProperty "baseType" $ check' baseType genBaseType
     , testProperty "arrayType" $
         check' (wType) $
           sized genArrayType
-    , testProperty "pairType" $ check' wPairType $ sized genPairType
+    , testProperty "pairType" $ check' pairType $ sized genPairType
     , testProperty "pairElemType" $
         check' pairElemType $
           sized genPairElemType
