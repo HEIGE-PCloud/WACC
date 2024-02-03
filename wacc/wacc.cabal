@@ -58,6 +58,8 @@ test-suite wacc-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Test.Common
+      Test.Golden
       Test.Ingredients
       Test.Integration
       Test.Parser.QuickCheck
@@ -79,6 +81,7 @@ test-suite wacc-test
     , tasty
     , tasty-ant-xml
     , tasty-autocollect
+    , tasty-golden
     , tasty-hspec
     , tasty-quickcheck
     , wacc
