@@ -25,7 +25,7 @@ runSyntaxCheck :: FilePath -> TestTree
 runSyntaxCheck path = goldenVsStringDiff testname diff goldenPath testAction
   where
     testname = drop (length testNamePrefix) (takeBaseName path)
-    diff ref new = ["diff", "-u", ref, new] 
+    diff ref new = ["diff", "-u", ref, new]
     goldenPath = goldenBasePath ++ "/" ++ testname
     testAction = do
       input <- readFile path
@@ -36,4 +36,7 @@ syntaxCheck source = case parse prog source of
   Success _ -> error "syntax check should fail but succeeded"
   Failure err -> err
 
-test = testGroup "goldenTests" [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]
+test =
+  testGroup
+    "goldenTests"
+    [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]
