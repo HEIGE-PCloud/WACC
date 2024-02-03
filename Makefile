@@ -22,8 +22,10 @@ unit-test:
 	    --test-arguments '--pattern "$$0 !~ /integrationTests/"' \
 		--test-arguments --quickcheck-max-size=10
 
+# Use `ACCEPT=1 make golden-test` to accept the changes
 golden-test:
 	stack test \
+		--test-arguments --hide-successes \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=1s \
 		--test-arguments --xml=../rspec.xml \
