@@ -47,7 +47,6 @@ lint:
 
 build:
   script:
-    - stack update
     - stack build --test --no-run-tests
   stage: build
   variables:
