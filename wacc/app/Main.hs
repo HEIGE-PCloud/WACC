@@ -4,6 +4,7 @@ module Main (main) where
 
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
+import Language.WACC.Parser.Prog (prog)
 import Language.WACC.Parser.Token
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
@@ -16,7 +17,6 @@ import Text.Gigaparsec.Expr
   , precedence
   , (>+)
   )
-import Language.WACC.Parser.Prog (prog)
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
