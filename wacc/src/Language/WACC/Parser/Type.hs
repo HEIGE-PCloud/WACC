@@ -12,7 +12,8 @@ import Language.WACC.Parser.Token (sym)
 import Text.Gigaparsec (Parsec, atomic, lookAhead, some, (<~>))
 import Text.Gigaparsec.Combinator (choice, option)
 import Text.Gigaparsec.Patterns
-  ( deriveDeferredConstructors )
+  ( deriveDeferredConstructors
+  )
 
 $( deriveDeferredConstructors
     "mk"
