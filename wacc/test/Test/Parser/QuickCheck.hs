@@ -344,11 +344,11 @@ test =
     , testProperty "pairElemType" $
         check' pairElemType $
           sized genPairElemType
-    -- , testProperty "program" $ check' prog $ sized genProgram
-    -- , testProperty "func" $ check' func $ sized genFunc
-    -- , testProperty "param" $ check' param $ sized genParam
-    -- , testProperty "stmt" $ check' stmts $ sized genStmt
-    -- , testProperty "lvalue" $ check' lValue $ sized genLvalue
-    -- , testProperty "rvalue" $ check' rValue $ sized genRvalue
-    -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
+          -- , testProperty "program" $ check' prog $ sized genProgram
+          -- , testProperty "func" $ check' func $ sized genFunc
+          -- , testProperty "param" $ check' param $ sized genParam
+          -- , testProperty "stmt" $ check' stmts $ sized genStmt
+          -- , testProperty "lvalue" $ check' lValue $ sized genLvalue
+          -- , testProperty "rvalue" $ check' rValue $ sized genRvalue
+          -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
     ]
