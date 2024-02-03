@@ -97,6 +97,7 @@ waccNameDesc =
     , operatorLetter = Nothing
     }
 
+keywords :: [String]
 keywords =
   [ "begin"
   , "end"
@@ -129,6 +130,7 @@ keywords =
   , "null"
   ]
 
+operators :: [String]
 operators =
   [ "!"
   , "-"
@@ -250,5 +252,5 @@ charLiteral = ascii $ T.charLiteral lexeme
 fully :: Parsec a -> Parsec a
 fully = T.fully lexer
 
-sym :: String -> Parsec String
-sym s = T.sym lexeme s $> s
+sym :: String -> Parsec ()
+sym = T.sym lexeme

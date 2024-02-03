@@ -12,7 +12,7 @@ import Language.WACC.AST.WType (WType)
 import Language.WACC.Parser.Stmt (stmts)
 import Language.WACC.Parser.Token (fully, identifier, sym)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, lookAhead, many, (<|>))
+import Text.Gigaparsec (Parsec, lookAhead, many, ($>), (<|>))
 import Text.Gigaparsec.Combinator (option, optional)
 import Text.Gigaparsec.Errors.Combinator (fail)
 import Text.Gigaparsec.Patterns
@@ -70,7 +70,7 @@ funcStmtPre :: Parsec (WType, String, String)
 funcStmtPre = do
   wt <- wType
   i <- identifier
-  c <- sym "(" <|> sym "="
+  c <- (sym "(" $> "(") <|> (sym "=" $> "=")
   pure (wt, i, c)
 
 progInner :: Parsec (Prog String String)
