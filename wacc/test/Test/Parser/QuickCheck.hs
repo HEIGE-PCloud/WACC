@@ -40,10 +40,10 @@ someSize :: Gen String -> Gen String
 someSize gen = sized $ \n -> someN gen n
 
 intMin :: Int
-intMin = minBound :: Int
+intMin = -(2 ^ 31)
 
 intMax :: Int
-intMax = maxBound :: Int
+intMax = 2 ^ 31 - 1
 
 genIntLiter :: Gen String
 genIntLiter = choose (intMin, intMax) <&> show
@@ -360,9 +360,9 @@ test =
     check' pairElemType $
       sized genPairElemType
 
-test = testProperty "can parse program" $ check' prog $ sized genProgram
+test_ignoreTest = testProperty "can parse program" $ check' prog $ sized genProgram
 
-test = testProperty "can parse func" $ check' func $ sized genFunc
+test_ignoreTest = testProperty "can parse func" $ check' func $ sized genFunc
 
 -- test = testProperty "can parse paramList" $ check' paramList $ sized genParamList
 

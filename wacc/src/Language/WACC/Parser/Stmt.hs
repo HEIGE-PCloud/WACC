@@ -18,7 +18,7 @@ import Language.WACC.AST.Stmt
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier, sym)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, atomic, (<|>))
+import Text.Gigaparsec (Parsec, (<|>))
 import Text.Gigaparsec.Combinator (choice, option)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
@@ -96,7 +96,7 @@ arrayLit = do
 
   pure $ Data.Maybe.fromMaybe [] mexps
   where
-    arrexps = atomic $ do
+    arrexps = do
       e <- expr
       es <- many (sym "," *> expr)
       pure (e : es)
@@ -125,7 +125,7 @@ fnCall = do
   f <- mkRVCall
   pure $ f i exps
   where
-    arrexps = atomic $ do
+    arrexps = do
       e <- expr
       es <- many (sym "," *> expr)
       pure (e : es)

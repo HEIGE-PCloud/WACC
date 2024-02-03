@@ -6,10 +6,11 @@ module Language.WACC.Parser.Type where
 
 import Control.Applicative (many)
 import Data.Functor (void)
+import Data.Maybe (isNothing)
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Token (sym)
-import Text.Gigaparsec (Parsec, atomic, notFollowedBy, some, (<~>))
-import Text.Gigaparsec.Combinator (choice)
+import Text.Gigaparsec (Parsec, atomic, lookAhead, notFollowedBy, some, (<~>))
+import Text.Gigaparsec.Combinator (choice, option)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
@@ -23,6 +24,10 @@ $( deriveDeferredConstructors
 wTypeWithArray :: Parsec WType -> Parsec WType
 wTypeWithArray p = do
   (t, ln) <- p <~> many (void (sym "[]"))
+  pure $ foldr (const WArray) t ln
+
+wTypeWithArray1 p = do
+  (t, ln) <- p <~> some (void (sym "[]"))
   pure $ foldr (const WArray) t ln
 
 wType :: Parsec WType
@@ -49,10 +54,16 @@ wPairType = do
   constructor <- mkWKnownPair
   pure $ constructor pet1 pet2
 
+pairTypeOrErased :: Parsec WType
+pairTypeOrErased = do
+  m <- option (atomic $ lookAhead (sym "pair" *> sym "("))
+  if isNothing m
+    then sym "pair" *> mkWErasedPair
+    else wTypeWithArray1 wPairType
+
 pairElemType :: Parsec WType
 pairElemType =
   choice
-    [ atomic (sym "pair" *> mkWErasedPair <* notFollowedBy (sym "("))
+    [ lookAhead (sym "pair") *> pairTypeOrErased
     , wTypeWithArray wBaseType
-    , wTypeWithArray wPairType
     ]

@@ -3,15 +3,18 @@
 
 module Language.WACC.Parser.Expr where
 
+import qualified Data.Set as Set
 import Language.WACC.AST.Expr (ArrayIndex (ArrayIndex), Expr (..), WAtom (..))
 import Language.WACC.Parser.Token
   ( charLiteral
   , decimal
+  , escapeChars
   , identifier
   , stringLiteral
   , sym
   )
-import Text.Gigaparsec (Parsec, many, (<|>))
+import Text.Gigaparsec (Parsec, atomic, many, notFollowedBy, (<|>))
+import Text.Gigaparsec.Char (char, digit, noneOf, oneOf, whitespaces)
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
@@ -87,13 +90,19 @@ intLiter = mkIntLit decimal
 mkNegLit :: Parsec (Expr String -> Expr String)
 mkNegLit = do
   g <- mkNegate
-  pure (\x -> case x of WAtom (IntLit i) -> WAtom (IntLit (-i)); _ -> g x)
+  pure (\x -> case x of WAtom (IntLit i p) -> WAtom (IntLit (-i) p); _ -> g x)
 
 boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit $ (== "true") <$> (sym "true" <|> sym "false")
 
 charLiter :: Parsec (WAtom i)
-charLiter = mkCharLit charLiteral
+charLiter =
+  char '\''
+    *> mkCharLit
+      ( noneOf (Set.fromList ['\\', '\'', '"'])
+          <|> (char '\\' *> oneOf (Set.fromList escapeChars))
+      )
+    <* sym "'"
 
 stringLiter :: Parsec (WAtom i)
 stringLiter = mkStringLit stringLiteral
@@ -133,7 +142,7 @@ expr =
         >+ ops
           Prefix
           [ mkNot <* sym "!"
-          , mkNegLit <* sym "-"
+          , mkNegate <* atomic (char '-' <* notFollowedBy digit <* whitespaces)
           , mkLen <* sym "len"
           , mkOrd <* sym "ord"
           , mkChr <* sym "chr"

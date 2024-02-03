@@ -3,6 +3,8 @@ WACC expressions.
 -}
 module Language.WACC.AST.Expr (WAtom (..), Expr (..), ArrayIndex (..)) where
 
+import Text.Gigaparsec.Position (Pos)
+
 {- |
 WACC array indexing subexpressions.
 
@@ -15,9 +17,9 @@ Atomic WACC expressions.
 -}
 data WAtom ident
   = -- | @int@ literals.
-    IntLit Integer
+    IntLit Integer Pos
   | -- | @bool@ literals.
-    BoolLit Bool
+    BoolLit Bool Pos
   | -- | @char@ literals.
     CharLit Char
   | -- | @string@ literals.
