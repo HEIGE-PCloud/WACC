@@ -15,7 +15,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/expressions/missingOperand2.wacc (line 13, column 1):
   unexpected keyword end
-  expected !, "(", "-", %, *, /, boolean, character, chr, digit, identifier, integer, len, null, ord, or strings
+  expected !, "(", "-", %, *, /, boolean, character literal, chr, digit, identifier, integer, len, null, ord, or strings
   >  int b = 2 - 
   >end
    ^^^

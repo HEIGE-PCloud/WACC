@@ -1,13 +1,11 @@
 module Language.WACC.Parser.Token where
 
-import Data.Char (isAlpha, isAlphaNum, isAscii, isPrint, isSpace)
+import Data.Char (isAlpha, isAlphaNum, isSpace)
 import Data.List ((\\))
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
-import Text.Gigaparsec.Char (char, digit, string)
-import Text.Gigaparsec.Combinator (choice)
-import Text.Gigaparsec.Errors.Combinator (explain)
+import Text.Gigaparsec.Char (char, digit)
 import Text.Gigaparsec.Internal.Token.Errors (VanillaFilterConfig (VBecause))
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
@@ -213,7 +211,7 @@ waccTextDesc =
     , characterLiteralEnd = '\''
     , stringEnds = Set.fromList [("\"", "\"")]
     , multiStringEnds = Set.empty
-    , graphicCharacter = Just (\x -> isAscii x && isPrint x)
+    , graphicCharacter = Just (`elem` graphicChars)
     }
 
 waccSpaceDesc :: SpaceDesc
@@ -276,18 +274,5 @@ sym = T.sym lexeme
 negateOp :: Parsec ()
 negateOp = T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit)))
 
-graphicChars :: [String]
-graphicChars = map (: []) ['\32' .. '\126']
-
-normalChars :: Parsec Char
-normalChars = last <$> choice [atomic (string c) | c <- graphicChars \\ ["\\", "\"", "\'"]]
-
-escapedChars :: Parsec Char
-escapedChars =
-  mkEscapedChars' $
-    last
-      <$> choice
-        [atomic (string c) | c <- ["0", "b", "t", "n", "f", "r", "\"", "\'", "\\"]]
-
-mkEscapedChars' :: Parsec Char -> Parsec Char
-mkEscapedChars' = explain "This is not an valid escape character."
+graphicChars :: [Char]
+graphicChars = ['\32' .. '\126'] \\ ['\\', '\"', '\'']

@@ -15,8 +15,8 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/basic/badEscape.wacc (line 12, column 14):
   unexpected "H"
-  expected """, "'", "0", "\", "b", "f", "n", "r", or "t"
-  This is not an valid escape character.
+  expected end of escape sequence
+  invalid escape sequence
   >begin
   >  char a = '\H'
                 ^

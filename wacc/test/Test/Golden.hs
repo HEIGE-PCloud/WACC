@@ -11,7 +11,7 @@ import Language.WACC.Parser.Token (fully)
 import Test.Common (syntaxErrTests, takeBaseName)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
-import Text.Gigaparsec (Result (Failure, Success), parse, parseFromFile)
+import Text.Gigaparsec (Result (Failure, Success), parseFromFile)
 
 goldenBasePath :: FilePath
 goldenBasePath = "test/golden"

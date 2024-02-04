@@ -15,7 +15,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/literals/stringLiteralOnlyAscii.wacc (line 12, column 18):
   unexpected "é"
-  expected """ or character
+  expected """ or string character
   >begin
   >    string s = "héllo world"
                     ^

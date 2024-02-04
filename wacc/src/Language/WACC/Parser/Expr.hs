@@ -19,15 +19,13 @@ import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Token
   ( decimal
-  , escapedChars
   , identifier
   , negateOp
-  , normalChars
+  , charLiteral, stringLiteral
   )
 import Text.Gigaparsec (Parsec, many, ($>), (<|>))
-import Text.Gigaparsec.Char (char)
 import Text.Gigaparsec.Combinator (choice, option)
-import Text.Gigaparsec.Errors.Combinator (explain, label)
+import Text.Gigaparsec.Errors.Combinator (label)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -86,20 +84,13 @@ intLiter = mkIntLit' decimal
 boolLiter :: Parsec (WAtom i)
 boolLiter = mkBoolLit' (("true" $> True) <|> ("false" $> False))
 
-{- | > <character> ::= any-graphic-ASCII-character-except-'\'-'''-'"'
- > (graphic 𝑔 ≥' ')
- >                   | '\' ⟨escaped-char⟩
--}
-character :: Parsec Char
-character = mkNormalChars' normalChars <|> mkEscapedChars' (char '\\' *> escapedChars)
-
 -- | > <char-liter> ::= ''' <character> '''
 charLiter :: Parsec (WAtom i)
-charLiter = mkCharLit' (char '\'' *> character <* "'")
+charLiter = mkCharLit' charLiteral
 
 -- | > <string-liter> ::= '"' <character>* '"'
 stringLiter :: Parsec (WAtom i)
-stringLiter = mkStringLit' (char '\"' *> many (mkChar' character) <* "\"")
+stringLiter = mkStringLit' stringLiteral
 
 -- | > <null-liter> ::= "null"
 pairLiter :: Parsec (WAtom i)
@@ -170,10 +161,7 @@ mkBoolLit' :: Parsec Bool -> Parsec (WAtom ident)
 mkBoolLit' = label (fromList ["boolean"]) . mkBoolLit
 
 mkCharLit' :: Parsec Char -> Parsec (WAtom ident)
-mkCharLit' = label (fromList ["character"]) . mkCharLit
-
-mkChar' :: Parsec Char -> Parsec Char
-mkChar' = label (fromList ["character"])
+mkCharLit' = label (fromList ["character literal"]) . mkCharLit
 
 mkStringLit' :: Parsec String -> Parsec (WAtom ident)
 mkStringLit' = label (fromList ["strings"]) . mkStringLit
@@ -183,14 +171,6 @@ mkNull' = label (fromList ["null"]) mkNull
 
 mkIdent' :: Parsec String -> Parsec (WAtom String)
 mkIdent' = label (fromList ["identifier"]) . mkIdent
-
-mkNormalChars' :: Parsec Char -> Parsec Char
-mkNormalChars' = label (fromList ["character"])
-
-mkEscapedChars' :: Parsec Char -> Parsec Char
-mkEscapedChars' =
-  explain "This is a special character, it needs to be escaped by '\\'."
-    . label (fromList ["escaped character"])
 
 mkExpr' :: Parsec a -> Parsec a
 mkExpr' = label (fromList ["expression"])
