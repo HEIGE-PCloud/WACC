@@ -1,6 +1,7 @@
-(line 18, column 3):
-  Function must end with a return or exit statement
+(line 17, column 3):
+  Function can only be exited via a 'return' or 'exit' statement.
+  There must not be any code following the last 'return' or 'exit' of any execution path.
+  >    fi
   >  end
-  >  bool g ( bool b ) is
      ^
-  >    if ( b ) then
+  >  bool g ( bool b ) is

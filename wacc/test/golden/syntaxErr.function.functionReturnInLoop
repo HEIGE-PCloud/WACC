@@ -1,6 +1,7 @@
-(line 24, column 3):
-  Function must end with a return or exit statement
+(line 23, column 3):
+  Function can only be exited via a 'return' or 'exit' statement.
+  There must not be any code following the last 'return' or 'exit' of any execution path.
+  >    done
   >  end
-  >  int x = call f(10) ;
      ^
-  >  println x 
+  >  int x = call f(10) ;
