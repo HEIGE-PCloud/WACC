@@ -1,0 +1,8 @@
+repos:
+- repo: local
+  hooks:
+  - id: format-code
+    name: Format code with fourmolu
+    entry: fourmolu -i .
+    language: system
+    types: [python, haskell, rust, yaml]

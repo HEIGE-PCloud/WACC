@@ -88,7 +88,7 @@ rValue =
     ]
 
 arrayLit :: Parsec [Expr String]
-arrayLit = "[" *> mkArgList (option argList) <* "]"
+arrayLit = "[" *> optionalArgList argList <* "]"
 
 newPair :: Parsec (RValue fnident String)
 newPair = mkRVNewPair ("newpair" *> "(" *> expr) ("," *> expr <* ")")
@@ -97,10 +97,13 @@ pairElem :: Parsec (PairElem String)
 pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
 
 fnCall :: Parsec (RValue String String)
-fnCall = mkRVCall ("call" *> identifier) ("(" *> mkArgList (option argList) <* ")")
+fnCall = mkRVCall ("call" *> identifier) ("(" *> optionalArgList argList <* ")")
 
 mkArgList :: Parsec (Maybe [a]) -> Parsec [a]
 mkArgList = fmap (fromMaybe [])
+
+optionalArgList :: Parsec [a] -> Parsec [a]
+optionalArgList = mkArgList . option
 
 argList :: Parsec [Expr String]
 argList = sepBy1 expr ","
