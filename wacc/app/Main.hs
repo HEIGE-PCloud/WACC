@@ -29,8 +29,8 @@ main = do
 
 compile :: String -> IO ()
 compile filename = do
-  source <- readFile filename
-  case parse (fully program) source of
+  res <- parseFromFile (fully program) filename
+  case res of
     Failure err -> putStrLn err >> exitWithSyntaxError
     Success _ -> exitSuccess
 
