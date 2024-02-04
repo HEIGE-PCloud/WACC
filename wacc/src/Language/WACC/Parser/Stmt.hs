@@ -3,7 +3,6 @@
 
 module Language.WACC.Parser.Stmt where
 
-import Control.Applicative (Alternative (many))
 import Data.List.NonEmpty (fromList)
 import Data.List.NonEmpty as D (NonEmpty ((:|)), last)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
@@ -20,7 +19,7 @@ import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, lookAhead, ($>), (<|>), (<~>))
+import Text.Gigaparsec (Parsec, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (fail)
 import Text.Gigaparsec.Patterns
@@ -51,7 +50,6 @@ $( deriveLiftedConstructors
     , 'Asgn
     , 'RVCall
     , 'Func
-    , 'Main
     ]
  )
 
@@ -63,23 +61,52 @@ $( deriveDeferredConstructors
  )
 
 program :: Parsec (Prog String String)
-program = "begin" *> progInner <* "end"
+program = "begin" *> program' <* "end"
 
-funcStmtPre :: Parsec (WType, String, String)
-funcStmtPre = do
-  wt <- wType
-  i <- identifier
-  c <- ("(" $> "(") <|> ("=" $> "=")
-  pure (wt, i, c)
+program' :: Parsec (Prog String String)
+program' = parseProgPrefix >>= parseProgRest
 
-progInner :: Parsec (Prog String String)
-progInner = do
-  m <- option $ lookAhead funcStmtPre
-  case m of
-    Nothing -> Main [] <$> stmts
-    Just (_, _, c) -> case c of
-      "(" -> (do f <- func; (Main fs ss) <- progInner; pure (Main (f : fs) ss))
-      "=" -> (do Main [] <$> stmts)
+func' :: Parsec ([(WType, String)], Stmts String String)
+func' =
+  ((concat <$> option paramList) <* ")")
+    <~> ("is" *> (stmts >>= checkExit) <* "end")
+
+stmts' :: Parsec [Stmt String String]
+stmts' = many (";" *> stmt)
+
+parseFuncPreix :: Parsec ((WType, String), Bool)
+parseFuncPreix = wType <~> identifier <~> (("(" $> True) <|> ("=" $> False))
+
+parseProgPrefix :: Parsec (Maybe ((WType, String), Bool))
+parseProgPrefix = option parseFuncPreix
+
+parseProgRest :: Maybe ((WType, String), Bool) -> Parsec (Prog String String)
+parseProgRest Nothing = mkMain1 <$> stmts
+parseProgRest (Just ((wtype, ident), True)) = do
+  (params, ss) <- func'
+  mkMain2 wtype ident (params, ss) <$> program'
+parseProgRest (Just ((wtype, ident), False)) = do
+  rvalue <- rValue
+  mkMain3 wtype ident rvalue <$> stmts'
+
+mkMain1 :: Stmts fnident ident -> Prog fnident ident
+mkMain1 = Main []
+
+mkMain2
+  :: WType
+  -> String
+  -> ([(WType, String)], Stmts String String)
+  -> Prog String String
+  -> Prog String String
+mkMain2 wtype ident (params, ss) (Main fs sts) = Main (Func wtype ident params ss : fs) sts
+
+mkMain3
+  :: WType
+  -> String
+  -> RValue String String
+  -> [Stmt String String]
+  -> Prog String String
+mkMain3 wtype ident rvalue sts = Main [] (fromList (Decl wtype ident rvalue : sts))
 
 func :: Parsec (Func String String)
 func =

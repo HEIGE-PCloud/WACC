@@ -30,6 +30,7 @@ import qualified Test.QuickCheck.Property as P
 import Test.Tasty (testGroup)
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
+
 -- import qualified Text.Gigaparsec.Char as TC
 -- justParse :: T.Parsec [Char]
 -- justParse = T.many TC.item
