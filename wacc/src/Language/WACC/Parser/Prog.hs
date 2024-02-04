@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
@@ -9,8 +10,9 @@ import Data.Maybe (fromMaybe)
 import Language.WACC.AST.Prog (Func (..), Prog (..))
 import Language.WACC.AST.Stmt (Stmt (..))
 import Language.WACC.AST.WType (WType)
+import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Stmt (stmts)
-import Language.WACC.Parser.Token (fully, identifier, sym)
+import Language.WACC.Parser.Token (fully, identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, lookAhead, many, ($>), (<|>))
 import Text.Gigaparsec.Combinator (option)
@@ -20,18 +22,18 @@ import Text.Gigaparsec.Patterns (deriveDeferredConstructors)
 $(deriveDeferredConstructors "mk" ['Func, 'Main])
 
 prog :: Parsec (Prog String String)
-prog = fully $ sym "begin" *> progInner <* sym "end"
+prog = fully $ "begin" *> progInner <* "end"
 
 func :: Parsec (Func String String)
 func = do
   wt <- wType
   i <- identifier
-  sym "("
+  "("
   mps <- option params
-  sym ")"
-  sym "is"
+  ")"
+  "is"
   ss <- stmts
-  sym "end"
+  "end"
 
   f <- mkFunc
 
@@ -60,14 +62,14 @@ param = do
 params :: Parsec [(WType, String)]
 params = do
   p <- param
-  ps <- many (sym "," *> param)
+  ps <- many ("," *> param)
   pure (p : ps)
 
 funcStmtPre :: Parsec (WType, String, String)
 funcStmtPre = do
   wt <- wType
   i <- identifier
-  c <- (sym "(" $> "(") <|> (sym "=" $> "=")
+  c <- ("(" $> "(") <|> ("=" $> "=")
   pure (wt, i, c)
 
 progInner :: Parsec (Prog String String)

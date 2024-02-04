@@ -11,7 +11,7 @@ module Language.WACC.Parser.Type
 where
 
 import Language.WACC.AST.WType (WType (..))
-import Language.WACC.Parser.Token (lexer)
+import Language.WACC.Parser.Common ()
 import Text.Gigaparsec (Parsec, many, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Expr.Chain (postfix1)
@@ -19,7 +19,6 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
-import Text.Gigaparsec.Token.Patterns (overloadedStrings)
 
 $( deriveDeferredConstructors
     "mk"
@@ -30,8 +29,6 @@ $( deriveLiftedConstructors
     "mk"
     ['WKnownPair]
  )
-
-$(overloadedStrings [|lexer|])
 
 -- | > <type> ::= <base-type> | <array-type> | <pair-type>
 wType :: Parsec WType

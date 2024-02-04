@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Language.WACC.Parser.Stmt where
@@ -15,8 +16,9 @@ import Language.WACC.AST.Stmt
   , Stmt (..)
   , Stmts
   )
+import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
-import Language.WACC.Parser.Token (identifier, sym)
+import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, (<|>))
 import Text.Gigaparsec.Combinator (choice, option)
@@ -27,41 +29,38 @@ import Text.Gigaparsec.Patterns
 
 $( deriveLiftedConstructors
     "mk"
-    ['LVPairElem]
+    [ 'LVPairElem
+    , 'FstElem
+    , 'SndElem
+    , 'RVExpr
+    , 'RVArrayLit
+    , 'RVPairElem
+    , 'Skip
+    , 'Read
+    , 'Free
+    , 'Return
+    , 'Exit
+    , 'Print
+    , 'PrintLn
+    ]
  )
 
 $( deriveDeferredConstructors
     "mk"
-    ['LVIdent, 'LVArrayElem]
- )
-
-$( deriveLiftedConstructors
-    "mk"
-    ['FstElem, 'SndElem]
- )
-
-$( deriveLiftedConstructors
-    "mk"
-    ['RVExpr, 'RVArrayLit, 'RVPairElem]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['RVNewPair, 'RVCall]
- )
-
-$( deriveLiftedConstructors
-    "mk"
-    ['Skip, 'Read, 'Free, 'Return, 'Exit, 'Print, 'PrintLn]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    ['Decl, 'IfElse, 'While, 'BeginEnd, 'Asgn]
+    [ 'RVNewPair
+    , 'RVCall
+    , 'Decl
+    , 'IfElse
+    , 'While
+    , 'BeginEnd
+    , 'Asgn
+    , 'LVIdent
+    , 'LVArrayElem
+    ]
  )
 
 pairElem :: Parsec (PairElem String)
-pairElem = sym "fst" *> mkFstElem lValue <|> sym "snd" *> mkSndElem lValue
+pairElem = "fst" *> mkFstElem lValue <|> "snd" *> mkSndElem lValue
 
 lValue :: Parsec (LValue String)
 lValue =
@@ -71,7 +70,7 @@ lValue =
 lVArrOrIdent :: Parsec (LValue String)
 lVArrOrIdent = do
   s <- identifier
-  exprs <- many (sym "[" *> expr <* sym "]")
+  exprs <- many ("[" *> expr <* "]")
   f <- mkLVIdent
   g <- mkLVArrayElem
   case exprs of
@@ -90,35 +89,35 @@ rValue =
 
 arrayLit :: Parsec [Expr String]
 arrayLit = do
-  sym "["
+  "["
   mexps <- option arrexps
-  sym "]"
+  "]"
 
   pure $ Data.Maybe.fromMaybe [] mexps
   where
     arrexps = do
       e <- expr
-      es <- many (sym "," *> expr)
+      es <- many ("," *> expr)
       pure (e : es)
 
 newPair :: Parsec (RValue fnident String)
 newPair = do
-  sym "newpair"
-  sym "("
+  "newpair"
+  "("
   e1 <- expr
-  sym ","
+  ","
   e2 <- expr
-  sym ")"
+  ")"
   f <- mkRVNewPair
   pure $ f e1 e2
 
 fnCall :: Parsec (RValue String String)
 fnCall = do
-  sym "call"
+  "call"
   i <- identifier
-  sym "("
+  "("
   mexps <- option arrexps
-  sym ")"
+  ")"
 
   let
     exps = Data.Maybe.fromMaybe [] mexps
@@ -127,21 +126,21 @@ fnCall = do
   where
     arrexps = do
       e <- expr
-      es <- many (sym "," *> expr)
+      es <- many ("," *> expr)
       pure (e : es)
 
 stmt :: Parsec (Stmt String String)
 stmt =
   choice
-    [ sym "skip" *> mkSkip
+    [ "skip" *> mkSkip
     , decl
     , asgn
-    , sym "read" *> mkRead lValue
-    , sym "free" *> mkFree expr
-    , sym "return" *> mkReturn expr
-    , sym "exit" *> mkExit expr
-    , sym "print" *> mkPrint expr
-    , sym "println" *> mkPrintLn expr
+    , "read" *> mkRead lValue
+    , "free" *> mkFree expr
+    , "return" *> mkReturn expr
+    , "exit" *> mkExit expr
+    , "print" *> mkPrint expr
+    , "println" *> mkPrintLn expr
     , ifElse
     , while
     , beginEnd
@@ -151,7 +150,7 @@ decl :: Parsec (Stmt String String)
 decl = do
   wt <- wType
   i <- identifier
-  sym "="
+  "="
   r <- rValue
   f <- mkDecl
   pure $ f wt i r
@@ -159,7 +158,7 @@ decl = do
 asgn :: Parsec (Stmt String String)
 asgn = do
   lv <- lValue
-  sym "="
+  "="
   rv <- rValue
   f <- mkAsgn
   pure $ f lv rv
@@ -167,35 +166,35 @@ asgn = do
 stmts :: Parsec (Stmts String String)
 stmts = do
   s <- stmt
-  ss <- many (sym ";" *> stmt)
+  ss <- many (";" *> stmt)
   pure $ fromList (s : ss)
 
 ifElse :: Parsec (Stmt String String)
 ifElse = do
-  sym "if"
+  "if"
   e1 <- expr
-  sym "then"
+  "then"
   s1 <- stmts
-  sym "else"
+  "else"
   s2 <- stmts
-  sym "fi"
+  "fi"
   f <- mkIfElse
   pure $ f e1 s1 s2
 
 while :: Parsec (Stmt String String)
 while = do
-  sym "while"
+  "while"
   e1 <- expr
-  sym "do"
+  "do"
   s <- stmts
-  sym "done"
+  "done"
   f <- mkWhile
   pure $ f e1 s
 
 beginEnd :: Parsec (Stmt String String)
 beginEnd = do
-  sym "begin"
+  "begin"
   s <- stmts
-  sym "end"
+  "end"
   f <- mkBeginEnd
   pure $ f s

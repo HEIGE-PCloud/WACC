@@ -23,6 +23,7 @@ library
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
+      Language.WACC.Parser.Common
       Language.WACC.Parser.Expr
       Language.WACC.Parser.Prog
       Language.WACC.Parser.Stmt
