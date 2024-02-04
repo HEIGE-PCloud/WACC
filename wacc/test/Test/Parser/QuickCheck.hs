@@ -9,8 +9,8 @@ where
 import Data.Functor ((<&>))
 import Data.List (intercalate, (\\))
 import Language.WACC.Parser.Expr
-import Language.WACC.Parser.Prog ()
-import Language.WACC.Parser.Stmt (lValue, rValue, stmts)
+import Language.WACC.Parser.Prog (func, param)
+import Language.WACC.Parser.Stmt (arrayLit, lValue, rValue, stmts)
 import Language.WACC.Parser.Token (fully, keywords)
 import Language.WACC.Parser.Type
   ( arrayType
@@ -194,7 +194,7 @@ genFunc depth = do
   c1 <- genParam (depth - 1)
   c2 <- optional (genParamList (depth - 1))
   c3 <- genStmt (depth - 1)
-  return (c1 ++ "(" ++ c2 ++ ")" ++ "is\n" ++ c3 ++ "\nend\n")
+  return (c1 ++ "(" ++ c2 ++ ")" ++ "is\n" ++ c3 ++ ";\nreturn true\nend\n")
 
 genParamList :: Int -> Gen String
 genParamList depth = do
@@ -351,10 +351,10 @@ test =
         check' pairElemType $
           sized genPairElemType
     , -- , testProperty "program" $ check' prog $ sized genProgram
-      -- , testProperty "func" $ check' func $ sized genFunc
-      -- , testProperty "param" $ check' param $ sized genParam
-      testProperty "stmt" $ check' stmts $ sized genStmt
+      testProperty "func" $ check' func $ sized genFunc
+    , testProperty "param" $ check' param $ sized genParam
+    , testProperty "stmt" $ check' stmts $ sized genStmt
     , testProperty "lvalue" $ check' lValue $ sized genLvalue
     , testProperty "rvalue" $ check' rValue $ sized genRvalue
-    -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
+    , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
     ]
