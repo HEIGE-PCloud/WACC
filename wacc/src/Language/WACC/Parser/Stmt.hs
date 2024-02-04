@@ -7,7 +7,6 @@ module Language.WACC.Parser.Stmt where
 
 import Control.Applicative (Alternative (many))
 import Data.List.NonEmpty (fromList)
-import qualified Data.Maybe
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
 import Language.WACC.AST.Stmt
   ( LValue (..)
@@ -26,6 +25,7 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
+import Data.Maybe (fromMaybe)
 
 $( deriveLiftedConstructors
     "mk"
@@ -48,13 +48,14 @@ $( deriveLiftedConstructors
     , 'RVNewPair
     , 'Decl
     , 'Asgn
+    , 'RVCall
     ]
  )
 
 $( deriveDeferredConstructors
     "mk"
-    [ 'RVCall
-    , 'LVIdent
+    [ 
+    'LVIdent
     , 'LVArrayElem
     ]
  )
@@ -70,17 +71,11 @@ mkIdentOrArrayElem
   :: Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (LValue String)
 mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
   where
-    mkIdentOrArrayElem' :: String -> Maybe [Expr String] -> LValue String
     mkIdentOrArrayElem' str (Just e) = LVArrayElem (ArrayIndex str e)
     mkIdentOrArrayElem' str Nothing = LVIdent str
 
 lValueOrIdent :: Parsec (LValue String)
 lValueOrIdent = mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]")))
-
-pairElem :: Parsec (PairElem String)
-pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
-
---------------TODO: RValue--------------
 
 rValue :: Parsec (RValue String String)
 rValue =
@@ -93,40 +88,22 @@ rValue =
     ]
 
 arrayLit :: Parsec [Expr String]
-arrayLit = do
-  "["
-  mexps <- option arrexps
-  "]"
-
-  pure $ Data.Maybe.fromMaybe [] mexps
-  where
-    arrexps = do
-      e <- expr
-      es <- many ("," *> expr)
-      pure (e : es)
+arrayLit = "[" *> mkArgList (option argList) <* "]"
 
 newPair :: Parsec (RValue fnident String)
 newPair = mkRVNewPair ("newpair" *> "(" *> expr) ("," *> expr <* ")")
 
+pairElem :: Parsec (PairElem String)
+pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
+
 fnCall :: Parsec (RValue String String)
-fnCall = do
-  "call"
-  i <- identifier
-  "("
-  mexps <- option arrexps
-  ")"
+fnCall = mkRVCall ("call" *> identifier) ("(" *> mkArgList (option argList) <* ")")
 
-  let
-    exps = Data.Maybe.fromMaybe [] mexps
-  f <- mkRVCall
-  pure $ f i exps
-  where
-    arrexps = do
-      e <- expr
-      es <- many ("," *> expr)
-      pure (e : es)
+mkArgList :: Parsec (Maybe [a]) -> Parsec [a]
+mkArgList = fmap (fromMaybe [])
 
---------------Stmts--------------
+argList :: Parsec [Expr String]
+argList = sepBy1 expr ","
 
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
 mkStmts = fmap fromList
