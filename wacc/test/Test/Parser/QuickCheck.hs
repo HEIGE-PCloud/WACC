@@ -10,7 +10,7 @@ import Data.Functor ((<&>))
 import Data.List (intercalate, (\\))
 import Language.WACC.Parser.Expr
 import Language.WACC.Parser.Prog ()
-import Language.WACC.Parser.Stmt ()
+import Language.WACC.Parser.Stmt (lValue, rValue, stmts)
 import Language.WACC.Parser.Token (fully, keywords)
 import Language.WACC.Parser.Type
   ( arrayType
@@ -350,11 +350,11 @@ test =
     , testProperty "pairElemType" $
         check' pairElemType $
           sized genPairElemType
-          -- , testProperty "program" $ check' prog $ sized genProgram
-          -- , testProperty "func" $ check' func $ sized genFunc
-          -- , testProperty "param" $ check' param $ sized genParam
-          -- , testProperty "stmt" $ check' stmts $ sized genStmt
-          -- , testProperty "lvalue" $ check' lValue $ sized genLvalue
-          -- , testProperty "rvalue" $ check' rValue $ sized genRvalue
-          -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
+    , -- , testProperty "program" $ check' prog $ sized genProgram
+      -- , testProperty "func" $ check' func $ sized genFunc
+      -- , testProperty "param" $ check' param $ sized genParam
+      testProperty "stmt" $ check' stmts $ sized genStmt
+    , testProperty "lvalue" $ check' lValue $ sized genLvalue
+    , testProperty "rvalue" $ check' rValue $ sized genRvalue
+    -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
     ]
