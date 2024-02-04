@@ -1,6 +1,6 @@
 (line 13, column 11):
   unexpected keyword snd
-  expected !, """, "'", "(", "+", "-", chr, digit, false, identifier, len, null, ord, or true
+  expected expression
   >	pair(int, char) p = newpair(10, 'a') ;
   >  println snd p
              ^^^

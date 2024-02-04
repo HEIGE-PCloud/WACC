@@ -1,6 +1,6 @@
 (line 12, column 11):
   unexpected "*"
-  expected !, """, "'", "(", "+", "-", "[", call, chr, digit, false, fst, identifier, len, newpair, null, ord, snd, or true
+  expected "[", call, expression, fst, newpair, or snd
   >begin
   >  int b = * 6
              ^

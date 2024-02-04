@@ -95,11 +95,11 @@ character = mkNormalChars' normalChars <|> mkEscapedChars' (char '\\' *> escaped
 
 -- | > <char-liter> ::= ''' <character> '''
 charLiter :: Parsec (WAtom i)
-charLiter = char '\'' *> mkCharLit' character <* "'"
+charLiter = mkCharLit' (char '\'' *> character <* "'")
 
 -- | > <string-liter> ::= '"' <character>* '"'
 stringLiter :: Parsec (WAtom i)
-stringLiter = mkStringLit' (char '\"' *> many character <* "\"")
+stringLiter = mkStringLit' (char '\"' *> many (mkChar' character) <* "\"")
 
 -- | > <null-liter> ::= "null"
 pairLiter :: Parsec (WAtom i)
@@ -142,7 +142,7 @@ mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
 -}
 expr :: Parsec (Expr String)
 expr =
-  precedence
+  mkExpr' $ precedence
     ( Atom atom
         >+ ops
           Prefix
@@ -171,6 +171,9 @@ mkBoolLit' = label (fromList ["boolean"]) . mkBoolLit
 mkCharLit' :: Parsec Char -> Parsec (WAtom ident)
 mkCharLit' = label (fromList ["character"]) . mkCharLit
 
+mkChar' :: Parsec Char -> Parsec Char
+mkChar' = label (fromList ["character"]) 
+
 mkStringLit' :: Parsec String -> Parsec (WAtom ident)
 mkStringLit' = label (fromList ["strings"]) . mkStringLit
 
@@ -187,3 +190,6 @@ mkEscapedChars' :: Parsec Char -> Parsec Char
 mkEscapedChars' =
   explain "This is a special character, it needs to be escaped by '\\'."
     . label (fromList ["escaped character"])
+
+mkExpr' :: Parsec a -> Parsec a
+mkExpr' = label (fromList ["expression"])
