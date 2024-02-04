@@ -1,6 +1,6 @@
 (line 12, column 11):
   unexpected "['H',"
-  expected !, """, "'", "(", "+", "-", "false", "true", chr, digit, identifier, len, null, or ord
+  expected !, """, "'", "(", "+", "-", chr, digit, false, identifier, len, null, ord, or true
   >begin
   >  println ['H','e','l','l','o',' ','W','o','r','l','d','!']
              ^^^^^

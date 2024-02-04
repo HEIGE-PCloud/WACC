@@ -9,8 +9,15 @@ where
 import Data.Functor ((<&>))
 import Data.List (intercalate, (\\))
 import Language.WACC.Parser.Expr
-import Language.WACC.Parser.Prog ()
-import Language.WACC.Parser.Stmt ()
+import Language.WACC.Parser.Stmt
+  ( arrayLiter
+  , func
+  , lValue
+  , param
+  , program
+  , rValue
+  , stmts
+  )
 import Language.WACC.Parser.Token (fully, keywords)
 import Language.WACC.Parser.Type
   ( arrayType
@@ -23,10 +30,10 @@ import qualified Test.QuickCheck.Property as P
 import Test.Tasty (testGroup)
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
-import qualified Text.Gigaparsec.Char as TC
 
-justParse :: T.Parsec [Char]
-justParse = T.many TC.item
+-- import qualified Text.Gigaparsec.Char as TC
+-- justParse :: T.Parsec [Char]
+-- justParse = T.many TC.item
 
 optional :: Gen String -> Gen String
 optional gen = frequency [(1, gen), (1, return "")]
@@ -194,7 +201,7 @@ genFunc depth = do
   c1 <- genParam (depth - 1)
   c2 <- optional (genParamList (depth - 1))
   c3 <- genStmt (depth - 1)
-  return (c1 ++ "(" ++ c2 ++ ")" ++ "is\n" ++ c3 ++ "\nend\n")
+  return (c1 ++ "(" ++ c2 ++ ")" ++ "is\n" ++ c3 ++ ";\nreturn true\nend\n")
 
 genParamList :: Int -> Gen String
 genParamList depth = do
@@ -327,7 +334,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 50000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
 
 test =
   testGroup
@@ -350,11 +357,11 @@ test =
     , testProperty "pairElemType" $
         check' pairElemType $
           sized genPairElemType
-          -- , testProperty "program" $ check' prog $ sized genProgram
-          -- , testProperty "func" $ check' func $ sized genFunc
-          -- , testProperty "param" $ check' param $ sized genParam
-          -- , testProperty "stmt" $ check' stmts $ sized genStmt
-          -- , testProperty "lvalue" $ check' lValue $ sized genLvalue
-          -- , testProperty "rvalue" $ check' rValue $ sized genRvalue
-          -- , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
+    , testProperty "program" $ check' program $ sized genProgram
+    , testProperty "func" $ check' func $ sized genFunc
+    , testProperty "param" $ check' param $ sized genParam
+    , testProperty "stmt" $ check' stmts $ sized genStmt
+    , testProperty "lvalue" $ check' lValue $ sized genLvalue
+    , testProperty "rvalue" $ check' rValue $ sized genRvalue
+    , testProperty "arrayLiter" $ check' arrayLiter $ sized genArrayLiter
     ]

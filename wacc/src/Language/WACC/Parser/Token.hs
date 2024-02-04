@@ -130,6 +130,8 @@ keywords =
   , "string"
   , "pair"
   , "null"
+  , "true"
+  , "false"
   ]
 
 operators :: [String]

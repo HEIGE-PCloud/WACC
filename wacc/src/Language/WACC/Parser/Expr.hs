@@ -15,10 +15,10 @@ module Language.WACC.Parser.Expr
 where
 
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
+import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Token
   ( decimal
   , identifier
-  , lexer
   , negateOp
   , validChars
   )
@@ -36,7 +36,6 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
-import Text.Gigaparsec.Token.Patterns (overloadedStrings)
 import Prelude hiding (GT, LT)
 
 $( deriveLiftedConstructors
@@ -75,8 +74,6 @@ $( deriveDeferredConstructors
     , 'Or
     ]
  )
-
-$(overloadedStrings [|lexer|])
 
 -- | > <int-liter> ::= <int-sign>? <digit>+
 intLiter :: Parsec (WAtom i)
