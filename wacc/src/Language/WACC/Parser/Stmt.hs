@@ -1,5 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -7,8 +5,9 @@ module Language.WACC.Parser.Stmt where
 
 import Control.Applicative (Alternative (many))
 import Data.List.NonEmpty (fromList)
-import Data.Maybe (fromMaybe)
+import Data.List.NonEmpty as D (NonEmpty ((:|)), last)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
+import Language.WACC.AST.Prog (Func (..), Prog (Main))
 import Language.WACC.AST.Stmt
   ( LValue (..)
   , PairElem (..)
@@ -16,12 +15,14 @@ import Language.WACC.AST.Stmt
   , Stmt (..)
   , Stmts
   )
+import Language.WACC.AST.WType (WType)
 import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, (<|>))
+import Text.Gigaparsec (Parsec, lookAhead, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
+import Text.Gigaparsec.Errors.Combinator as E (fail)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
@@ -49,6 +50,8 @@ $( deriveLiftedConstructors
     , 'Decl
     , 'Asgn
     , 'RVCall
+    , 'Func
+    , 'Main
     ]
  )
 
@@ -59,7 +62,57 @@ $( deriveDeferredConstructors
     ]
  )
 
---------------LValue--------------
+program :: Parsec (Prog String String)
+program = "begin" *> progInner <* "end"
+
+funcStmtPre :: Parsec (WType, String, String)
+funcStmtPre = do
+  wt <- wType
+  i <- identifier
+  c <- ("(" $> "(") <|> ("=" $> "=")
+  pure (wt, i, c)
+
+progInner :: Parsec (Prog String String)
+progInner = do
+  m <- option $ lookAhead funcStmtPre
+  case m of
+    Nothing -> Main [] <$> stmts
+    Just (_, _, c) -> case c of
+      "(" -> (do f <- func; (Main fs ss) <- progInner; pure (Main (f : fs) ss))
+      "=" -> (do Main [] <$> stmts)
+
+func :: Parsec (Func String String)
+func =
+  mkFunc
+    wType
+    identifier
+    ("(" *> (concat <$> option paramList) <* ")")
+    ("is" *> (stmts >>= checkExit) <* "end")
+
+checkExit :: Stmts fnident ident -> Parsec (Stmts fnident ident)
+checkExit ss
+  | funcExit (D.last ss) = pure ss
+  | otherwise =
+      E.fail $
+        "Function can only be exited via a 'return' or 'exit' statement.\n \
+        \ There must not be any code following the last 'return' or 'exit' of any execution path."
+          :| []
+
+funcExit :: Stmt fnident ident -> Bool
+funcExit (Return _) = True
+funcExit (Exit _) = True
+funcExit (IfElse _ s1 s2) =
+  funcExit (D.last s1)
+    && funcExit (D.last s2)
+funcExit (While _ s) = funcExit (D.last s)
+funcExit (BeginEnd s) = funcExit (D.last s)
+funcExit _ = False
+
+param :: Parsec (WType, String)
+param = wType <~> identifier
+
+paramList :: Parsec [(WType, String)]
+paramList = sepBy1 param ","
 
 lValue :: Parsec (LValue String)
 lValue =

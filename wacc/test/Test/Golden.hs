@@ -6,7 +6,8 @@ module Test.Golden
 where
 
 import Data.ByteString.Lazy.UTF8 (fromString)
-import Language.WACC.Parser.Prog (prog)
+import Language.WACC.Parser.Stmt (program)
+import Language.WACC.Parser.Token (fully)
 import Test.Common (syntaxErrTests, takeBaseName)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
@@ -32,7 +33,7 @@ runSyntaxCheck path = goldenVsStringDiff testname diff goldenPath testAction
       return (fromString (syntaxCheck input))
 
 syntaxCheck :: String -> String
-syntaxCheck source = case parse prog source of
+syntaxCheck source = case parse (fully program) source of
   Success _ -> error "syntax check should fail but succeeded"
   Failure err -> err
 

@@ -9,8 +9,15 @@ where
 import Data.Functor ((<&>))
 import Data.List (intercalate, (\\))
 import Language.WACC.Parser.Expr
-import Language.WACC.Parser.Prog (func, param)
-import Language.WACC.Parser.Stmt (arrayLit, lValue, rValue, stmts)
+import Language.WACC.Parser.Stmt
+  ( arrayLit
+  , func
+  , lValue
+  , param
+  , program
+  , rValue
+  , stmts
+  )
 import Language.WACC.Parser.Token (fully, keywords)
 import Language.WACC.Parser.Type
   ( arrayType
@@ -23,10 +30,9 @@ import qualified Test.QuickCheck.Property as P
 import Test.Tasty (testGroup)
 import Test.Tasty.QuickCheck
 import qualified Text.Gigaparsec as T
-import qualified Text.Gigaparsec.Char as TC
-
-justParse :: T.Parsec [Char]
-justParse = T.many TC.item
+-- import qualified Text.Gigaparsec.Char as TC
+-- justParse :: T.Parsec [Char]
+-- justParse = T.many TC.item
 
 optional :: Gen String -> Gen String
 optional gen = frequency [(1, gen), (1, return "")]
@@ -350,8 +356,8 @@ test =
     , testProperty "pairElemType" $
         check' pairElemType $
           sized genPairElemType
-    , -- , testProperty "program" $ check' prog $ sized genProgram
-      testProperty "func" $ check' func $ sized genFunc
+    , testProperty "program" $ check' program $ sized genProgram
+    , testProperty "func" $ check' func $ sized genFunc
     , testProperty "param" $ check' param $ sized genParam
     , testProperty "stmt" $ check' stmts $ sized genStmt
     , testProperty "lvalue" $ check' lValue $ sized genLvalue
