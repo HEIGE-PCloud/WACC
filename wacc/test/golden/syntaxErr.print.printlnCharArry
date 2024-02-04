@@ -13,7 +13,7 @@ begin
 end
 
 
-(line 12, column 11):
+In test/wacc_examples/invalid/syntaxErr/print/printlnCharArry.wacc (line 12, column 11):
   unexpected "['H',"
   expected expression
   >begin

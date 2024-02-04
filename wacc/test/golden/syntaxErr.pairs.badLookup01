@@ -14,7 +14,7 @@ begin
 end
 
 
-(line 13, column 11):
+In test/wacc_examples/invalid/syntaxErr/pairs/badLookup01.wacc (line 13, column 11):
   unexpected keyword fst
   expected expression
   >	pair(int, char) p = newpair(10, 'a') ;

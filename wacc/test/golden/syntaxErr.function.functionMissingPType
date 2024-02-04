@@ -16,7 +16,7 @@ begin
 end	
 
 
-(line 12, column 9):
+In test/wacc_examples/invalid/syntaxErr/function/functionMissingPType.wacc (line 12, column 9):
   unexpected "x"
   expected ")", bool, char, int, pair, or string
   >begin

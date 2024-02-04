@@ -17,7 +17,7 @@ begin
 end
 
 
-(line 11, column 1):
+In test/wacc_examples/invalid/syntaxErr/function/badlyPlaced.wacc (line 11, column 1):
   unexpected "int"
   expected begin
   >

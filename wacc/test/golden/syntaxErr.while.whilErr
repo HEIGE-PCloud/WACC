@@ -15,7 +15,7 @@ begin
 end
 
 
-(line 12, column 8):
+In test/wacc_examples/invalid/syntaxErr/while/whilErr.wacc (line 12, column 8):
   unexpected "f"
   expected "=" or "["
   >begin

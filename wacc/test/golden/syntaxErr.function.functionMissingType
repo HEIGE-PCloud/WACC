@@ -17,7 +17,7 @@ end
 
 
 
-(line 12, column 4):
+In test/wacc_examples/invalid/syntaxErr/function/functionMissingType.wacc (line 12, column 4):
   unexpected "("
   expected "=" or "["
   >begin

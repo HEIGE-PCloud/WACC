@@ -14,7 +14,7 @@ begin
 end
 
 
-(line 13, column 11):
+In test/wacc_examples/invalid/syntaxErr/pairs/badLookup02.wacc (line 13, column 11):
   unexpected keyword snd
   expected expression
   >	pair(int, char) p = newpair(10, 'a') ;

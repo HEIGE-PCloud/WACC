@@ -16,7 +16,7 @@ begin
 end
 
 
-(line 15, column 3):
+In test/wacc_examples/invalid/syntaxErr/if/ifNoelse.wacc (line 15, column 3):
   unexpected "fi"
   expected ";", else, or end of skip
   >    skip

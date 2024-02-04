@@ -14,7 +14,7 @@ begin
 end
 
 
-(line 12, column 14):
+In test/wacc_examples/invalid/syntaxErr/variables/badintAssignments.wacc (line 12, column 14):
   unexpected "0"
   expected !=, ";", %, &&, *, +, -, /, <, <=, ==, >, >=, digit, end, or ||
   >begin

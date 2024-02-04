@@ -13,7 +13,7 @@ begin
 end
 
 
-(line 12, column 13):
+In test/wacc_examples/invalid/syntaxErr/basic/unescapedChar.wacc (line 12, column 13):
   unexpected """
   expected character or escaped character
   This is a special character, it needs to be escaped by '\'.

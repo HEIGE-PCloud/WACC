@@ -13,7 +13,7 @@ begin
 end
 
 
-(line 12, column 11):
+In test/wacc_examples/invalid/syntaxErr/variables/bigIntAssignment.wacc (line 12, column 11):
   literal is not within the range -2147483648 to 2147483647
   >begin
   >  int x = 2200000000 

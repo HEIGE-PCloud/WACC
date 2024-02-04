@@ -23,7 +23,7 @@ end
 	
 
 
-(line 17, column 8):
+In test/wacc_examples/invalid/syntaxErr/function/functionLateDefine.wacc (line 17, column 8):
   unexpected "("
   expected "="
   >  println x ;

@@ -13,9 +13,10 @@ begin
 end
 
 
-(line 12, column 14):
+In test/wacc_examples/invalid/syntaxErr/basic/badEscape.wacc (line 12, column 14):
   unexpected "H"
   expected """, "'", "0", "\", "b", "f", "n", "r", or "t"
+  This is not an valid escape character.
   >begin
   >  char a = '\H'
                 ^

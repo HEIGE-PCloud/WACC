@@ -15,7 +15,7 @@ begin
 end
 
 
-(line 13, column 5):
+In test/wacc_examples/invalid/syntaxErr/while/whileNodo.wacc (line 13, column 5):
   unexpected "sk"
   expected !=, %, &&, *, +, -, /, <, <=, ==, >, >=, do, end of false, or ||
   >  while false

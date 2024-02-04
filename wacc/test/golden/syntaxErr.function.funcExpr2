@@ -23,7 +23,7 @@ end
 	
 
 
-(line 17, column 14):
+In test/wacc_examples/invalid/syntaxErr/function/funcExpr2.wacc (line 17, column 14):
   unexpected "(x"
   expected !=, "[", %, &&, *, +, -, /, ==, do, or ||
   >  int x = 2 ;

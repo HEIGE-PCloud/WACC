@@ -13,7 +13,7 @@ begin
 end
 
 
-(line 12, column 11):
+In test/wacc_examples/invalid/syntaxErr/expressions/missingOperand1.wacc (line 12, column 11):
   unexpected "*"
   expected "[", call, expression, fst, newpair, or snd
   >begin

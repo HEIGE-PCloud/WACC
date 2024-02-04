@@ -11,7 +11,7 @@
 begin end
 
 
-(line 11, column 7):
+In test/wacc_examples/invalid/syntaxErr/basic/noBody.wacc (line 11, column 7):
   unexpected keyword end
   expected begin, bool, char, exit, free, fst, identifier, if, int, pair, print, println, read, return, skip, snd, string, or while
   >

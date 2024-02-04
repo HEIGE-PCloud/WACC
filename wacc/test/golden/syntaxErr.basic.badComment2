@@ -15,7 +15,7 @@ begin
 end
 
 
-(line 12, column 20):
+In test/wacc_examples/invalid/syntaxErr/basic/badComment2.wacc (line 12, column 20):
   unexpected "I"
   expected "=" or "["
   >begin

@@ -21,7 +21,7 @@ end
 
 
 
-(line 13, column 10):
+In test/wacc_examples/invalid/syntaxErr/function/functionScopeDef.wacc (line 13, column 10):
   unexpected "("
   expected "="
   >  begin
