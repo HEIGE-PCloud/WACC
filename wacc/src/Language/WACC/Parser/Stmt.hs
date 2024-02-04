@@ -21,7 +21,7 @@ import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, (<|>))
-import Text.Gigaparsec.Combinator (choice, option)
+import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
@@ -42,25 +42,25 @@ $( deriveLiftedConstructors
     , 'Exit
     , 'Print
     , 'PrintLn
+    , 'IfElse
+    , 'While
+    , 'BeginEnd
+    , 'RVNewPair
+    , 'Decl
+    , 'Asgn
     ]
  )
 
 $( deriveDeferredConstructors
     "mk"
-    [ 'RVNewPair
-    , 'RVCall
-    , 'Decl
-    , 'IfElse
-    , 'While
-    , 'BeginEnd
-    , 'Asgn
+    [ 'RVCall
     , 'LVIdent
     , 'LVArrayElem
     ]
  )
 
 pairElem :: Parsec (PairElem String)
-pairElem = "fst" *> mkFstElem lValue <|> "snd" *> mkSndElem lValue
+pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
 
 lValue :: Parsec (LValue String)
 lValue =
@@ -101,15 +101,7 @@ arrayLit = do
       pure (e : es)
 
 newPair :: Parsec (RValue fnident String)
-newPair = do
-  "newpair"
-  "("
-  e1 <- expr
-  ","
-  e2 <- expr
-  ")"
-  f <- mkRVNewPair
-  pure $ f e1 e2
+newPair = mkRVNewPair ("newpair" *> "(" *> expr) ("," *> expr <* ")")
 
 fnCall :: Parsec (RValue String String)
 fnCall = do
@@ -129,6 +121,12 @@ fnCall = do
       es <- many ("," *> expr)
       pure (e : es)
 
+mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
+mkStmts = fmap fromList
+
+stmts :: Parsec (Stmts String String)
+stmts = mkStmts (sepBy1 stmt ";")
+
 stmt :: Parsec (Stmt String String)
 stmt =
   choice
@@ -147,54 +145,16 @@ stmt =
     ]
 
 decl :: Parsec (Stmt String String)
-decl = do
-  wt <- wType
-  i <- identifier
-  "="
-  r <- rValue
-  f <- mkDecl
-  pure $ f wt i r
+decl = mkDecl wType (identifier <* "=") rValue
 
 asgn :: Parsec (Stmt String String)
-asgn = do
-  lv <- lValue
-  "="
-  rv <- rValue
-  f <- mkAsgn
-  pure $ f lv rv
-
-stmts :: Parsec (Stmts String String)
-stmts = do
-  s <- stmt
-  ss <- many (";" *> stmt)
-  pure $ fromList (s : ss)
+asgn = mkAsgn (lValue<* "=") rValue
 
 ifElse :: Parsec (Stmt String String)
-ifElse = do
-  "if"
-  e1 <- expr
-  "then"
-  s1 <- stmts
-  "else"
-  s2 <- stmts
-  "fi"
-  f <- mkIfElse
-  pure $ f e1 s1 s2
-
+ifElse = mkIfElse ("if" *> expr <* "then") stmts ("else" *> stmts <* "fi")
+  
 while :: Parsec (Stmt String String)
-while = do
-  "while"
-  e1 <- expr
-  "do"
-  s <- stmts
-  "done"
-  f <- mkWhile
-  pure $ f e1 s
+while = mkWhile ("while" *> expr <* "do") (stmts <* "done")
 
 beginEnd :: Parsec (Stmt String String)
-beginEnd = do
-  "begin"
-  s <- stmts
-  "end"
-  f <- mkBeginEnd
-  pure $ f s
+beginEnd = mkBeginEnd ("begin" *> stmts <* "end")
