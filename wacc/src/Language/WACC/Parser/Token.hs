@@ -7,6 +7,7 @@ import qualified Data.Set as Set
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
 import Text.Gigaparsec.Char (char, digit, string)
 import Text.Gigaparsec.Combinator (choice)
+import Text.Gigaparsec.Errors.Combinator (explain)
 import Text.Gigaparsec.Internal.Token.Errors (VanillaFilterConfig (VBecause))
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
@@ -283,6 +284,10 @@ normalChars = last <$> choice [atomic (string c) | c <- graphicChars \\ ["\\", "
 
 escapedChars :: Parsec Char
 escapedChars =
-  last
-    <$> choice
-      [atomic (string c) | c <- ["0", "b", "t", "n", "f", "r", "\"", "\'", "\\"]]
+  mkEscapedChars' $
+    last
+      <$> choice
+        [atomic (string c) | c <- ["0", "b", "t", "n", "f", "r", "\"", "\'", "\\"]]
+
+mkEscapedChars' :: Parsec Char -> Parsec Char
+mkEscapedChars' = explain "This is not an valid escape character."
