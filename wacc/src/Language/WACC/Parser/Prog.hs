@@ -78,5 +78,5 @@ progInner = do
   case m of
     Nothing -> Main [] <$> stmts
     Just (_, _, c) -> case c of
-      "(" -> (do f <- func; (Main fs ss) <- progInner; pure (Main (f : fs) ss))
+      "(" -> (do f <- func;       (Main fs ss) <- progInner; pure (Main (f : fs) ss))
       "=" -> (do Main [] <$> stmts)
