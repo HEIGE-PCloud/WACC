@@ -80,6 +80,7 @@ import Text.Gigaparsec.Token.Descriptions
     , stringEnds
     )
   )
+import Text.Gigaparsec.Token.Errors (ErrorConfig, defaultErrorConfig)
 import Text.Gigaparsec.Token.Lexer
   ( CanHoldSigned
   , IntegerParsers
@@ -87,7 +88,7 @@ import Text.Gigaparsec.Token.Lexer
   , Lexer
   , Names
   , TextParsers (ascii)
-  , mkLexer
+  , mkLexerWithErrorConfig
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
 
@@ -222,9 +223,12 @@ waccSpaceDesc =
     , whitespaceIsContextDependent = False
     }
 
+errorConfig :: ErrorConfig
+errorConfig = defaultErrorConfig
+
 lexer :: Lexer
 lexer =
-  mkLexer $
+  mkLexerWithErrorConfig
     LexicalDesc
       { nameDesc = waccNameDesc
       , symbolDesc = waccSymbolDesc
@@ -232,6 +236,7 @@ lexer =
       , textDesc = waccTextDesc
       , spaceDesc = waccSpaceDesc
       }
+    errorConfig
 
 lexeme :: Lexeme
 lexeme = T.lexeme lexer
