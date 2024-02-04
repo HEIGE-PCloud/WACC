@@ -6,6 +6,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
 import Text.Gigaparsec.Char (char, digit, string)
+import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -89,7 +90,6 @@ import Text.Gigaparsec.Token.Lexer
   , mkLexer
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
-import Text.Gigaparsec.Combinator (choice)
 
 waccNameDesc :: NameDesc
 waccNameDesc =
@@ -267,7 +267,10 @@ graphicChars :: [String]
 graphicChars = map (: []) ['\32' .. '\126']
 
 normalChars :: Parsec Char
-normalChars = last <$> choice [atomic (string c) | c <- graphicChars \\ ["\\", "\"", "\'"]] 
+normalChars = last <$> choice [atomic (string c) | c <- graphicChars \\ ["\\", "\"", "\'"]]
 
 escapedChars :: Parsec Char
-escapedChars = last <$> choice [atomic (string c) | c <- ["0", "b", "t", "n", "f", "r", "\"", "\'", "\\"]]  
+escapedChars =
+  last
+    <$> choice
+      [atomic (string c) | c <- ["0", "b", "t", "n", "f", "r", "\"", "\'", "\\"]]

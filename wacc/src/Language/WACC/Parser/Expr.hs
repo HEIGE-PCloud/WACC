@@ -14,18 +14,20 @@ module Language.WACC.Parser.Expr
   )
 where
 
+import Data.Set (fromList)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Token
   ( decimal
+  , escapedChars
   , identifier
   , negateOp
   , normalChars
-  , escapedChars
   )
 import Text.Gigaparsec (Parsec, many, ($>), (<|>))
 import Text.Gigaparsec.Char (char)
 import Text.Gigaparsec.Combinator (choice, option)
+import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -38,8 +40,6 @@ import Text.Gigaparsec.Patterns
   , deriveLiftedConstructors
   )
 import Prelude hiding (GT, LT)
-import Text.Gigaparsec.Errors.Combinator (label, explain)
-import Data.Set (fromList)
 
 $( deriveLiftedConstructors
     "mk"
@@ -162,7 +162,6 @@ expr =
         >+ ops InfixR [mkOr <* "||"]
     )
 
-
 mkIntLit' :: Parsec Integer -> Parsec (WAtom ident)
 mkIntLit' = label (fromList ["integer"]) . mkIntLit
 
@@ -185,4 +184,6 @@ mkNormalChars' :: Parsec Char -> Parsec Char
 mkNormalChars' = label (fromList ["character"])
 
 mkEscapedChars' :: Parsec Char -> Parsec Char
-mkEscapedChars' = explain "This is a special character, it needs to be escaped by '\\'." . label (fromList ["escaped character"])
+mkEscapedChars' =
+  explain "This is a special character, it needs to be escaped by '\\'."
+    . label (fromList ["escaped character"])
