@@ -59,23 +59,28 @@ $( deriveDeferredConstructors
     ]
  )
 
-pairElem :: Parsec (PairElem String)
-pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
+--------------LValue--------------
 
 lValue :: Parsec (LValue String)
 lValue =
   choice
-    [lVArrOrIdent, mkLVPairElem pairElem]
+    [lValueOrIdent, mkLVPairElem pairElem]
 
-lVArrOrIdent :: Parsec (LValue String)
-lVArrOrIdent = do
-  s <- identifier
-  exprs <- many ("[" *> expr <* "]")
-  f <- mkLVIdent
-  g <- mkLVArrayElem
-  case exprs of
-    [] -> pure (f s)
-    _ -> pure (g (ArrayIndex s exprs))
+mkIdentOrArrayElem
+  :: Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (LValue String)
+mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
+  where
+    mkIdentOrArrayElem' :: String -> Maybe [Expr String] -> LValue String
+    mkIdentOrArrayElem' str (Just e) = LVArrayElem (ArrayIndex str e)
+    mkIdentOrArrayElem' str Nothing = LVIdent str
+
+lValueOrIdent :: Parsec (LValue String)
+lValueOrIdent = mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]")))
+
+pairElem :: Parsec (PairElem String)
+pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
+
+--------------TODO: RValue--------------
 
 rValue :: Parsec (RValue String String)
 rValue =
@@ -121,6 +126,8 @@ fnCall = do
       es <- many ("," *> expr)
       pure (e : es)
 
+--------------Stmts--------------
+
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
 mkStmts = fmap fromList
 
@@ -148,11 +155,11 @@ decl :: Parsec (Stmt String String)
 decl = mkDecl wType (identifier <* "=") rValue
 
 asgn :: Parsec (Stmt String String)
-asgn = mkAsgn (lValue<* "=") rValue
+asgn = mkAsgn (lValue <* "=") rValue
 
 ifElse :: Parsec (Stmt String String)
 ifElse = mkIfElse ("if" *> expr <* "then") stmts ("else" *> stmts <* "fi")
-  
+
 while :: Parsec (Stmt String String)
 while = mkWhile ("while" *> expr <* "do") (stmts <* "done")
 
