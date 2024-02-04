@@ -103,7 +103,7 @@ ident = mkIdent' identifier
 
 -- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
 arrayElem :: Parsec (WAtom String)
-arrayElem = mkArrayElem (mkArrayIndex identifier (many ("[" *> expr <* "]")))
+arrayElem = mkArrayElem' (mkArrayIndex identifier (many ("[" *> expr <* "]")))
 
 {- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
  >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
@@ -175,3 +175,6 @@ mkIdent' = label (fromList ["identifier"]) . mkIdent
 
 mkExpr' :: Parsec a -> Parsec a
 mkExpr' = label (fromList ["expression"])
+
+mkArrayElem' :: Parsec (ArrayIndex String) -> Parsec (WAtom String)
+mkArrayElem' = label (fromList ["array element"]) . mkArrayElem

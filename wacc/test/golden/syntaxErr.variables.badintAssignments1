@@ -15,7 +15,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/variables/badintAssignments1.wacc (line 12, column 14):
   unexpected "0"
-  expected !=, ";", %, &&, *, +, -, /, <, <=, ==, >, >=, digit, end, or ||
+  expected ";", arithmetic operator, comparison operator, digit, end, or logical operator
   >begin
   >  int x = 22 0
                 ^

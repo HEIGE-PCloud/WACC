@@ -16,7 +16,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/array/arrayExpr.wacc (line 12, column 23):
   unexpected "++"
-  expected !=; ","; ";"; %; &&; *; +; -; /; <; <=; ==; >; >=; digit; end; or ||
+  expected ","; ";"; arithmetic operator; comparison operator; digit; end; or logical operator
   >begin
   >  int[] b = [1, 2, 3] ++ [4] ;
                          ^^

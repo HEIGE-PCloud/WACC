@@ -19,7 +19,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/if/ifNothen.wacc (line 13, column 3):
   unexpected "else"
-  expected !=, "then", %, &&, *, +, -, /, <, <=, ==, >, >=, end of true, or ||
+  expected "then", arithmetic operator, comparison operator, end of true, or logical operator
   >  if true 
   >  else
      ^^^^

@@ -2,11 +2,15 @@ module Language.WACC.Parser.Token where
 
 import Data.Char (isAlpha, isAlphaNum, isSpace)
 import Data.List ((\\))
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.Map as M
+import qualified Data.Set as S
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
 import Text.Gigaparsec.Char (char, digit)
-import Text.Gigaparsec.Internal.Token.Errors (VanillaFilterConfig (VBecause))
+import Text.Gigaparsec.Internal.Token.Errors
+  ( SpecializedFilterConfig (SSpecializedFilter)
+  , VanillaFilterConfig (VBecause)
+  )
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -81,7 +85,9 @@ import Text.Gigaparsec.Token.Descriptions
     )
   )
 import Text.Gigaparsec.Token.Errors
-  ( ErrorConfig (filterCharNonAscii)
+  ( ErrorConfig (filterCharNonAscii, filterStringNonAscii, labelSymbol)
+  , LabelConfigurable (label)
+  , LabelWithExplainConfigurable (labelAndReason)
   , defaultErrorConfig
   )
 import Text.Gigaparsec.Token.Lexer
@@ -164,9 +170,9 @@ waccSymbolDesc :: SymbolDesc
 waccSymbolDesc =
   SymbolDesc
     { hardKeywords =
-        Set.fromList keywords
+        S.fromList keywords
     , hardOperators =
-        Set.fromList operators
+        S.fromList operators
     , caseSensitive = True
     }
 
@@ -184,9 +190,9 @@ waccNumericDesc =
     , realNumbersCanBeBinary = False
     , realNumbersCanBeHexadecimal = False
     , realNumbersCanBeOctal = False
-    , hexadecimalLeads = Set.empty
-    , octalLeads = Set.empty
-    , binaryLeads = Set.empty
+    , hexadecimalLeads = S.empty
+    , octalLeads = S.empty
+    , binaryLeads = S.empty
     , decimalExponentDesc = NoExponents
     , hexadecimalExponentDesc = NoExponents
     , octalExponentDesc = NoExponents
@@ -199,8 +205,8 @@ waccTextDesc =
     { escapeSequences =
         EscapeDesc
           { escBegin = '\\'
-          , literals = Set.fromList escapeChars
-          , mapping = Map.empty
+          , literals = S.fromList escapeChars
+          , mapping = M.empty
           , decimalEscape = NumericIllegal
           , octalEscape = NumericIllegal
           , hexadecimalEscape = NumericIllegal
@@ -209,8 +215,8 @@ waccTextDesc =
           , gapsSupported = False
           }
     , characterLiteralEnd = '\''
-    , stringEnds = Set.fromList [("\"", "\"")]
-    , multiStringEnds = Set.empty
+    , stringEnds = S.fromList [("\"", "\"")]
+    , multiStringEnds = S.empty
     , graphicCharacter = Just (`elem` graphicChars)
     }
 
@@ -230,6 +236,27 @@ errorConfig :: ErrorConfig
 errorConfig =
   defaultErrorConfig
     { filterCharNonAscii = VBecause (const "Only ASCII characters are allowed.")
+    , filterStringNonAscii =
+        SSpecializedFilter
+          (const $ "Only ASCII characters are allowed." :| [])
+    , labelSymbol =
+        M.fromList
+          [ ("}", labelAndReason (S.fromList ["closing brace"]) "unclosed brace")
+          , (")", labelAndReason (S.fromList ["closing bracket"]) "unclosed bracket")
+          , ("+", label (S.fromList ["arithmetic operator"]))
+          , ("-", label (S.fromList ["arithmetic operator"]))
+          , ("*", label (S.fromList ["arithmetic operator"]))
+          , ("/", label (S.fromList ["arithmetic operator"]))
+          , ("%", label (S.fromList ["arithmetic operator"]))
+          , (">", label (S.fromList ["comparison operator"]))
+          , ("<", label (S.fromList ["comparison operator"]))
+          , (">=", label (S.fromList ["comparison operator"]))
+          , ("<=", label (S.fromList ["comparison operator"]))
+          , ("==", label (S.fromList ["comparison operator"]))
+          , ("!=", label (S.fromList ["comparison operator"]))
+          , ("&&", label (S.fromList ["logical operator"]))
+          , ("||", label (S.fromList ["logical operator"]))
+          ]
     }
 
 lexer :: Lexer
