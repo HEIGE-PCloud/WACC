@@ -5,7 +5,7 @@ import Data.List ((\\))
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
-import Text.Gigaparsec.Char (char, digit)
+import Text.Gigaparsec.Char (char, digit, string)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -89,6 +89,7 @@ import Text.Gigaparsec.Token.Lexer
   , mkLexer
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
+import Text.Gigaparsec.Combinator (choice)
 
 waccNameDesc :: NameDesc
 waccNameDesc =
@@ -265,11 +266,8 @@ negateOp = T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit)))
 graphicChars :: [String]
 graphicChars = map (: []) ['\32' .. '\126']
 
-normalChars :: [String]
-normalChars = graphicChars \\ ["\\", "\"", "\'"]
+normalChars :: Parsec Char
+normalChars = last <$> choice [atomic (string c) | c <- graphicChars \\ ["\\", "\"", "\'"]] 
 
-escapedChars :: [String]
-escapedChars = ["\\0", "\\b", "\\t", "\\n", "\\f", "\\r", "\\\"", "\\\'", "\\\\"]
-
-validChars :: [String]
-validChars = normalChars ++ escapedChars
+escapedChars :: Parsec Char
+escapedChars = last <$> choice [atomic (string c) | c <- ["0", "b", "t", "n", "f", "r", "\"", "\'", "\\"]]  
