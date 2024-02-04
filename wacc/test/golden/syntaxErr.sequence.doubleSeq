@@ -1,3 +1,19 @@
+# missing sequential composition
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin 
+  skip;;
+  skip 
+end
+
+
 (line 12, column 8):
   unexpected ";"
   expected begin, bool, char, end of skip, exit, free, fst, identifier, if, int, pair, print, println, read, return, skip, snd, string, or while

@@ -30,7 +30,7 @@ runSyntaxCheck path = goldenVsStringDiff testname diff goldenPath testAction
     goldenPath = goldenBasePath ++ "/" ++ testname
     testAction = do
       input <- readFile path
-      return (fromString (syntaxCheck input))
+      return (fromString (input ++ "\n\n" ++ syntaxCheck input))
 
 syntaxCheck :: String -> String
 syntaxCheck source = case parse (fully program) source of

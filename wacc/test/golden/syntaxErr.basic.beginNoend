@@ -1,3 +1,16 @@
+# begin missing closing end
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin skip
+
+
 (line 12, column 1):
   unexpected end of input
   expected ";", end, or end of skip

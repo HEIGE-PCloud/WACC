@@ -1,3 +1,18 @@
+# program has unacceptable escape character
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  char a = '\H'
+end
+
+
 (line 12, column 14):
   unexpected "H"
   expected """, "'", "0", "\", "b", "f", "n", "r", or "t"

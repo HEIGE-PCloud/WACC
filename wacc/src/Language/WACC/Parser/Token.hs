@@ -7,6 +7,7 @@ import qualified Data.Set as Set
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
 import Text.Gigaparsec.Char (char, digit, string)
 import Text.Gigaparsec.Combinator (choice)
+import Text.Gigaparsec.Internal.Token.Errors (VanillaFilterConfig (VBecause))
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -80,7 +81,10 @@ import Text.Gigaparsec.Token.Descriptions
     , stringEnds
     )
   )
-import Text.Gigaparsec.Token.Errors (ErrorConfig, defaultErrorConfig)
+import Text.Gigaparsec.Token.Errors
+  ( ErrorConfig (filterCharNonAscii)
+  , defaultErrorConfig
+  )
 import Text.Gigaparsec.Token.Lexer
   ( CanHoldSigned
   , IntegerParsers
@@ -224,7 +228,10 @@ waccSpaceDesc =
     }
 
 errorConfig :: ErrorConfig
-errorConfig = defaultErrorConfig
+errorConfig =
+  defaultErrorConfig
+    { filterCharNonAscii = VBecause (const "Only ASCII characters are allowed.")
+    }
 
 lexer :: Lexer
 lexer =

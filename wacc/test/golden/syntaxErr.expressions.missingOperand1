@@ -1,3 +1,18 @@
+# operator missing first operand
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int b = * 6
+end
+
+
 (line 12, column 11):
   unexpected "*"
   expected "[", call, expression, fst, newpair, or snd

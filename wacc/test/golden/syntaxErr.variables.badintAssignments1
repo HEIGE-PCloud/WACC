@@ -1,3 +1,18 @@
+# bad integer assignment - whitespace should delimit ints
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int x = 22 0
+end 
+
+
 (line 12, column 14):
   unexpected "0"
   expected !=, ";", %, &&, *, +, -, /, <, <=, ==, >, >=, digit, end, or ||

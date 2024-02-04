@@ -1,3 +1,23 @@
+# function body missing return or exit statement
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int f() is
+    bool b = true 
+  end
+
+  int x = call f();
+  println x
+end
+	
+
+
 (line 13, column 3):
   Function can only be exited via a 'return' or 'exit' statement.
   There must not be any code following the last 'return' or 'exit' of any execution path.

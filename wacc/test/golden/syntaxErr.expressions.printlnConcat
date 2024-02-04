@@ -1,3 +1,18 @@
+# string concatenation is not part of the language
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  println "Hello " ++ "World!"
+end
+
+
 (line 12, column 22):
   unexpected space
   expected digit

@@ -1,3 +1,20 @@
+# done typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  while false do
+    skip
+  dono
+end
+
+
 (line 14, column 3):
   unexpected "dono"
   expected ";", done, or end of skip

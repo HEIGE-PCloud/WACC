@@ -1,3 +1,18 @@
+# pair types cannot be nested
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+    pair(pair(int, string), char) p = null
+end
+
+
 (line 12, column 27):
   unexpected ","
   expected "[" or end of string

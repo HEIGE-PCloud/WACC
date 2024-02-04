@@ -1,3 +1,21 @@
+# program missing body after function declaration
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int f() is
+  return 0 
+  end
+end
+	
+
+
 (line 15, column 1):
   unexpected keyword end
   expected begin, bool, char, end of end, exit, free, fst, identifier, if, int, pair, print, println, read, return, skip, snd, string, or while

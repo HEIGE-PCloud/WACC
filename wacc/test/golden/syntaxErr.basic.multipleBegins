@@ -1,3 +1,22 @@
+# begin missing closing end
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin 
+  skip 
+end
+
+begin 
+  skip 
+end
+
+
 (line 15, column 1):
   unexpected "b"
   expected end of end or end of input

@@ -1,3 +1,22 @@
+# if missing then clause
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  if true 
+  else
+    skip
+  fi
+end
+
+
+
 (line 13, column 3):
   unexpected "else"
   expected !=, "then", %, &&, *, +, -, /, <, <=, ==, >, >=, end of true, or ||

@@ -1,3 +1,32 @@
+# function body missing return or exit statement on a path
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  bool f ( bool b ) is
+    if ( b ) then
+      return b
+    else
+      skip
+    fi
+  end
+  bool g ( bool b ) is
+    if ( b ) then
+      skip
+    else
+      return b
+    fi
+  end
+  bool c = call f ( false ) ;
+  bool d = call g ( true )
+end
+
+
 (line 17, column 3):
   Function can only be exited via a 'return' or 'exit' statement.
   There must not be any code following the last 'return' or 'exit' of any execution path.

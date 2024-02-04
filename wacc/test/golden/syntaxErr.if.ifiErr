@@ -1,3 +1,23 @@
+# if typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  ifi true 
+  then
+    skip
+  else
+    skip
+  fi
+end
+
+
 (line 12, column 7):
   unexpected "t"
   expected "=" or "["

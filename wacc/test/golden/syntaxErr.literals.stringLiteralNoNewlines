@@ -1,3 +1,19 @@
+# Strings cannot be split across lines
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+    string s = "hello
+ world"
+end
+
+
 (line 12, column 22):
   unexpected newline
   expected """ or character
