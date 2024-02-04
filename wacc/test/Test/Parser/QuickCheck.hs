@@ -10,7 +10,7 @@ import Data.Functor ((<&>))
 import Data.List (intercalate, (\\))
 import Language.WACC.Parser.Expr
 import Language.WACC.Parser.Stmt
-  ( arrayLit
+  ( arrayLiter
   , func
   , lValue
   , param
@@ -363,5 +363,5 @@ test =
     , testProperty "stmt" $ check' stmts $ sized genStmt
     , testProperty "lvalue" $ check' lValue $ sized genLvalue
     , testProperty "rvalue" $ check' rValue $ sized genRvalue
-    , testProperty "arrayLiter" $ check' arrayLit $ sized genArrayLiter
+    , testProperty "arrayLiter" $ check' arrayLiter $ sized genArrayLiter
     ]
