@@ -1,7 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Language.WACC.Parser.Stmt where
+module Language.WACC.Parser.Stmt
+  ( program
+  , func
+  , paramList
+  , param
+  , stmts
+  , lValue
+  , rValue
+  , argList
+  , pairElem
+  , arrayLiter
+  )
+where
 
 import Data.List.NonEmpty (fromList)
 import Data.List.NonEmpty as D (NonEmpty ((:|)), last)
@@ -22,10 +34,7 @@ import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (fail)
-import Text.Gigaparsec.Patterns
-  ( deriveDeferredConstructors
-  , deriveLiftedConstructors
-  )
+import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
 $( deriveLiftedConstructors
     "mk"
@@ -53,13 +62,7 @@ $( deriveLiftedConstructors
     ]
  )
 
-$( deriveDeferredConstructors
-    "mk"
-    [ 'LVIdent
-    , 'LVArrayElem
-    ]
- )
-
+-- | > program ::= "begin" <func>* <stmt> "end"
 program :: Parsec (Prog String String)
 program = "begin" *> program' <* "end"
 
@@ -108,6 +111,7 @@ mkMain3
   -> Prog String String
 mkMain3 wtype ident rvalue sts = Main [] (fromList (Decl wtype ident rvalue : sts))
 
+-- | > func ::= <type> <identifier> '(' <paramList>? ')' 'is' <stmt> 'end'
 func :: Parsec (Func String String)
 func =
   mkFunc
@@ -135,12 +139,14 @@ funcExit (While _ s) = funcExit (D.last s)
 funcExit (BeginEnd s) = funcExit (D.last s)
 funcExit _ = False
 
+-- | > <param> ::= <type> <identifier>
 param :: Parsec (WType, String)
 param = wType <~> identifier
 
 paramList :: Parsec [(WType, String)]
 paramList = sepBy1 param ","
 
+-- | > <lvalue> ::= <ident> | <array-elem> | <pair-elem>
 lValue :: Parsec (LValue String)
 lValue =
   choice
@@ -156,40 +162,59 @@ mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
 lValueOrIdent :: Parsec (LValue String)
 lValueOrIdent = mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]")))
 
+-- | > <rvalue> ::= <expr> | <array-liter> | <newpair> | <pair-elem> | <fn-call>
 rValue :: Parsec (RValue String String)
 rValue =
   choice
     [ mkRVExpr expr
-    , mkRVArrayLit arrayLit
+    , mkRVArrayLit arrayLiter
     , newPair
     , mkRVPairElem pairElem
     , fnCall
     ]
 
-arrayLit :: Parsec [Expr String]
-arrayLit = "[" *> optionalArgList <* "]"
+arrayLiter :: Parsec [Expr String]
+arrayLiter = "[" *> optionalArgList <* "]"
 
+-- | > <newpair> ::= "newpair" '(' <expr> ',' <expr> ')'
 newPair :: Parsec (RValue fnident String)
 newPair = mkRVNewPair ("newpair" *> "(" *> expr) ("," *> expr <* ")")
 
+-- | > <pair-elem> ::= "fst" <lvalue> | "snd" <lvalue>
 pairElem :: Parsec (PairElem String)
 pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
 
+-- | > <fn-call> ::= <identifier> '(' <argList>? ')'
 fnCall :: Parsec (RValue String String)
 fnCall = mkRVCall ("call" *> identifier) ("(" *> optionalArgList <* ")")
 
 optionalArgList :: Parsec [Expr String]
 optionalArgList = concat <$> option argList
 
+-- | > <argList> ::= <expr> (',' <expr>)*
 argList :: Parsec [Expr String]
 argList = sepBy1 expr ","
 
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
 mkStmts = fmap fromList
 
+-- | > <stmts> ::= <stmt> (';' <stmt>)*
 stmts :: Parsec (Stmts String String)
 stmts = mkStmts (sepBy1 stmt ";")
 
+{- | > <stmt> ::= "skip"
+ >              | <decl>
+ >              | <asgn>
+ >              | "read" <lvalue>
+ >              | "free" <expr>
+ >              | "return" <expr>
+ >              | "exit" <expr>
+ >              | "print" <expr>
+ >              | "println" <expr>
+ >              | <if-else>
+ >              | <while>
+ >              | <begin-end>
+-}
 stmt :: Parsec (Stmt String String)
 stmt =
   choice
@@ -207,17 +232,22 @@ stmt =
     , beginEnd
     ]
 
+-- | > <decl> ::= <type> <ident> '=' <rvalue>
 decl :: Parsec (Stmt String String)
 decl = mkDecl wType (identifier <* "=") rValue
 
+-- | > <asgn> ::= <lvalue> '=' <rvalue>
 asgn :: Parsec (Stmt String String)
 asgn = mkAsgn (lValue <* "=") rValue
 
+-- | > <if-else> ::= "if" <expr> "then" <stmts> "else" <stmts> "fi"
 ifElse :: Parsec (Stmt String String)
 ifElse = mkIfElse ("if" *> expr <* "then") stmts ("else" *> stmts <* "fi")
 
+-- | > <while> ::= "while" <expr> "do" <stmts> "done"
 while :: Parsec (Stmt String String)
 while = mkWhile ("while" *> expr <* "do") (stmts <* "done")
 
+-- | > <begin-end> ::= "begin" <stmts> "end"
 beginEnd :: Parsec (Stmt String String)
 beginEnd = mkBeginEnd ("begin" *> stmts <* "end")
