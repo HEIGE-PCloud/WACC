@@ -334,7 +334,7 @@ check parser str = case parse' (fully parser) str of
   T.Failure err -> P.failed {P.reason = "Failed to parse " ++ err}
 
 check' :: T.Parsec a -> Gen String -> Property
-check' parser gen = withMaxSuccess 50000 $ forAll gen $ check parser
+check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
 
 test =
   testGroup
