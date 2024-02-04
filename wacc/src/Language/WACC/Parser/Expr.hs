@@ -18,10 +18,11 @@ import Data.Set (fromList)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Token
-  ( decimal
+  ( charLiteral
+  , decimal
   , identifier
   , negateOp
-  , charLiteral, stringLiteral
+  , stringLiteral
   )
 import Text.Gigaparsec (Parsec, many, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option)
