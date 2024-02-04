@@ -7,6 +7,7 @@ module Language.WACC.Parser.Stmt where
 
 import Control.Applicative (Alternative (many))
 import Data.List.NonEmpty (fromList)
+import Data.Maybe (fromMaybe)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
 import Language.WACC.AST.Stmt
   ( LValue (..)
@@ -25,7 +26,6 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
-import Data.Maybe (fromMaybe)
 
 $( deriveLiftedConstructors
     "mk"
@@ -54,8 +54,7 @@ $( deriveLiftedConstructors
 
 $( deriveDeferredConstructors
     "mk"
-    [ 
-    'LVIdent
+    [ 'LVIdent
     , 'LVArrayElem
     ]
  )
