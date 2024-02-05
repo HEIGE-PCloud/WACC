@@ -1,9 +1,0 @@
-# simple boolean variable declaration
-
-# Output:
-
-# Program:
-
-begin
-  bool b = false
-end
