@@ -70,6 +70,25 @@ Fixed 'Language.WACC.AST.WType.WArray'.
 pattern BArray :: BType -> BType
 pattern BArray t = BFixed (WArrayF t)
 
+unifyParam :: BType -> BType -> Maybe BType
+-- BAny and BUnknown always unify.
+unifyParam BAny t = Just t
+unifyParam t BAny = Just t
+unifyParam BUnknown t = Just t
+unifyParam t BUnknown = Just t
+-- Identical types always unify.
+unifyParam bt1 bt2
+  | bt1 == bt2 = Just bt1
+-- Erased pairs unify with known pairs.
+unifyParam BErasedPair pt@(BKnownPair _ _) = Just pt
+unifyParam pt@(BKnownPair _ _) BErasedPair = Just pt
+-- Type constructors distribute over unification.
+unifyParam (BArray bt1) (BArray bt2) = BArray <$> unifyParam bt1 bt2
+unifyParam (BKnownPair lbt1 rbt1) (BKnownPair lbt2 rbt2) =
+  BKnownPair <$> unifyParam lbt1 lbt2 <*> unifyParam rbt1 rbt2
+-- Otherwise unification fails.
+unifyParam _ _ = Nothing
+
 {- |
 Bounded type unification.
 
@@ -77,25 +96,6 @@ Bounded type unification.
 @expT@.
 -}
 unify :: BType -> BType -> Maybe BType
--- BAny and BUnknown always unify.
-unify BAny t = Just t
-unify t BAny = Just t
-unify BUnknown t = Just t
-unify t BUnknown = Just t
-unify (BFixed t) (BFixed t') = BFixed <$> unifyW t t'
-  where
-    unifyW :: FixedType -> FixedType -> Maybe FixedType
-    -- Identical types always unify.
-    unifyW wt1 wt2
-      | wt1 == wt2 = Just wt1
-    -- Accept char[] where string is expected.
-    unifyW (WArrayF bt) WStringF = WStringF <$ unify bt (BFixed WCharF)
-    -- Erased pairs unify with known pairs.
-    unifyW WErasedPairF pt@(WKnownPairF _ _) = Just pt
-    unifyW pt@(WKnownPairF _ _) WErasedPairF = Just pt
-    -- Type constructors distribute over unification.
-    unifyW (WArrayF bt1) (WArrayF bt2) = WArrayF <$> unify bt1 bt2
-    unifyW (WKnownPairF lbt1 rbt1) (WKnownPairF lbt2 rbt2) =
-      WKnownPairF <$> unify lbt1 lbt2 <*> unify rbt1 rbt2
-    -- Otherwise unification fails.
-    unifyW _ _ = Nothing
+-- Accept char[] where string is expected.
+unify (BArray bt) BString = BString <$ unifyParam bt BChar
+unify bt1 bt2 = unifyParam bt1 bt2
