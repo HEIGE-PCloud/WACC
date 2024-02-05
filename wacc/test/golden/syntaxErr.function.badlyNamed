@@ -19,7 +19,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/function/badlyNamed.wacc (line 12, column 7):
   unexpected "("
-  expected "=" or "["
+  expected "[" or assignment
   >begin
   >  intf() is
          ^

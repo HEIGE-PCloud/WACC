@@ -25,7 +25,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/function/functionLateDefine.wacc (line 17, column 8):
   unexpected "("
-  expected "="
+  expected assignment
   >  println x ;
   >  int g() is
           ^

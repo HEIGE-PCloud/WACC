@@ -13,7 +13,7 @@ begin skp end
 
 In test/wacc_examples/invalid/syntaxErr/basic/skpErr.wacc (line 11, column 11):
   unexpected "e"
-  expected "=" or "["
+  expected "[" or assignment
   >
   >begin skp end
              ^
