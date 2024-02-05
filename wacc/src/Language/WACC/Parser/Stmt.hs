@@ -32,10 +32,11 @@ import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, many, ($>), (<|>), (<~>))
+import Text.Gigaparsec (Parsec, many, ($>), (<|>), (<~>), eof)
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (fail, label)
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
+import Text.Gigaparsec.Errors.Patterns (verifiedExplain)
 
 $( deriveLiftedConstructors
     "mk"
@@ -65,7 +66,7 @@ $( deriveLiftedConstructors
 
 -- | > program ::= "begin" <func>* <stmt> "end"
 program :: Parsec (Prog String String)
-program = "begin" *> program' <* "end"
+program = "begin" *> program' <* ("end" <|> _unclosedEnd "main body")
 
 program' :: Parsec (Prog String String)
 program' = parseProgPrefix >>= parseProgRest
@@ -73,7 +74,7 @@ program' = parseProgPrefix >>= parseProgRest
 func' :: Parsec ([(WType, String)], Stmts String String)
 func' =
   ((concat <$> option paramList) <* ")")
-    <~> ("is" *> (stmts >>= checkExit) <* "end")
+    <~> ("is" *> (stmts >>= checkExit) <* ("end" <|> _unclosedEnd "function body"))
 
 stmts' :: Parsec [Stmt String String]
 stmts' = many (";" *> stmt)
@@ -254,4 +255,7 @@ while = mkWhile ("while" *> expr <* "do") (stmts <* "done")
 
 -- | > <begin-end> ::= "begin" <stmts> "end"
 beginEnd :: Parsec (Stmt String String)
-beginEnd = mkBeginEnd ("begin" *> stmts <* "end")
+beginEnd = mkBeginEnd ("begin" *> stmts <* ("end" <|> _unclosedEnd "block"))
+
+_unclosedEnd :: String -> Parsec b
+_unclosedEnd place = verifiedExplain (const $ "unclosed " ++ place) eof
