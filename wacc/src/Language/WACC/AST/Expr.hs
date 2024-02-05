@@ -1,14 +1,17 @@
+{-# LANGUAGE DeriveFunctor #-}
 {- |
 WACC expressions.
 -}
 module Language.WACC.AST.Expr (WAtom (..), Expr (..), ArrayIndex (..)) where
+
+import Text.Gigaparsec.Position (Pos)
 
 {- |
 WACC array indexing subexpressions.
 
 > <ident>[<expr>]...
 -}
-data ArrayIndex ident = ArrayIndex ident [Expr ident] deriving (Eq, Show)
+data ArrayIndex ident = ArrayIndex ident [Expr ident] deriving (Eq, Show, Functor)
 
 {- |
 Atomic WACC expressions.
@@ -25,10 +28,10 @@ data WAtom ident
   | -- | > null
     Null
   | -- | > <ident>
-    Ident ident
+    Ident ident Pos
   | -- | > <ident>[<expr>]...
     ArrayElem (ArrayIndex ident)
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)
 
 {- |
 Composite WACC expressions.
@@ -72,4 +75,4 @@ data Expr ident
     And (Expr ident) (Expr ident)
   | -- | > <expr> || <expr>
     Or (Expr ident) (Expr ident)
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)

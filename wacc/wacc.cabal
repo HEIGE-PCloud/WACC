@@ -28,6 +28,7 @@ library
       Language.WACC.Parser.Stmt
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
+      Language.WACC.Semantic.Scope
       Lib
   other-modules:
       Paths_wacc
@@ -38,6 +39,7 @@ library
       base >=4.7 && <5
     , containers
     , gigaparsec
+    , mtl
   default-language: Haskell2010
 
 executable compile
@@ -51,6 +53,7 @@ executable compile
       base >=4.7 && <5
     , containers
     , gigaparsec
+    , mtl
     , wacc
   default-language: Haskell2010
 
@@ -75,6 +78,7 @@ test-suite wacc-test
     , deepseq
     , directory
     , gigaparsec
+    , mtl
     , process
     , tasty
     , tasty-ant-xml
