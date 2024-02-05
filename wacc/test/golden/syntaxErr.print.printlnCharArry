@@ -16,6 +16,7 @@ end
 In test/wacc_examples/invalid/syntaxErr/print/printlnCharArry.wacc (line 12, column 11):
   unexpected "['H',"
   expected expression
+  expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
   >begin
   >  println ['H','e','l','l','o',' ','W','o','r','l','d','!']
              ^^^^^

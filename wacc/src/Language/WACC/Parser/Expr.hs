@@ -26,7 +26,7 @@ import Language.WACC.Parser.Token
   )
 import Text.Gigaparsec (Parsec, many, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option)
-import Text.Gigaparsec.Errors.Combinator (label)
+import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -174,7 +174,10 @@ mkIdent' :: Parsec String -> Parsec (WAtom String)
 mkIdent' = label (fromList ["identifier"]) . mkIdent
 
 mkExpr' :: Parsec a -> Parsec a
-mkExpr' = label (fromList ["expression"])
+mkExpr' =
+  explain
+    "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses"
+    . label (fromList ["expression"])
 
 mkArrayElem' :: Parsec (ArrayIndex String) -> Parsec (WAtom String)
 mkArrayElem' = label (fromList ["array element"]) . mkArrayElem
