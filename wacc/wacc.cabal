@@ -29,7 +29,6 @@ library
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
       Language.WACC.TypeChecking.BType
-      Lib
   other-modules:
       Paths_wacc
   hs-source-dirs:
