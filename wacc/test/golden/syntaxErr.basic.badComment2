@@ -17,7 +17,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/basic/badComment2.wacc (line 12, column 20):
   unexpected "I"
-  expected "[" or assignment
+  expected array index or assignment
   >begin
   >  int x = 10 ; can I put in-line comments after the ';'?
                       ^

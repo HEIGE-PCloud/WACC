@@ -17,6 +17,7 @@ where
 
 import Data.List.NonEmpty (fromList)
 import Data.List.NonEmpty as D (NonEmpty ((:|)), last)
+import qualified Data.Set as Set
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
 import Language.WACC.AST.Prog (Func (..), Prog (Main))
 import Language.WACC.AST.Stmt
@@ -33,7 +34,7 @@ import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
-import Text.Gigaparsec.Errors.Combinator as E (fail)
+import Text.Gigaparsec.Errors.Combinator as E (fail, label)
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
 $( deriveLiftedConstructors
@@ -160,7 +161,10 @@ mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
     mkIdentOrArrayElem' str Nothing = LVIdent str
 
 lValueOrIdent :: Parsec (LValue String)
-lValueOrIdent = mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]")))
+lValueOrIdent = mkIdentOrArrayElem identifier (option (many (arrayIndex "[" *> expr <* "]")))
+
+arrayIndex :: Parsec a -> Parsec a
+arrayIndex = label (Set.fromList ["array index"])
 
 -- | > <rvalue> ::= <expr> | <array-liter> | <newpair> | <pair-elem> | <fn-call>
 rValue :: Parsec (RValue String String)

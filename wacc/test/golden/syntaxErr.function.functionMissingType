@@ -19,7 +19,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/function/functionMissingType.wacc (line 12, column 4):
   unexpected "("
-  expected "[" or assignment
+  expected array index or assignment
   >begin
   >  f() is
       ^
