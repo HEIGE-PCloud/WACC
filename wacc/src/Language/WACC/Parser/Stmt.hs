@@ -34,7 +34,7 @@ import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
-import Text.Gigaparsec.Errors.Combinator as E (fail, label, explain)
+import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
 import Text.Gigaparsec.Errors.Patterns (verifiedExplain)
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
@@ -67,7 +67,9 @@ $( deriveLiftedConstructors
 -- | > program ::= "begin" <func>* <stmt> "end"
 program :: Parsec (Prog String String)
 program =
-  mkBegin "begin" *> (program' <|> _emptyProgram) <* ("end" <|> _unclosedEnd "main body")
+  mkBegin "begin"
+    *> (program' <|> _emptyProgram)
+    <* ("end" <|> _unclosedEnd "main body")
 
 program' :: Parsec (Prog String String)
 program' = parseProgPrefix >>= parseProgRest
@@ -260,7 +262,9 @@ beginEnd :: Parsec (Stmt String String)
 beginEnd = mkBeginEnd ("begin" *> stmts <* ("end" <|> _unclosedEnd "block"))
 
 mkBegin :: Parsec a -> Parsec a
-mkBegin = explain "all program body and function declarations must be within `begin` and `end`"
+mkBegin =
+  explain
+    "all program body and function declarations must be within `begin` and `end`"
 
 mkCall :: Parsec a -> Parsec a
 mkCall = label (Set.singleton "function call")
