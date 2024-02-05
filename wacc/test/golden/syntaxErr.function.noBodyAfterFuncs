@@ -18,7 +18,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/function/noBodyAfterFuncs.wacc (line 15, column 1):
   unexpected keyword end
-  expected begin, bool, char, end of end, exit, free, fst, identifier, if, int, pair, print, println, read, return, skip, snd, string, or while
+  expected end of end, function declaration, or statement
   >  end
   >end
    ^^^

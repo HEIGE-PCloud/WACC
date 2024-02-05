@@ -81,7 +81,8 @@ import Text.Gigaparsec.Token.Descriptions
   )
 import Text.Gigaparsec.Token.Errors
   ( ErrorConfig
-      ( labelSymbol, labelEscapeEnd
+      ( labelEscapeEnd
+      , labelSymbol
       )
   , LabelConfigurable (label)
   , LabelWithExplainConfigurable (labelAndReason)
@@ -261,10 +262,10 @@ errorConfig =
           , ("&&", Text.Gigaparsec.Token.Errors.label (S.fromList ["logical operator"]))
           , ("||", Text.Gigaparsec.Token.Errors.label (S.fromList ["logical operator"]))
           ]
-          , labelEscapeEnd =
-              Text.Gigaparsec.Token.Errors.labelAndReason
-                (S.fromList ["escape sequence"])
-                "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
+    , labelEscapeEnd =
+        Text.Gigaparsec.Token.Errors.labelAndReason
+          (S.fromList ["escape sequence"])
+          "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
     }
 
 lexer :: Lexer

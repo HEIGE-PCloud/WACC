@@ -32,11 +32,11 @@ import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, many, ($>), (<|>), (<~>), eof)
+import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (fail, label)
-import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 import Text.Gigaparsec.Errors.Patterns (verifiedExplain)
+import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
 $( deriveLiftedConstructors
     "mk"
@@ -66,7 +66,8 @@ $( deriveLiftedConstructors
 
 -- | > program ::= "begin" <func>* <stmt> "end"
 program :: Parsec (Prog String String)
-program = "begin" *> program' <* ("end" <|> _unclosedEnd "main body")
+program =
+  "begin" *> (program' <|> _emptyProgram) <* ("end" <|> _unclosedEnd "main body")
 
 program' :: Parsec (Prog String String)
 program' = parseProgPrefix >>= parseProgRest
@@ -80,7 +81,7 @@ stmts' :: Parsec [Stmt String String]
 stmts' = many (";" *> stmt)
 
 parseFuncPreix :: Parsec ((WType, String), Bool)
-parseFuncPreix = wType <~> identifier <~> (("(" $> True) <|> ("=" $> False))
+parseFuncPreix = mkFunc' $ wType <~> identifier <~> (("(" $> True) <|> ("=" $> False))
 
 parseProgPrefix :: Parsec (Maybe ((WType, String), Bool))
 parseProgPrefix = option parseFuncPreix
@@ -222,20 +223,21 @@ stmts = mkStmts (sepBy1 stmt ";")
 -}
 stmt :: Parsec (Stmt String String)
 stmt =
-  choice
-    [ "skip" *> mkSkip
-    , decl
-    , asgn
-    , "read" *> mkRead lValue
-    , "free" *> mkFree expr
-    , "return" *> mkReturn expr
-    , "exit" *> mkExit expr
-    , "print" *> mkPrint expr
-    , "println" *> mkPrintLn expr
-    , ifElse
-    , while
-    , beginEnd
-    ]
+  mkStmt $
+    choice
+      [ "skip" *> mkSkip
+      , decl
+      , asgn
+      , "read" *> mkRead lValue
+      , "free" *> mkFree expr
+      , "return" *> mkReturn expr
+      , "exit" *> mkExit expr
+      , "print" *> mkPrint expr
+      , "println" *> mkPrintLn expr
+      , ifElse
+      , while
+      , beginEnd
+      ]
 
 -- | > <decl> ::= <type> <ident> '=' <rvalue>
 decl :: Parsec (Stmt String String)
@@ -256,6 +258,15 @@ while = mkWhile ("while" *> expr <* "do") (stmts <* "done")
 -- | > <begin-end> ::= "begin" <stmts> "end"
 beginEnd :: Parsec (Stmt String String)
 beginEnd = mkBeginEnd ("begin" *> stmts <* ("end" <|> _unclosedEnd "block"))
+
+mkStmt :: Parsec a -> Parsec a
+mkStmt = label (Set.fromList ["statement"])
+
+mkFunc' :: Parsec a -> Parsec a
+mkFunc' = label (Set.fromList ["function declaration"])
+
+_emptyProgram :: Parsec b
+_emptyProgram = verifiedExplain (const "missing main program body") "end"
 
 _unclosedEnd :: String -> Parsec b
 _unclosedEnd place = verifiedExplain (const $ "unclosed " ++ place) eof
