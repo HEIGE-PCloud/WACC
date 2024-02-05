@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: gigaparsec-0.2.4.1@sha256:9b92f722c13be8d5985ab0b39f5c76a49d023058476f2e1d18d800f2aa4dcf3b,8935
+    hackage: gigaparsec-0.2.5.0@sha256:16f2e9459e1f283d3e9141c836296a349aaf3f0e165b9355285e06eef6bd0d37,8934
     pantry-tree:
-      sha256: 70c29a7ed608bed0cb638d68fccea791e065441dec0e3ee70328c4c2294277f1
-      size: 4833
+      sha256: 4c8e3fc41026470a2ccedc0143246bb0681a3491e18ab9b3e0325425ccbc5b40
+      size: 4834
   original:
-    hackage: gigaparsec-0.2.4.1
+    hackage: gigaparsec-0.2.5.0
 snapshots:
 - completed:
     sha256: 7b975b104cb3dbf0c297dfd01f936a4d2ee523241dd0b1ae960522b833fe3027
