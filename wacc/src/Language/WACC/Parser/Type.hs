@@ -1,15 +1,20 @@
-{-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Language.WACC.Parser.Type where
+module Language.WACC.Parser.Type
+  ( wType
+  , baseType
+  , arrayType
+  , pairElemType
+  , pairType
+  )
+where
 
-import Control.Applicative (many)
-import Data.Functor (void)
 import Language.WACC.AST.WType (WType (..))
-import Language.WACC.Parser.Token (sym)
-import Text.Gigaparsec (Parsec, some, (<~>))
+import Language.WACC.Parser.Common ()
+import Text.Gigaparsec (Parsec, many, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
+import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
@@ -17,37 +22,47 @@ import Text.Gigaparsec.Patterns
 
 $( deriveDeferredConstructors
     "mk"
-    ['WBool, 'WInt, 'WChar, 'WString, 'WErasedPair, 'WKnownPair, 'WArray]
+    ['WBool, 'WInt, 'WChar, 'WString, 'WErasedPair]
  )
 
-wTypeWithArray :: Parsec WType -> Parsec WType
-wTypeWithArray p = do
-  (t, ln) <- p <~> many (void (sym "[]"))
-  pure $ foldr (const WArray) t ln
+$( deriveLiftedConstructors
+    "mk"
+    ['WKnownPair]
+ )
 
+-- | > <type> ::= <base-type> | <array-type> | <pair-type>
 wType :: Parsec WType
-wType = wTypeWithArray (choice [wBaseType, wPairType])
+wType = mkWType (baseType <|> pairType) (many "[]")
 
-wBaseType :: Parsec WType
-wBaseType =
+mkWType :: Parsec WType -> Parsec [()] -> Parsec WType
+mkWType = liftA2 (foldr (const WArray))
+
+-- | > <base-type> ::= "int" | "bool" | "char" | "string"
+baseType :: Parsec WType
+baseType =
   choice
-    [ sym "int" *> mkWInt
-    , sym "bool" *> mkWBool
-    , sym "char" *> mkWChar
-    , sym "string" *> mkWString
+    [ "int" *> mkWInt
+    , "bool" *> mkWBool
+    , "char" *> mkWChar
+    , "string" *> mkWString
     ]
 
-wPairType :: Parsec WType
-wPairType = do
-  sym "pair"
-  sym "("
-  pet1 <- pairElemType
-  sym ","
-  pet2 <- pairElemType
-  sym ")"
+squareBrackets :: Parsec ()
+squareBrackets = "[" *> "]"
 
-  constructor <- mkWKnownPair
-  pure $ constructor pet1 pet2
+-- | > <array-type> ::= <type> '[' ']'
+arrayType :: Parsec WType
+arrayType = postfix1 id (baseType <|> pairType) (squareBrackets >> pure WArray)
 
+pairBrackets :: Parsec WType
+pairBrackets = "(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")"
+
+-- | > <pair-type> ::= 'pair' '(' <pair-elem-type> ',' <pair-elem-type> ')'
+pairType :: Parsec WType
+pairType = "pair" *> pairBrackets
+
+-- | > <pair-elem-type> ::= <base-type> | <array-type> | 'pair'
 pairElemType :: Parsec WType
-pairElemType = choice [wTypeWithArray wBaseType, sym "pair" *> mkWErasedPair]
+pairElemType =
+  mkWType baseType (many squareBrackets)
+    <|> ("pair" *> (mkWType pairBrackets (some squareBrackets) <|> mkWErasedPair))

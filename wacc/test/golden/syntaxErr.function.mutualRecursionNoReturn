@@ -1,0 +1,7 @@
+(line 27, column 3):
+  Function can only be exited via a 'return' or 'exit' statement.
+  There must not be any code following the last 'return' or 'exit' of any execution path.
+  >    int z = call r1(y - 1)
+  >  end
+     ^
+  >

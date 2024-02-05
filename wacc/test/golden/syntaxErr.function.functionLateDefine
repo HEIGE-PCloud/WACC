@@ -1,0 +1,7 @@
+(line 17, column 8):
+  unexpected "("
+  expected "="
+  >  println x ;
+  >  int g() is
+          ^
+  >    return 1

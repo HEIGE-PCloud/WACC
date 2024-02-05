@@ -1,0 +1,7 @@
+(line 15, column 1):
+  unexpected "b"
+  expected end of end or end of input
+  >
+  >begin 
+   ^
+  >  skip 

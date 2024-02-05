@@ -1,0 +1,7 @@
+(line 12, column 8):
+  unexpected "f"
+  expected "=" or "["
+  >begin
+  >  whil false do
+          ^
+  >    skip

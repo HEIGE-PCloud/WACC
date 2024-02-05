@@ -22,6 +22,10 @@ ghc-options:
   - -Wmissing-home-modules
   - -Wpartial-fields
   - -Wredundant-constraints
+  - -Wno-missing-export-lists
+  - -Wno-type-equality-requires-operators
+  - -Wno-orphans
+  - -j
 
 library:
   source-dirs: src
@@ -56,8 +60,12 @@ tests:
       - tasty-hunit
       - tasty-quickcheck
       - tasty-ant-xml
+      - tasty-golden
       - wacc
       - deepseq
       - directory
       - process
       - QuickCheck
+      - bytestring
+      - utf8-string
+

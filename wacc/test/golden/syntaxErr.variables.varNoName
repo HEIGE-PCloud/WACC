@@ -1,0 +1,7 @@
+(line 13, column 7):
+  unexpected "="
+  expected "[]" or identifier
+  >begin
+  >  int = 42
+         ^
+  >end

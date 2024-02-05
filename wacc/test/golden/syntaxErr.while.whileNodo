@@ -1,0 +1,7 @@
+(line 13, column 5):
+  unexpected "sk"
+  expected !=, %, &&, *, +, -, /, <, <=, ==, >, >=, do, end of false, or ||
+  >  while false
+  >    skip
+       ^^
+  >  done

@@ -1,0 +1,7 @@
+(line 12, column 4):
+  unexpected "("
+  expected "=" or "["
+  >begin
+  >  f() is
+      ^
+  >    return 0 

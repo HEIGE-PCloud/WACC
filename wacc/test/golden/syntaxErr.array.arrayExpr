@@ -1,0 +1,7 @@
+(line 12, column 23):
+  unexpected "++"
+  expected !=; ","; ";"; %; &&; *; +; -; /; <; <=; ==; >; >=; digit; end; or ||
+  >begin
+  >  int[] b = [1, 2, 3] ++ [4] ;
+                         ^^
+  >	println b[3]

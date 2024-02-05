@@ -1,0 +1,7 @@
+(line 17, column 1):
+  unexpected "en"
+  expected ";", end of skip, or fi
+  >    skip
+  >end
+   ^^
+  >
