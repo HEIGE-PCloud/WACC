@@ -34,7 +34,7 @@ import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
-import Text.Gigaparsec.Errors.Combinator as E (fail, label)
+import Text.Gigaparsec.Errors.Combinator as E (fail, label, explain)
 import Text.Gigaparsec.Errors.Patterns (verifiedExplain)
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
@@ -67,7 +67,7 @@ $( deriveLiftedConstructors
 -- | > program ::= "begin" <func>* <stmt> "end"
 program :: Parsec (Prog String String)
 program =
-  "begin" *> (program' <|> _emptyProgram) <* ("end" <|> _unclosedEnd "main body")
+  mkBegin "begin" *> (program' <|> _emptyProgram) <* ("end" <|> _unclosedEnd "main body")
 
 program' :: Parsec (Prog String String)
 program' = parseProgPrefix >>= parseProgRest
@@ -166,7 +166,7 @@ lValueOrIdent :: Parsec (LValue String)
 lValueOrIdent = mkIdentOrArrayElem identifier (option (many (arrayIndex "[" *> expr <* "]")))
 
 arrayIndex :: Parsec a -> Parsec a
-arrayIndex = label (Set.fromList ["array index"])
+arrayIndex = label (Set.singleton "array index")
 
 -- | > <rvalue> ::= <expr> | <array-liter> | <newpair> | <pair-elem> | <fn-call>
 rValue :: Parsec (RValue String String)
@@ -180,7 +180,7 @@ rValue =
     ]
 
 arrayLiter :: Parsec [Expr String]
-arrayLiter = "[" *> optionalArgList <* "]"
+arrayLiter = arrayLiteral "[" *> optionalArgList <* "]"
 
 -- | > <newpair> ::= "newpair" '(' <expr> ',' <expr> ')'
 newPair :: Parsec (RValue fnident String)
@@ -192,7 +192,7 @@ pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
 
 -- | > <fn-call> ::= <identifier> '(' <argList>? ')'
 fnCall :: Parsec (RValue String String)
-fnCall = mkRVCall ("call" *> identifier) ("(" *> optionalArgList <* ")")
+fnCall = mkRVCall (mkCall "call" *> identifier) ("(" *> optionalArgList <* ")")
 
 optionalArgList :: Parsec [Expr String]
 optionalArgList = concat <$> option argList
@@ -259,11 +259,20 @@ while = mkWhile ("while" *> expr <* "do") (stmts <* "done")
 beginEnd :: Parsec (Stmt String String)
 beginEnd = mkBeginEnd ("begin" *> stmts <* ("end" <|> _unclosedEnd "block"))
 
+mkBegin :: Parsec a -> Parsec a
+mkBegin = explain "all program body and function declarations must be within `begin` and `end`"
+
+mkCall :: Parsec a -> Parsec a
+mkCall = label (Set.singleton "function call")
+
 mkStmt :: Parsec a -> Parsec a
 mkStmt = label (Set.fromList ["statement"])
 
 mkFunc' :: Parsec a -> Parsec a
 mkFunc' = label (Set.fromList ["function declaration"])
+
+arrayLiteral :: Parsec a -> Parsec a
+arrayLiteral = label (Set.singleton "array literal")
 
 _emptyProgram :: Parsec b
 _emptyProgram = verifiedExplain (const "missing main program body") "end"
