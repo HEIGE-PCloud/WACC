@@ -29,6 +29,8 @@ library
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
       Language.WACC.TypeChecking.BType
+      Language.WACC.TypeChecking.Expr
+      Language.WACC.TypeChecking.State
   other-modules:
       Paths_wacc
   hs-source-dirs:
@@ -39,6 +41,7 @@ library
     , containers
     , gigaparsec
     , recursion-schemes
+    , transformers
   default-language: Haskell2010
 
 executable compile
@@ -53,6 +56,7 @@ executable compile
     , containers
     , gigaparsec
     , recursion-schemes
+    , transformers
     , wacc
   default-language: Haskell2010
 
@@ -93,6 +97,7 @@ test-suite wacc-test
     , tasty-hspec
     , tasty-hunit
     , tasty-quickcheck
+    , transformers
     , utf8-string
     , wacc
   default-language: Haskell2010

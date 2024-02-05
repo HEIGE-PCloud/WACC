@@ -6,13 +6,17 @@ Bounded WACC types with unification.
 -}
 module Language.WACC.TypeChecking.BType
   ( BType (.., BBool, BChar, BInt, BString, BErasedPair, BKnownPair, BArray)
-  , FixedType
   , unify
+  , FixedType
+  , fix
+  , orderedTypes
+  , heapAllocatedTypes
   )
 where
 
+import Data.Functor.Foldable (cata)
 import GHC.Generics (Generic)
-import Language.WACC.AST (WTypeF (..))
+import Language.WACC.AST (WType, WTypeF (..))
 
 {- |
 A bounded WACC type.
@@ -69,6 +73,24 @@ Fixed 'Language.WACC.AST.WType.WArray'.
 -}
 pattern BArray :: BType -> BType
 pattern BArray t = BFixed (WArrayF t)
+
+{- |
+Valid parameter types for @>@, @>=@, @<@ and @<=@.
+-}
+orderedTypes :: [BType]
+orderedTypes = [BInt, BChar]
+
+{- |
+Valid parameter types for @free@.
+-}
+heapAllocatedTypes :: [BType]
+heapAllocatedTypes = [BArray BAny, BErasedPair, BKnownPair BAny BAny]
+
+{- |
+Convert a 'WType' into a fixed 'BType'.
+-}
+fix :: WType -> BType
+fix = cata BFixed
 
 unifyParam :: BType -> BType -> Maybe BType
 -- BAny and BUnknown always unify.

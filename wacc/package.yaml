@@ -11,6 +11,7 @@ dependencies:
   - containers
   - gigaparsec
   - recursion-schemes
+  - transformers
 
 ghc-options:
   - -Wall
@@ -68,4 +69,3 @@ tests:
       - QuickCheck
       - bytestring
       - utf8-string
-
