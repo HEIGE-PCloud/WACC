@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-dodgy-exports #-}
+
 module Test
   ( module Test.Arbitrary
   , module Test.Tasty
