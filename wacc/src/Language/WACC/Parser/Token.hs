@@ -230,40 +230,41 @@ waccSpaceDesc =
     , whitespaceIsContextDependent = False
     }
 
-errorConfig :: Text.Gigaparsec.Token.Errors.ErrorConfig
+errorConfig :: ErrorConfig
 errorConfig =
-  Text.Gigaparsec.Token.Errors.defaultErrorConfig
+  defaultErrorConfig
     { labelSymbol =
         M.fromList
           [
             ( "}"
-            , Text.Gigaparsec.Token.Errors.labelAndReason
+            , labelAndReason
                 (S.fromList ["closing brace"])
                 "unclosed brace"
             )
+          , ("(", label (S.singleton "opening parenthesis"))
           ,
             ( ")"
-            , Text.Gigaparsec.Token.Errors.labelAndReason
+            , labelAndReason
                 (S.fromList ["closing bracket"])
                 "unclosed bracket"
             )
-          , ("=", Text.Gigaparsec.Token.Errors.label (S.fromList ["assignment"]))
-          , ("+", Text.Gigaparsec.Token.Errors.label (S.fromList ["arithmetic operator"]))
-          , ("-", Text.Gigaparsec.Token.Errors.label (S.fromList ["arithmetic operator"]))
-          , ("*", Text.Gigaparsec.Token.Errors.label (S.fromList ["arithmetic operator"]))
-          , ("/", Text.Gigaparsec.Token.Errors.label (S.fromList ["arithmetic operator"]))
-          , ("%", Text.Gigaparsec.Token.Errors.label (S.fromList ["arithmetic operator"]))
-          , (">", Text.Gigaparsec.Token.Errors.label (S.fromList ["comparison operator"]))
-          , ("<", Text.Gigaparsec.Token.Errors.label (S.fromList ["comparison operator"]))
-          , (">=", Text.Gigaparsec.Token.Errors.label (S.fromList ["comparison operator"]))
-          , ("<=", Text.Gigaparsec.Token.Errors.label (S.fromList ["comparison operator"]))
-          , ("==", Text.Gigaparsec.Token.Errors.label (S.fromList ["comparison operator"]))
-          , ("!=", Text.Gigaparsec.Token.Errors.label (S.fromList ["comparison operator"]))
-          , ("&&", Text.Gigaparsec.Token.Errors.label (S.fromList ["logical operator"]))
-          , ("||", Text.Gigaparsec.Token.Errors.label (S.fromList ["logical operator"]))
+          , ("=", label (S.fromList ["assignment"]))
+          , ("+", label (S.fromList ["arithmetic operator"]))
+          , ("-", label (S.fromList ["arithmetic operator"]))
+          , ("*", label (S.fromList ["arithmetic operator"]))
+          , ("/", label (S.fromList ["arithmetic operator"]))
+          , ("%", label (S.fromList ["arithmetic operator"]))
+          , (">", label (S.fromList ["comparison operator"]))
+          , ("<", label (S.fromList ["comparison operator"]))
+          , (">=", label (S.fromList ["comparison operator"]))
+          , ("<=", label (S.fromList ["comparison operator"]))
+          , ("==", label (S.fromList ["comparison operator"]))
+          , ("!=", label (S.fromList ["comparison operator"]))
+          , ("&&", label (S.fromList ["logical operator"]))
+          , ("||", label (S.fromList ["logical operator"]))
           ]
     , labelEscapeEnd =
-        Text.Gigaparsec.Token.Errors.labelAndReason
+        labelAndReason
           (S.fromList ["escape sequence"])
           "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
     }
