@@ -1,9 +1,0 @@
-# simple negative integer variable declaration
-
-# Output:
-
-# Program:
-
-begin
-  int x = -1
-end

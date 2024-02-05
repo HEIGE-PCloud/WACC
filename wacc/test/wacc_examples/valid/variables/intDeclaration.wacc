@@ -1,9 +1,0 @@
-# simple integer variable declaration
-
-# Output:
-
-# Program:
-
-begin
-  int x = 42
-end

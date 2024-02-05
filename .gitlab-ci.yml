@@ -1,5 +1,6 @@
 variables:
   BUILD_CACHE_POLICY: 'pull'
+  GIT_SUBMODULE_STRATEGY: recursive
 
 include:
   - template: Code-Quality.gitlab-ci.yml
