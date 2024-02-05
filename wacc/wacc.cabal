@@ -65,6 +65,7 @@ test-suite wacc-test
   main-is: Main.hs
   other-modules:
       Language.WACC.TypeChecking.BTypeTest
+      Language.WACC.TypeChecking.ExprTest
       Test
       Test.Arbitrary
       Test.Common
