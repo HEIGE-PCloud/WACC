@@ -28,7 +28,7 @@ data BType
     BUnknown
   | -- | Fixed type.
     BFixed FixedType
-  deriving (Eq, Generic, Show)
+  deriving (Eq, Generic, Ord, Show)
 
 type FixedType = WTypeF BType
 

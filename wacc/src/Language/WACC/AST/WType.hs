@@ -43,4 +43,6 @@ makeBaseFunctor ''WType
 
 deriving instance (Eq r) => Eq (WTypeF r)
 
+deriving instance (Ord r) => Ord (WTypeF r)
+
 deriving instance (Show r) => Show (WTypeF r)
