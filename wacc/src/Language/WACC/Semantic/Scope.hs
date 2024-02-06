@@ -2,8 +2,7 @@
 
 {- |
 The strategy for scope analysis is add all function names into a symbol table,
-analyse the @main@ statement and on completeion leave the outermost scope in the table
-(global variables), then analyse each function
+analyse the @Stmt@ of each function and the main @Stmt@
 -}
 module Language.WACC.Semantic.Scope () where
 
@@ -25,7 +24,7 @@ import Language.WACC.AST
 import Language.WACC.AST.Prog (Prog)
 import Language.WACC.AST.WType (WType)
 import Text.Gigaparsec.Position (Pos)
-import Prelude hiding (reverse, unzip)
+import Prelude hiding (GT, LT, reverse, unzip)
 
 {- |
 The @Integer  acts as a UID (which will not clash with variable @Vident@s either)
@@ -71,8 +70,50 @@ renameRValue = undefined
 renameLValue :: LValue String -> Analysis (LValue Vident)
 renameLValue = undefined
 
+renameAtom :: WAtom String -> Analysis (WAtom Vident)
+renameAtom (Ident ident pos) = do
+  (localST, superST) <- getST
+  case (getDecl ident localST superST) of
+    Just (n, t, _) -> return (Ident (Vident n ident t) pos)
+    Nothing -> do
+      report pos "ident was not previously declared"
+      return undefined
+renameAtom (ArrayElem (ArrayIndex ident es) pos) = do
+  (localST, superST) <- getST
+  es' <- mapM renameExpr es
+  case (getDecl ident localST superST) of
+    Just (n, t, _) -> return (ArrayElem (ArrayIndex (Vident n ident t) es') pos)
+    Nothing -> do
+      report pos "ident was not previously declared"
+      return undefined
+renameAtom (IntLit x) = pure (IntLit x)
+renameAtom (BoolLit x) = pure (BoolLit x)
+renameAtom (CharLit x) = pure (CharLit x)
+renameAtom (StringLit x) = pure (StringLit x)
+renameAtom Null = pure Null
+
+-- renameAtom x = pure x -- TODO Doesn't work because x :: WAtom String. Is there some way to change this
+
 renameExpr :: Expr String -> Analysis (Expr Vident)
-renameExpr = undefined
+renameExpr (WAtom atom) = WAtom <$> renameAtom atom
+renameExpr (Not e) = Not <$> renameExpr e
+renameExpr (Negate e) = Negate <$> renameExpr e
+renameExpr (Len e) = Len <$> renameExpr e
+renameExpr (Ord e) = Ord <$> renameExpr e
+renameExpr (Chr e) = Chr <$> renameExpr e
+renameExpr (Mul e1 e2) = Mul <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Div e1 e2) = Div <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Mod e1 e2) = Mod <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Add e1 e2) = Add <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Sub e1 e2) = Sub <$> renameExpr e1 <*> renameExpr e2
+renameExpr (GT e1 e2) = GT <$> renameExpr e1 <*> renameExpr e2
+renameExpr (GTE e1 e2) = GTE <$> renameExpr e1 <*> renameExpr e2
+renameExpr (LT e1 e2) = LT <$> renameExpr e1 <*> renameExpr e2
+renameExpr (LTE e1 e2) = LTE <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Eq e1 e2) = Eq <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Ineq e1 e2) = Ineq <$> renameExpr e1 <*> renameExpr e2
+renameExpr (And e1 e2) = And <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Or e1 e2) = Or <$> renameExpr e1 <*> renameExpr e2
 
 mapPair :: (a -> c, b -> d) -> (a, b) -> (c, d)
 mapPair (f, g) (x, y) = (f x, g y)
