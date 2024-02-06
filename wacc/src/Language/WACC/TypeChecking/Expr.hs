@@ -51,11 +51,15 @@ checkExpr (Div x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
 checkExpr (Mod x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
 checkExpr (Add x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
 checkExpr (Sub x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (GT x y) = [t | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (GTE x y) = [t | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (LT x y) = [t | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (LTE x y) = [t | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (Eq x y) = unifyExprs BAny [x, y]
-checkExpr (Ineq x y) = unifyExprs BAny [x, y]
+checkExpr (GT x y) =
+  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
+checkExpr (GTE x y) =
+  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
+checkExpr (LT x y) =
+  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
+checkExpr (LTE x y) =
+  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
+checkExpr (Eq x y) = BBool <$ unifyExprs BAny [x, y]
+checkExpr (Ineq x y) = BBool <$ unifyExprs BAny [x, y]
 checkExpr (And x y) = unifyExprs BBool [x] *> unifyExprs BBool [y]
 checkExpr (Or x y) = unifyExprs BBool [x] *> unifyExprs BBool [y]
