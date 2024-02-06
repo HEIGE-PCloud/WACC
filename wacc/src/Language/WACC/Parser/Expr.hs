@@ -36,7 +36,7 @@ $( deriveLiftedConstructors
 
 $( deriveDeferredConstructors
     "mk"
-    ['Ident, 'ArrayElem]
+    ['Ident, 'ArrayElem, 'ArrayIndex]
  )
 
 $( deriveDeferredConstructors
@@ -99,8 +99,9 @@ pairLiter = do
 arrayElem :: Parsec (ArrayIndex String)
 arrayElem = do
   s <- identifier
+  h <- mkArrayIndex
   exprs <- some (sym "[" *> expr <* sym "]")
-  pure (ArrayIndex s (toList exprs))
+  pure (h s (toList exprs))
 
 arrOrIdent :: Parsec (WAtom String)
 arrOrIdent = do
@@ -108,9 +109,10 @@ arrOrIdent = do
   exprs <- many (sym "[" *> expr <* sym "]")
   f <- mkIdent
   g <- mkArrayElem
+  h <- mkArrayIndex
   case exprs of
     [] -> pure (f s)
-    _ -> pure (g (ArrayIndex s (toList exprs)))
+    _ -> pure (g (h s (toList exprs)))
 
 atom :: Parsec (Expr String)
 atom =
