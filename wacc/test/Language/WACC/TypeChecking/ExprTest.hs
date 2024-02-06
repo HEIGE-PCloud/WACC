@@ -61,6 +61,7 @@ varExpr = WAtom . Ident
 
 showType :: BType -> String
 showType BAny = "T"
+showType BUnknown = "unk"
 showType BInt = "int"
 showType BBool = "bool"
 showType BChar = "char"

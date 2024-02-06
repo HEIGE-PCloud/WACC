@@ -74,6 +74,18 @@ Fixed 'Language.WACC.AST.WType.WArray'.
 pattern BArray :: BType -> BType
 pattern BArray t = BFixed (WArrayF t)
 
+{-# COMPLETE
+  BAny
+  , BUnknown
+  , BInt
+  , BBool
+  , BChar
+  , BString
+  , BErasedPair
+  , BKnownPair
+  , BArray
+  #-}
+
 {- |
 Valid parameter types for @>@, @>=@, @<@ and @<=@.
 -}
