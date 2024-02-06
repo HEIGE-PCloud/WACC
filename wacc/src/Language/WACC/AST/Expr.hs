@@ -12,7 +12,7 @@ WACC array indexing subexpressions.
 
 > <ident>[<expr>]...
 -}
-data ArrayIndex ident = ArrayIndex ident [Expr ident]
+data ArrayIndex ident = ArrayIndex ident [Expr ident] Pos
   deriving (Eq, Show, Functor)
 
 {- |
@@ -32,7 +32,7 @@ data WAtom ident
   | -- | > <ident>
     Ident ident Pos
   | -- | > <ident>[<expr>]...
-    ArrayElem (ArrayIndex ident) Pos
+    ArrayElem (ArrayIndex ident)
   deriving (Eq, Show, Functor)
 
 {- |

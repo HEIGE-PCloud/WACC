@@ -33,7 +33,7 @@ A WACC @lvalue@, which is the target of an assignment statement.
 -}
 data LValue ident
   = -- | > <ident>
-    LVIdent ident
+    LVIdent ident Pos
   | -- | > <ident>[<expr>]...
     LVArrayElem (ArrayIndex ident)
   | -- |

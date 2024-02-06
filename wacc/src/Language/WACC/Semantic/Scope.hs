@@ -17,6 +17,7 @@ import Language.WACC.AST
   , Expr (..)
   , LValue (..)
   , RValue (..)
+  , PairElem (..)
   , Stmt (..)
   , Stmts
   , WAtom (..)
@@ -64,28 +65,40 @@ type Ctr = Integer
 
 type Analysis = RWS SuperST (DList Error) (LocalST, Ctr)
 
+renamePairElem :: PairElem String -> Analysis (PairElem Vident)
+renamePairElem (FstElem lv) = FstElem <$> renameLValue lv
+renamePairElem (SndElem lv) = SndElem <$> renameLValue lv
+
 renameRValue :: RValue String String -> Analysis (RValue Fnident Vident)
-renameRValue = undefined
+renameRValue (RVExpr e) = RVExpr <$> renameExpr e
+renameRValue (RVArrayLit es) = RVArrayLit <$> (mapM renameExpr es)
+
+renameRValue (RVNewPair e1 e2) = RVNewPair <$> renameExpr e1 <*> renameExpr e2
+renameRValue (RVPairElem pe) = RVPairElem <$> renamePairElem pe
+renameRValue (RVCall fnident es) = undefined
 
 renameLValue :: LValue String -> Analysis (LValue Vident)
-renameLValue = undefined
+renameLValue (LVIdent ident pos)              = renameOrErr ident pos (\n t -> (LVIdent (Vident n ident t) pos))
+renameLValue (LVArrayElem arrI) = LVArrayElem <$> renameArrayIndex arrI
+renameLValue (LVPairElem pe)    = LVPairElem  <$> renamePairElem pe
+
+renameOrErr :: String -> Pos -> (Integer -> WType -> a) -> Analysis a 
+renameOrErr ident pos constr = do
+  (localST, superST) <- getST
+  case (getDecl ident localST superST) of
+    Just (n, t, _) -> return $ constr n t
+    Nothing -> do
+      report pos "ident was not previously declared"
+      return undefined
+
+renameArrayIndex :: ArrayIndex String -> Analysis (ArrayIndex Vident)
+renameArrayIndex (ArrayIndex ident es pos) = do
+  es' <- mapM renameExpr es
+  renameOrErr ident pos (\n t -> ArrayIndex (Vident n ident t) es' pos)
 
 renameAtom :: WAtom String -> Analysis (WAtom Vident)
-renameAtom (Ident ident pos) = do
-  (localST, superST) <- getST
-  case (getDecl ident localST superST) of
-    Just (n, t, _) -> return (Ident (Vident n ident t) pos)
-    Nothing -> do
-      report pos "ident was not previously declared"
-      return undefined
-renameAtom (ArrayElem (ArrayIndex ident es) pos) = do
-  (localST, superST) <- getST
-  es' <- mapM renameExpr es
-  case (getDecl ident localST superST) of
-    Just (n, t, _) -> return (ArrayElem (ArrayIndex (Vident n ident t) es') pos)
-    Nothing -> do
-      report pos "ident was not previously declared"
-      return undefined
+renameAtom (Ident ident pos) = renameOrErr ident pos (\n t -> Ident (Vident n ident t) pos)
+renameAtom (ArrayElem arrI) = ArrayElem <$> (renameArrayIndex arrI)
 renameAtom (IntLit x) = pure (IntLit x)
 renameAtom (BoolLit x) = pure (BoolLit x)
 renameAtom (CharLit x) = pure (CharLit x)
