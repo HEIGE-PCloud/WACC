@@ -1,10 +1,20 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+
 {- |
 WACC types.
 -}
 module Language.WACC.AST.WType
   ( WType (..)
+  , WTypeF (..)
   )
 where
+
+import Data.Functor.Foldable.TH (makeBaseFunctor)
+import GHC.Generics (Generic)
 
 {- |
 A WACC type.
@@ -27,4 +37,12 @@ data WType
     WKnownPair WType WType
   | -- | > <type>[]
     WArray WType
-  deriving (Eq, Show)
+  deriving (Eq, Generic, Show)
+
+makeBaseFunctor ''WType
+
+deriving instance (Eq r) => Eq (WTypeF r)
+
+deriving instance (Ord r) => Ord (WTypeF r)
+
+deriving instance (Show r) => Show (WTypeF r)

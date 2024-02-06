@@ -10,6 +10,8 @@ dependencies:
   - base >= 4.7 && < 5
   - containers
   - gigaparsec
+  - recursion-schemes
+  - transformers
 
 ghc-options:
   - -Wall
@@ -52,9 +54,11 @@ tests:
     build-tools:
       - tasty-autocollect:tasty-autocollect
     dependencies:
+      - generic-arbitrary
       - tasty
       - tasty-autocollect
       - tasty-hspec
+      - tasty-hunit
       - tasty-quickcheck
       - tasty-ant-xml
       - tasty-golden
@@ -65,4 +69,3 @@ tests:
       - QuickCheck
       - bytestring
       - utf8-string
-
