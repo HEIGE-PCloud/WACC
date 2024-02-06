@@ -32,7 +32,7 @@ data WAtom ident
   | -- | > <ident>
     Ident ident Pos
   | -- | > <ident>[<expr>]...
-    ArrayElem (ArrayIndex ident)
+    ArrayElem (ArrayIndex ident) Pos
   deriving (Eq, Show, Functor)
 
 {- |
