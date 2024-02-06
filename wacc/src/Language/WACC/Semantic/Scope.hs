@@ -16,8 +16,8 @@ import Language.WACC.AST
   ( ArrayIndex (..)
   , Expr (..)
   , LValue (..)
-  , RValue (..)
   , PairElem (..)
+  , RValue (..)
   , Stmt (..)
   , Stmts
   , WAtom (..)
@@ -72,17 +72,16 @@ renamePairElem (SndElem lv) = SndElem <$> renameLValue lv
 renameRValue :: RValue String String -> Analysis (RValue Fnident Vident)
 renameRValue (RVExpr e) = RVExpr <$> renameExpr e
 renameRValue (RVArrayLit es) = RVArrayLit <$> (mapM renameExpr es)
-
 renameRValue (RVNewPair e1 e2) = RVNewPair <$> renameExpr e1 <*> renameExpr e2
 renameRValue (RVPairElem pe) = RVPairElem <$> renamePairElem pe
 renameRValue (RVCall fnident es) = undefined
 
 renameLValue :: LValue String -> Analysis (LValue Vident)
-renameLValue (LVIdent ident pos)              = renameOrErr ident pos (\n t -> (LVIdent (Vident n ident t) pos))
+renameLValue (LVIdent ident pos) = renameOrErr ident pos (\n t -> (LVIdent (Vident n ident t) pos))
 renameLValue (LVArrayElem arrI) = LVArrayElem <$> renameArrayIndex arrI
-renameLValue (LVPairElem pe)    = LVPairElem  <$> renamePairElem pe
+renameLValue (LVPairElem pe) = LVPairElem <$> renamePairElem pe
 
-renameOrErr :: String -> Pos -> (Integer -> WType -> a) -> Analysis a 
+renameOrErr :: String -> Pos -> (Integer -> WType -> a) -> Analysis a
 renameOrErr ident pos constr = do
   (localST, superST) <- getST
   case (getDecl ident localST superST) of
