@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
+
 {- |
 WACC expressions.
 -}
@@ -11,7 +12,8 @@ WACC array indexing subexpressions.
 
 > <ident>[<expr>]...
 -}
-data ArrayIndex ident = ArrayIndex ident [Expr ident] deriving (Eq, Show, Functor)
+data ArrayIndex ident = ArrayIndex ident [Expr ident]
+  deriving (Eq, Show, Functor)
 
 {- |
 Atomic WACC expressions.

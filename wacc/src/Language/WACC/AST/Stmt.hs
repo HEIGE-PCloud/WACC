@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
+
 {- |
 WACC statements.
 -}
@@ -11,8 +12,8 @@ module Language.WACC.AST.Stmt
   )
 where
 
-import Data.List.NonEmpty (NonEmpty)
 import Data.Bifunctor
+import Data.List.NonEmpty (NonEmpty)
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
 import Language.WACC.AST.WType (WType)
 import Text.Gigaparsec.Position (Pos)
@@ -66,18 +67,18 @@ data RValue fnident ident
   deriving (Eq, Show, Functor)
 
 instance Bifunctor RValue where
-  -- first :: (a -> b) -> RValue a c -> RValue b c 
-  first f (RVExpr e)          = RVExpr e
-  first f (RVArrayLit es)     = RVArrayLit es
-  first f (RVNewPair e1 e2)   = RVNewPair e1 e2
-  first f (RVPairElem pe)     = RVPairElem pe
+  -- first :: (a -> b) -> RValue a c -> RValue b c
+  first f (RVExpr e) = RVExpr e
+  first f (RVArrayLit es) = RVArrayLit es
+  first f (RVNewPair e1 e2) = RVNewPair e1 e2
+  first f (RVPairElem pe) = RVPairElem pe
   first f (RVCall fnident es) = RVCall (f fnident) es
 
-  -- second :: (a -> b) -> RValue a c -> RValue b c 
-  second f (RVExpr e)          = RVExpr (f <$> e)
-  second f (RVArrayLit es)     = RVArrayLit ((f <$>) <$> es)
-  second f (RVNewPair e1 e2)   = RVNewPair (f <$> e1) (f <$> e2)
-  second f (RVPairElem pe)     = RVPairElem (f <$> pe)
+  -- second :: (a -> b) -> RValue a c -> RValue b c
+  second f (RVExpr e) = RVExpr (f <$> e)
+  second f (RVArrayLit es) = RVArrayLit ((f <$>) <$> es)
+  second f (RVNewPair e1 e2) = RVNewPair (f <$> e1) (f <$> e2)
+  second f (RVPairElem pe) = RVPairElem (f <$> pe)
   second f (RVCall fnident es) = RVCall fnident ((f <$>) <$> es)
 
 {- |
