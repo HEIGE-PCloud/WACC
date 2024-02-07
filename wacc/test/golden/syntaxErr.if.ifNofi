@@ -19,7 +19,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/if/ifNofi.wacc (line 17, column 1):
   unexpected "en"
-  expected ";", end of skip, or fi
+  expected ";" or fi
   >    skip
   >end
    ^^

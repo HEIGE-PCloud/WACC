@@ -17,7 +17,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/while/donoErr.wacc (line 14, column 3):
   unexpected "dono"
-  expected ";", done, or end of skip
+  expected ";" or done
   >    skip
   >  dono
      ^^^^

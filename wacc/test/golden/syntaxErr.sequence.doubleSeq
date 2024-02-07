@@ -16,7 +16,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/sequence/doubleSeq.wacc (line 12, column 8):
   unexpected ";"
-  expected end of skip or statement
+  expected statement
   >begin 
   >  skip;;
           ^

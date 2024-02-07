@@ -16,7 +16,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/sequence/missingSeq.wacc (line 13, column 3):
   unexpected "ski"
-  expected ";", end, or end of skip
+  expected ";" or end
   >  skip
   >  skip 
      ^^^

@@ -13,7 +13,7 @@ begin skip; end
 
 In test/wacc_examples/invalid/syntaxErr/sequence/extraSeq.wacc (line 11, column 13):
   unexpected keyword end
-  expected end of skip or statement
+  expected statement
   >
   >begin skip; end
                ^^^

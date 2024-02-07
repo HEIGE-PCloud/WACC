@@ -34,7 +34,7 @@ import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
-import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label, hide)
+import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
 import Text.Gigaparsec.Errors.Patterns (verifiedExplain)
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
@@ -149,7 +149,7 @@ param :: Parsec (WType, String)
 param = wType <~> identifier
 
 paramList :: Parsec [(WType, String)]
-paramList = sepBy1 param ","
+paramList = param `sepBy1` ","
 
 -- | > <lvalue> ::= <ident> | <array-elem> | <pair-elem>
 lValue :: Parsec (LValue String)
@@ -201,14 +201,14 @@ optionalArgList = concat <$> option argList
 
 -- | > <argList> ::= <expr> (',' <expr>)*
 argList :: Parsec [Expr String]
-argList = hide $ expr `sepBy1` ","
+argList = expr `sepBy1` ","
 
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
 mkStmts = fmap fromList
 
 -- | > <stmts> ::= <stmt> (';' <stmt>)*
 stmts :: Parsec (Stmts String String)
-stmts = mkStmts (sepBy1 stmt ";")
+stmts = mkStmts (stmt `sepBy1` ";")
 
 {- | > <stmt> ::= "skip"
  >              | <decl>
