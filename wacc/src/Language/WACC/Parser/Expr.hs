@@ -135,28 +135,27 @@ mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
 -}
 expr :: Parsec (Expr String)
 expr =
-  _funcExpr
-    *> ( mkExpr' $
-          precedence
-            ( Atom atom
-                >+ ops
-                  Prefix
-                  [ mkNot <* "!"
-                  , mkNegate <* negateOp
-                  , mkLen <* "len"
-                  , mkOrd <* "ord"
-                  , mkChr <* "chr"
-                  ]
-                >+ ops InfixL [mkMul <* "*", mkMod <* "%", mkDiv <* "/"]
-                >+ ops InfixL [mkAdd <* "+", mkSub <* "-"]
-                >+ ops
-                  InfixN
-                  [mkGTE <* ">=", mkGT <* ">", mkLTE <* "<=", mkLT <* "<"]
-                >+ ops InfixN [mkEq <* "==", mkIneq <* "!="]
-                >+ ops InfixR [mkAnd <* "&&"]
-                >+ ops InfixR [mkOr <* "||"]
-            )
-       )
+  mkExpr'
+    ( precedence
+        ( Atom (_funcExpr *> atom)
+            >+ ops
+              Prefix
+              [ mkNot <* "!"
+              , mkNegate <* negateOp
+              , mkLen <* "len"
+              , mkOrd <* "ord"
+              , mkChr <* "chr"
+              ]
+            >+ ops InfixL [mkMul <* "*", mkMod <* "%", mkDiv <* "/"]
+            >+ ops InfixL [mkAdd <* "+", mkSub <* "-"]
+            >+ ops
+              InfixN
+              [mkGTE <* ">=", mkGT <* ">", mkLTE <* "<=", mkLT <* "<"]
+            >+ ops InfixN [mkEq <* "==", mkIneq <* "!="]
+            >+ ops InfixR [mkAnd <* "&&"]
+            >+ ops InfixR [mkOr <* "||"]
+        )
+    )
 
 mkIntLit' :: Parsec Integer -> Parsec (WAtom ident)
 mkIntLit' = label (fromList ["integer"]) . mkIntLit

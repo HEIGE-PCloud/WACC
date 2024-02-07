@@ -16,7 +16,7 @@ import Language.WACC.Parser.Common ()
 import Text.Gigaparsec (Parsec, many, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Errors.Combinator (label)
-import Text.Gigaparsec.Errors.Patterns (preventWith, preventativeExplain)
+import Text.Gigaparsec.Errors.Patterns (preventativeExplain)
 import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
