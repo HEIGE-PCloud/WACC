@@ -16,6 +16,7 @@ import Language.WACC.Parser.Common ()
 import Text.Gigaparsec (Parsec, many, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Errors.Combinator (label)
+import Text.Gigaparsec.Errors.Patterns (preventWith, preventativeExplain)
 import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
@@ -66,8 +67,12 @@ pairType = "pair" *> pairBrackets
 -- | > <pair-elem-type> ::= <base-type> | <array-type> | 'pair'
 pairElemType :: Parsec WType
 pairElemType =
-  mkWType baseType (many squareBrackets)
-    <|> ("pair" *> (mkWType pairBrackets (some squareBrackets) <|> mkWErasedPair))
+  _nestedPair
+    *> mkWType baseType (many squareBrackets)
+      <|> ("pair" *> (mkWType pairBrackets (some squareBrackets) <|> mkWErasedPair))
 
 _arrayType :: Parsec a -> Parsec a
 _arrayType = label (Set.singleton "array type")
+
+_nestedPair :: Parsec ()
+_nestedPair = preventativeExplain (const "pair types may not be nested") pairType
