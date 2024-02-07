@@ -251,7 +251,7 @@ asgn = mkAsgn (lValue <* "=") rValue
 
 -- | > <if-else> ::= "if" <expr> "then" <stmts> "else" <stmts> "fi"
 ifElse :: Parsec (Stmt String String)
-ifElse = mkIfElse ("if" *> expr <* "then") stmts (_else *> stmts <* _fi)
+ifElse = mkIfElse ("if" *> expr <* _then) stmts (_else *> stmts <* _fi)
 
 -- | > <while> ::= "while" <expr> "do" <stmts> "done"
 while :: Parsec (Stmt String String)
@@ -315,3 +315,6 @@ _else = explain "all if statements must have an else clause" "else"
 
 _fi :: Parsec ()
 _fi = explain "unclosed if statement" "fi"
+
+_then :: Parsec ()
+_then = explain "the condition of an if statement must be closed with `then`" "then"
