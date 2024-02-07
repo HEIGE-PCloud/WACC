@@ -97,7 +97,15 @@ checkStmt (Asgn lv rv) =
   , _ <- tryUnify rvt lvt
   ]
 checkStmt (Read lv) = BAny <$ checkLValue lv
-checkStmt (Free x) = [BAny | t <- checkExpr x, t `elem` heapAllocatedTypes]
+checkStmt (Free x) =
+  [ BAny
+  | t <- checkExpr x
+  , let
+      t' = case t of
+        BFixed ft -> BFixed $ BAny <$ ft
+        _ -> t
+  , t' `elem` heapAllocatedTypes
+  ]
 checkStmt (Return x) = checkExpr x
 checkStmt (Exit x) = BAny <$ unifyExprs BInt [x]
 checkStmt (Print x) = BAny <$ checkExpr x
