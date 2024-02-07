@@ -245,7 +245,7 @@ stmt =
       , "return" *> mkReturn expr
       , "exit" *> mkExit expr
       , "print" *> mkPrint expr
-      , "println" *> mkPrintLn (expr <|> _arrayLiteral)
+      , "println" *> mkPrintLn (expr <|> _arrayLiteral <|> _pairLookup)
       , ifElse
       , while
       , beginEnd
@@ -319,6 +319,12 @@ _extraSemiColon =
 
 _arrayLiteral :: Parsec b
 _arrayLiteral = verifiedExplain (const "array literals can only appear in assignments") "["
+
+_pairLookup :: Parsec b
+_pairLookup =
+  verifiedExplain
+    (const "tuple extraction is only allowed in assignments")
+    ("fst" <|> "snd")
 
 _else :: Parsec ()
 _else = explain "all if statements must have an else clause" "else"
