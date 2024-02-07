@@ -235,20 +235,21 @@ stmts = mkStmts ((stmt <|> _extraSemiColon) `sepBy1` ";")
 -}
 stmt :: Parsec (Stmt String String)
 stmt =
-  choice
-    [ "skip" *> mkSkip
-    , decl
-    , asgn
-    , "read" *> mkRead lValue
-    , "free" *> mkFree expr
-    , "return" *> mkReturn expr
-    , "exit" *> mkExit expr
-    , "print" *> mkPrint expr
-    , "println" *> mkPrintLn (expr <|> _arrayLiteral)
-    , ifElse
-    , while
-    , beginEnd
-    ]
+  _funcLateDefine
+    *> choice
+      [ "skip" *> mkSkip
+      , decl
+      , asgn
+      , "read" *> mkRead lValue
+      , "free" *> mkFree expr
+      , "return" *> mkReturn expr
+      , "exit" *> mkExit expr
+      , "print" *> mkPrint expr
+      , "println" *> mkPrintLn (expr <|> _arrayLiteral)
+      , ifElse
+      , while
+      , beginEnd
+      ]
 
 -- | > <decl> ::= <type> <ident> '=' <rvalue>
 decl :: Parsec (Stmt String String)
@@ -337,3 +338,9 @@ _checkFunc =
         }
     )
     (identifier <* "()")
+
+_funcLateDefine :: Parsec ()
+_funcLateDefine =
+  preventativeExplain
+    (const "function declaration must be at the beginning of the program")
+    func

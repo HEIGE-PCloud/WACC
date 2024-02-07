@@ -21,10 +21,11 @@ end
 
 
 
-In test/wacc_examples/invalid/syntaxErr/function/functionScopeDef.wacc (line 13, column 10):
-  unexpected "("
-  expected assignment
+In test/wacc_examples/invalid/syntaxErr/function/functionScopeDef.wacc (line 13, column 5):
+  unexpected "int"
+  expected statement
+  function declaration must be at the beginning of the program
   >  begin
   >    int f() is
-            ^
+       ^^^
   >      return 0 
