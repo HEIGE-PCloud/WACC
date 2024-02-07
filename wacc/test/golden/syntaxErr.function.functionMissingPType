@@ -19,7 +19,6 @@ end
 In test/wacc_examples/invalid/syntaxErr/function/functionMissingPType.wacc (line 12, column 9):
   unexpected "x"
   expected closing bracket or type
-  unclosed bracket
   >begin
   >  int f(x) is
            ^
