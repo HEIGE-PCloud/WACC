@@ -34,7 +34,7 @@ import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
-import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
+import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label, hide)
 import Text.Gigaparsec.Errors.Patterns (verifiedExplain)
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
@@ -201,7 +201,7 @@ optionalArgList = concat <$> option argList
 
 -- | > <argList> ::= <expr> (',' <expr>)*
 argList :: Parsec [Expr String]
-argList = sepBy1 expr ","
+argList = hide $ expr `sepBy1` ","
 
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
 mkStmts = fmap fromList
