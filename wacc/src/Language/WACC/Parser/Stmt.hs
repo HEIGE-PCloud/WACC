@@ -235,7 +235,7 @@ stmt =
     , "return" *> mkReturn expr
     , "exit" *> mkExit expr
     , "print" *> mkPrint expr
-    , "println" *> mkPrintLn expr
+    , "println" *> mkPrintLn (expr <|> _arrayLiteral)
     , ifElse
     , while
     , beginEnd
@@ -306,3 +306,6 @@ _extraSemiColon =
         "extra semi-colons are not valid, there must be exactly one between each statement"
     )
     ";"
+
+_arrayLiteral :: Parsec b
+_arrayLiteral = verifiedExplain (const "array literals can only appear in assignments") "["
