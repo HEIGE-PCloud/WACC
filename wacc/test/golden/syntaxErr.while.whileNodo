@@ -17,7 +17,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/while/whileNodo.wacc (line 13, column 5):
   unexpected "sk"
-  expected arithmetic operator, comparison operator, do, or logical operator
+  expected binary operator or do
   >  while false
   >    skip
        ^^

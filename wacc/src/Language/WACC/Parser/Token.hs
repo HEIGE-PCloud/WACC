@@ -239,31 +239,31 @@ errorConfig =
           [
             ( "}"
             , labelAndReason
-                (S.fromList ["closing brace"])
+                (S.singleton "closing brace")
                 "unclosed brace"
             )
           , ("(", label (S.singleton "opening parenthesis"))
           ,
             ( ")"
             , labelAndReason
-                (S.fromList ["closing bracket"])
+                (S.singleton "closing bracket")
                 "unclosed bracket"
             )
-          , ("!", label (S.fromList ["not"]))
-          , ("=", label (S.fromList ["assignment"]))
-          , ("+", label (S.fromList ["arithmetic operator"]))
-          , ("-", label (S.fromList ["arithmetic operator"]))
-          , ("*", label (S.fromList ["arithmetic operator"]))
-          , ("/", label (S.fromList ["arithmetic operator"]))
-          , ("%", label (S.fromList ["arithmetic operator"]))
-          , (">", label (S.fromList ["comparison operator"]))
-          , ("<", label (S.fromList ["comparison operator"]))
-          , (">=", label (S.fromList ["comparison operator"]))
-          , ("<=", label (S.fromList ["comparison operator"]))
-          , ("==", label (S.fromList ["comparison operator"]))
-          , ("!=", label (S.fromList ["comparison operator"]))
-          , ("&&", label (S.fromList ["logical operator"]))
-          , ("||", label (S.fromList ["logical operator"]))
+          , ("!", label (S.singleton "not"))
+          , ("=", label (S.singleton "assignment"))
+          , ("+", label (S.singleton "binary operator"))
+          , ("-", label (S.singleton "binary operator"))
+          , ("*", label (S.singleton "binary operator"))
+          , ("/", label (S.singleton "binary operator"))
+          , ("%", label (S.singleton "binary operator"))
+          , (">", label (S.singleton "binary operator"))
+          , ("<", label (S.singleton "binary operator"))
+          , (">=", label (S.singleton "binary operator"))
+          , ("<=", label (S.singleton "binary operator"))
+          , ("==", label (S.singleton "binary operator"))
+          , ("!=", label (S.singleton "binary operator"))
+          , ("&&", label (S.singleton "binary operator"))
+          , ("||", label (S.singleton "binary operator"))
           ]
     , labelEscapeEnd =
         labelAndReason

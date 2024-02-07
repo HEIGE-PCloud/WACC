@@ -19,7 +19,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/if/ifNothen.wacc (line 13, column 3):
   unexpected "else"
-  expected "then", arithmetic operator, comparison operator, or logical operator
+  expected "then" or binary operator
   >  if true 
   >  else
      ^^^^

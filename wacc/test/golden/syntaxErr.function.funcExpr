@@ -19,7 +19,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/function/funcExpr.wacc (line 15, column 12):
   unexpected "()"
-  expected ";", "[", arithmetic operator, comparison operator, end, or logical operator
+  expected ";", "[", binary operator, or end
   >  end
   >  int x = f() + f()
               ^^

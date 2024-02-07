@@ -15,7 +15,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/variables/badintAssignments2.wacc (line 12, column 12):
   unexpected "A4"
-  expected ";", arithmetic operator, comparison operator, digit, end, or logical operator
+  expected ";", binary operator, digit, or end
   >begin
   >  int y = 1A4
               ^^
