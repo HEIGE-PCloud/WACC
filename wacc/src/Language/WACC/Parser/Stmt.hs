@@ -251,7 +251,7 @@ asgn = mkAsgn (lValue <* "=") rValue
 
 -- | > <if-else> ::= "if" <expr> "then" <stmts> "else" <stmts> "fi"
 ifElse :: Parsec (Stmt String String)
-ifElse = mkIfElse ("if" *> expr <* "then") stmts (_else *> stmts <* "fi")
+ifElse = mkIfElse ("if" *> expr <* "then") stmts (_else *> stmts <* _fi)
 
 -- | > <while> ::= "while" <expr> "do" <stmts> "done"
 while :: Parsec (Stmt String String)
@@ -312,3 +312,6 @@ _arrayLiteral = verifiedExplain (const "array literals can only appear in assign
 
 _else :: Parsec ()
 _else = explain "all if statements must have an else clause" "else"
+
+_fi :: Parsec ()
+_fi = explain "unclosed if statement" "fi"
