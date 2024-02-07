@@ -25,7 +25,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/function/funcExpr2.wacc (line 17, column 14):
   unexpected "(x"
-  expected "[", binary operator, or do
+  expected array index, binary operator, or do
   >  int x = 2 ;
   >  while x > f(x) do
                 ^^
