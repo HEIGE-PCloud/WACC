@@ -6,8 +6,6 @@ module Language.WACC.TypeChecking.ExprTest
   )
 where
 
-import Control.Monad.Trans.Except (runExceptT)
-import Control.Monad.Trans.RWS (runRWS)
 import Data.Foldable (traverse_)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
@@ -37,17 +35,15 @@ forEachBType :: (BType -> Assertion) -> Assertion
 forEachBType = flip traverse_ btypes
 
 checkAtom' :: WAtom BType -> Maybe BType
-checkAtom' atom = case runRWS (runExceptT $ checkAtom'' atom) id mempty of
-  (Right mt, _, _) -> Just mt
-  _ -> Nothing
+checkAtom' atom = case runTypingM (checkAtom'' atom) id mempty of
+  (mt, _, _) -> mt
   where
     checkAtom'' :: WAtom BType -> TypingM () BType BType
     checkAtom'' = checkAtom
 
 checkExpr' :: Expr BType -> Maybe BType
-checkExpr' expr = case runRWS (runExceptT $ checkExpr'' expr) id mempty of
-  (Right mt, _, _) -> Just mt
-  _ -> Nothing
+checkExpr' expr = case runTypingM (checkExpr'' expr) id mempty of
+  (mt, _, _) -> mt
   where
     checkExpr'' :: Expr BType -> TypingM () BType BType
     checkExpr'' = checkExpr

@@ -3,6 +3,7 @@ Type checking monad and actions.
 -}
 module Language.WACC.TypeChecking.State
   ( TypingM
+  , runTypingM
   , typeOf
   , typeOfFn
   , setFnType
@@ -13,8 +14,8 @@ module Language.WACC.TypeChecking.State
 where
 
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except (ExceptT, throwE)
-import Control.Monad.Trans.RWS (RWS, asks, gets, modify)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
+import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS)
 import Data.DList (DList)
 import Data.Map (Map, insert, unionWith, (!))
 import Language.WACC.TypeChecking.BType (BType, FnType, unify)
@@ -30,11 +31,28 @@ instance Semigroup TypeErrors where
 instance Monoid TypeErrors where
   mempty = TypeErrors mempty
 
+type FnTypes fnident = Map fnident FnType
+
 {- |
 Type checking monad.
 -}
 type TypingM fnident ident =
-  ExceptT () (RWS (ident -> BType) TypeErrors (Map fnident FnType))
+  ExceptT () (RWS (ident -> BType) TypeErrors (FnTypes fnident))
+
+{- |
+Run a type checking action.
+-}
+runTypingM
+  :: TypingM fnident ident a
+  -> (ident -> BType)
+  -> FnTypes fnident
+  -> (Maybe a, FnTypes fnident, TypeErrors)
+runTypingM action typeOfIdent fnTypes = (mx, fts, es)
+  where
+    (ex, fts, es) = runRWS (runExceptT action) typeOfIdent fnTypes
+    mx = case ex of
+      Right x -> Just x
+      _ -> Nothing
 
 {- |
 Look up the type of an identifier.
