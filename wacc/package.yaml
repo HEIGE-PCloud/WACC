@@ -12,6 +12,7 @@ dependencies:
   - mtl
   - dlist
   - gigaparsec
+  - transformers
 
 ghc-options:
   - -Wall
@@ -54,6 +55,7 @@ tests:
       - tasty-autocollect
       - tasty-hspec
       - tasty-quickcheck
+      - tasty-hunit
       - tasty-ant-xml
       - wacc
       - deepseq

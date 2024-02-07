@@ -41,6 +41,7 @@ library
     , dlist
     , gigaparsec
     , mtl
+    , transformers
   default-language: Haskell2010
 
 executable compile
@@ -56,6 +57,7 @@ executable compile
     , dlist
     , gigaparsec
     , mtl
+    , transformers
     , wacc
   default-language: Haskell2010
 
@@ -67,6 +69,8 @@ test-suite wacc-test
       Test.Integration
       Test.Parser.QuickCheck
       Test.Program
+      Test.Semantic.QuickCheck
+      Test.Semantic.ScopeUnitTest
       Paths_wacc
   hs-source-dirs:
       test
@@ -87,6 +91,8 @@ test-suite wacc-test
     , tasty-ant-xml
     , tasty-autocollect
     , tasty-hspec
+    , tasty-hunit
     , tasty-quickcheck
+    , transformers
     , wacc
   default-language: Haskell2010

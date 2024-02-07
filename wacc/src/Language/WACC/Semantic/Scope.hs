@@ -4,7 +4,7 @@
 The strategy for scope analysis is add all function names into a symbol table,
 analyse the @Stmt@ of each function and the main @Stmt@
 -}
-module Language.WACC.Semantic.Scope () where
+module Language.WACC.Semantic.Scope (renameProgram) where
 
 import Control.Monad (foldM, liftM)
 import Control.Monad.RWS (RWS, ask, asks, get, gets, local, modify, put, tell)
@@ -195,3 +195,5 @@ renameStmts ls = do
   ls' <- local (\globalST -> localST `union` globalST) (mapM renameStmt ls)
   modify $ mapPair (const localST, id)
   return ls'
+
+renameProgram = undefined
