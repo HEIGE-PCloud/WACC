@@ -69,6 +69,7 @@ test-suite wacc-test
   other-modules:
       Language.WACC.TypeChecking.BTypeTest
       Language.WACC.TypeChecking.ExprTest
+      Language.WACC.TypeChecking.StmtTest
       Test
       Test.Arbitrary
       Test.Common
