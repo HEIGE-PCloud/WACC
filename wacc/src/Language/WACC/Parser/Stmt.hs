@@ -81,7 +81,7 @@ func' =
     <~> ("is" *> (stmts >>= checkExit) <* ("end" <|> _unclosedEnd "function body"))
 
 stmts' :: Parsec [Stmt String String]
-stmts' = many (";" *> stmt)
+stmts' = many (";" *> (stmt <|> _extraSemiColon))
 
 parseFuncPreix :: Parsec ((WType, String), Bool)
 parseFuncPreix = mkFunc' $ wType <~> identifier <~> (("(" $> True) <|> ("=" $> False))
@@ -209,7 +209,7 @@ mkStmts = label (Set.fromList ["statement"]) . fmap fromList
 
 -- | > <stmts> ::= <stmt> (';' <stmt>)*
 stmts :: Parsec (Stmts String String)
-stmts = mkStmts (stmt `sepBy1` ";")
+stmts = mkStmts ((stmt <|> _extraSemiColon) `sepBy1` ";")
 
 {- | > <stmt> ::= "skip"
 >              | <decl>
@@ -297,4 +297,12 @@ _semiColonAfterEnd :: Parsec ()
 _semiColonAfterEnd =
   preventativeExplain
     (const "semi-colons cannot follow the `end` of the program")
+    ";"
+
+_extraSemiColon :: Parsec b
+_extraSemiColon =
+  verifiedExplain
+    ( const
+        "extra semi-colons are not valid, there must be exactly one between each statement"
+    )
     ";"

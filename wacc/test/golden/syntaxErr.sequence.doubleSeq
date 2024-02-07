@@ -17,6 +17,7 @@ end
 In test/wacc_examples/invalid/syntaxErr/sequence/doubleSeq.wacc (line 12, column 8):
   unexpected ";"
   expected begin, exit, free, fst, identifier, if, print, println, read, return, skip, snd, type, or while
+  extra semi-colons are not valid, there must be exactly one between each statement
   >begin 
   >  skip;;
           ^
