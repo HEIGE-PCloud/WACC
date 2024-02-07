@@ -204,7 +204,7 @@ argList :: Parsec [Expr String]
 argList = expr `sepBy1` ","
 
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
-mkStmts = fmap fromList
+mkStmts = label (Set.fromList ["statement"]) . fmap fromList
 
 -- | > <stmts> ::= <stmt> (';' <stmt>)*
 stmts :: Parsec (Stmts String String)
@@ -225,21 +225,20 @@ stmts = mkStmts (stmt `sepBy1` ";")
 -}
 stmt :: Parsec (Stmt String String)
 stmt =
-  mkStmt $
-    choice
-      [ "skip" *> mkSkip
-      , decl
-      , asgn
-      , "read" *> mkRead lValue
-      , "free" *> mkFree expr
-      , "return" *> mkReturn expr
-      , "exit" *> mkExit expr
-      , "print" *> mkPrint expr
-      , "println" *> mkPrintLn expr
-      , ifElse
-      , while
-      , beginEnd
-      ]
+  choice
+    [ "skip" *> mkSkip
+    , decl
+    , asgn
+    , "read" *> mkRead lValue
+    , "free" *> mkFree expr
+    , "return" *> mkReturn expr
+    , "exit" *> mkExit expr
+    , "print" *> mkPrint expr
+    , "println" *> mkPrintLn expr
+    , ifElse
+    , while
+    , beginEnd
+    ]
 
 -- | > <decl> ::= <type> <ident> '=' <rvalue>
 decl :: Parsec (Stmt String String)
@@ -271,9 +270,6 @@ mkBegin =
 
 mkCall :: Parsec a -> Parsec a
 mkCall = label (Set.singleton "function call")
-
-mkStmt :: Parsec a -> Parsec a
-mkStmt = label (Set.fromList ["statement"])
 
 mkFunc' :: Parsec a -> Parsec a
 mkFunc' = label (Set.fromList ["function declaration"])
