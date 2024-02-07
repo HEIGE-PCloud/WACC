@@ -13,7 +13,7 @@ module Language.WACC.TypeChecking.Stmt
   )
 where
 
-import Control.Monad (foldM)
+import Control.Monad (foldM, zipWithM_)
 import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
@@ -54,7 +54,7 @@ checkRValue (RVPairElem pe) = checkPairElem pe
 checkRValue (RVCall f xs) = do
   FnType {..} <- typeOfFn f
   ts <- mapM checkExpr xs
-  sequence_ $ zipWith tryUnify ts paramTypes
+  zipWithM_ tryUnify ts paramTypes
   pure retType
 
 {- |
