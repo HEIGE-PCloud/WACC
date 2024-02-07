@@ -25,8 +25,9 @@ import Language.WACC.Parser.Token
   , stringLiteral
   )
 import Text.Gigaparsec (Parsec, many, ($>), (<|>))
-import Text.Gigaparsec.Combinator (choice, option)
+import Text.Gigaparsec.Combinator (choice, option, sepBy)
 import Text.Gigaparsec.Errors.Combinator (explain, label)
+import Text.Gigaparsec.Errors.Patterns (preventativeExplain)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -134,26 +135,28 @@ mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
 -}
 expr :: Parsec (Expr String)
 expr =
-  mkExpr' $
-    precedence
-      ( Atom atom
-          >+ ops
-            Prefix
-            [ mkNot <* "!"
-            , mkNegate <* negateOp
-            , mkLen <* "len"
-            , mkOrd <* "ord"
-            , mkChr <* "chr"
-            ]
-          >+ ops InfixL [mkMul <* "*", mkMod <* "%", mkDiv <* "/"]
-          >+ ops InfixL [mkAdd <* "+", mkSub <* "-"]
-          >+ ops
-            InfixN
-            [mkGTE <* ">=", mkGT <* ">", mkLTE <* "<=", mkLT <* "<"]
-          >+ ops InfixN [mkEq <* "==", mkIneq <* "!="]
-          >+ ops InfixR [mkAnd <* "&&"]
-          >+ ops InfixR [mkOr <* "||"]
-      )
+  _funcExpr
+    *> ( mkExpr' $
+          precedence
+            ( Atom atom
+                >+ ops
+                  Prefix
+                  [ mkNot <* "!"
+                  , mkNegate <* negateOp
+                  , mkLen <* "len"
+                  , mkOrd <* "ord"
+                  , mkChr <* "chr"
+                  ]
+                >+ ops InfixL [mkMul <* "*", mkMod <* "%", mkDiv <* "/"]
+                >+ ops InfixL [mkAdd <* "+", mkSub <* "-"]
+                >+ ops
+                  InfixN
+                  [mkGTE <* ">=", mkGT <* ">", mkLTE <* "<=", mkLT <* "<"]
+                >+ ops InfixN [mkEq <* "==", mkIneq <* "!="]
+                >+ ops InfixR [mkAnd <* "&&"]
+                >+ ops InfixR [mkOr <* "||"]
+            )
+       )
 
 mkIntLit' :: Parsec Integer -> Parsec (WAtom ident)
 mkIntLit' = label (fromList ["integer"]) . mkIntLit
@@ -181,3 +184,9 @@ mkExpr' =
 
 mkArrayElem' :: Parsec (ArrayIndex String) -> Parsec (WAtom String)
 mkArrayElem' = label (fromList ["array element"]) . mkArrayElem
+
+_funcExpr :: Parsec ()
+_funcExpr =
+  preventativeExplain
+    (const "function calls may not appear in expressions and must use `call`")
+    (identifier <* "(" *> (identifier `sepBy` ",") <* ")")
