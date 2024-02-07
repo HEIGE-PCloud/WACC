@@ -18,7 +18,7 @@ end
 
 In test/wacc_examples/invalid/syntaxErr/function/functionMissingPType.wacc (line 12, column 9):
   unexpected "x"
-  expected bool, char, closing bracket, int, pair, or string
+  expected closing bracket or type
   unclosed bracket
   >begin
   >  int f(x) is

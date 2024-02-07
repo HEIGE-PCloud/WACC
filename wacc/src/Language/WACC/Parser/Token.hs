@@ -8,158 +8,158 @@ import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
 import Text.Gigaparsec.Char (char, digit)
 import qualified Text.Gigaparsec.Errors.Combinator as E (label)
 import Text.Gigaparsec.Token.Descriptions
-  ( BreakCharDesc (NoBreakChar),
-    EscapeDesc
-      ( EscapeDesc,
-        binaryEscape,
-        decimalEscape,
-        emptyEscape,
-        escBegin,
-        gapsSupported,
-        hexadecimalEscape,
-        literals,
-        mapping,
-        octalEscape
-      ),
-    ExponentDesc (NoExponents),
-    LexicalDesc
-      ( LexicalDesc,
-        nameDesc,
-        numericDesc,
-        spaceDesc,
-        symbolDesc,
-        textDesc
-      ),
-    NameDesc
-      ( NameDesc,
-        identifierLetter,
-        identifierStart,
-        operatorLetter,
-        operatorStart
-      ),
-    NumericDesc
-      ( NumericDesc,
-        binaryExponentDesc,
-        binaryLeads,
-        decimalExponentDesc,
-        hexadecimalExponentDesc,
-        hexadecimalLeads,
-        integerNumbersCanBeBinary,
-        integerNumbersCanBeHexadecimal,
-        integerNumbersCanBeOctal,
-        leadingDotAllowed,
-        leadingZerosAllowed,
-        literalBreakChar,
-        octalExponentDesc,
-        octalLeads,
-        positiveSign,
-        realNumbersCanBeBinary,
-        realNumbersCanBeHexadecimal,
-        realNumbersCanBeOctal,
-        trailingDotAllowed
-      ),
-    NumericEscape (NumericIllegal),
-    PlusSignPresence (PlusOptional),
-    SpaceDesc
-      ( SpaceDesc,
-        lineCommentAllowsEOF,
-        lineCommentStart,
-        multiLineCommentEnd,
-        multiLineCommentStart,
-        multiLineNestedComments,
-        space,
-        whitespaceIsContextDependent
-      ),
-    SymbolDesc (SymbolDesc, caseSensitive, hardKeywords, hardOperators),
-    TextDesc
-      ( TextDesc,
-        characterLiteralEnd,
-        escapeSequences,
-        graphicCharacter,
-        multiStringEnds,
-        stringEnds
-      ),
+  ( BreakCharDesc (NoBreakChar)
+  , EscapeDesc
+    ( EscapeDesc
+    , binaryEscape
+    , decimalEscape
+    , emptyEscape
+    , escBegin
+    , gapsSupported
+    , hexadecimalEscape
+    , literals
+    , mapping
+    , octalEscape
+    )
+  , ExponentDesc (NoExponents)
+  , LexicalDesc
+    ( LexicalDesc
+    , nameDesc
+    , numericDesc
+    , spaceDesc
+    , symbolDesc
+    , textDesc
+    )
+  , NameDesc
+    ( NameDesc
+    , identifierLetter
+    , identifierStart
+    , operatorLetter
+    , operatorStart
+    )
+  , NumericDesc
+    ( NumericDesc
+    , binaryExponentDesc
+    , binaryLeads
+    , decimalExponentDesc
+    , hexadecimalExponentDesc
+    , hexadecimalLeads
+    , integerNumbersCanBeBinary
+    , integerNumbersCanBeHexadecimal
+    , integerNumbersCanBeOctal
+    , leadingDotAllowed
+    , leadingZerosAllowed
+    , literalBreakChar
+    , octalExponentDesc
+    , octalLeads
+    , positiveSign
+    , realNumbersCanBeBinary
+    , realNumbersCanBeHexadecimal
+    , realNumbersCanBeOctal
+    , trailingDotAllowed
+    )
+  , NumericEscape (NumericIllegal)
+  , PlusSignPresence (PlusOptional)
+  , SpaceDesc
+    ( SpaceDesc
+    , lineCommentAllowsEOF
+    , lineCommentStart
+    , multiLineCommentEnd
+    , multiLineCommentStart
+    , multiLineNestedComments
+    , space
+    , whitespaceIsContextDependent
+    )
+  , SymbolDesc (SymbolDesc, caseSensitive, hardKeywords, hardOperators)
+  , TextDesc
+    ( TextDesc
+    , characterLiteralEnd
+    , escapeSequences
+    , graphicCharacter
+    , multiStringEnds
+    , stringEnds
+    )
   )
 import Text.Gigaparsec.Token.Errors
   ( ErrorConfig
-      ( labelEscapeEnd,
-        labelSymbol
-      ),
-    LabelConfigurable (label),
-    LabelWithExplainConfigurable (labelAndReason),
-    defaultErrorConfig,
+      ( labelEscapeEnd
+      , labelSymbol
+      )
+  , LabelConfigurable (label)
+  , LabelWithExplainConfigurable (labelAndReason)
+  , defaultErrorConfig
   )
 import Text.Gigaparsec.Token.Lexer
-  ( CanHoldSigned,
-    IntegerParsers,
-    Lexeme,
-    Lexer,
-    Names,
-    TextParsers (ascii),
-    mkLexerWithErrorConfig,
+  ( CanHoldSigned
+  , IntegerParsers
+  , Lexeme
+  , Lexer
+  , Names
+  , TextParsers (ascii)
+  , mkLexerWithErrorConfig
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
 
 waccNameDesc :: NameDesc
 waccNameDesc =
   NameDesc
-    { identifierStart = Just (\x -> isAlpha x || x == '_'),
-      identifierLetter = Just (\x -> isAlphaNum x || x == '_'),
-      operatorStart = Nothing,
-      operatorLetter = Nothing
+    { identifierStart = Just (\x -> isAlpha x || x == '_')
+    , identifierLetter = Just (\x -> isAlphaNum x || x == '_')
+    , operatorStart = Nothing
+    , operatorLetter = Nothing
     }
 
 keywords :: [String]
 keywords =
-  [ "begin",
-    "end",
-    "is",
-    "skip",
-    "read",
-    "free",
-    "return",
-    "exit",
-    "println",
-    "print",
-    "if",
-    "else",
-    "fi",
-    "while",
-    "done",
-    "do",
-    "newpair",
-    "call",
-    "fst",
-    "snd",
-    "len",
-    "ord",
-    "chr",
-    "int",
-    "bool",
-    "char",
-    "string",
-    "pair",
-    "null",
-    "true",
-    "false"
+  [ "begin"
+  , "end"
+  , "is"
+  , "skip"
+  , "read"
+  , "free"
+  , "return"
+  , "exit"
+  , "println"
+  , "print"
+  , "if"
+  , "else"
+  , "fi"
+  , "while"
+  , "done"
+  , "do"
+  , "newpair"
+  , "call"
+  , "fst"
+  , "snd"
+  , "len"
+  , "ord"
+  , "chr"
+  , "int"
+  , "bool"
+  , "char"
+  , "string"
+  , "pair"
+  , "null"
+  , "true"
+  , "false"
   ]
 
 operators :: [String]
 operators =
-  [ "!",
-    "-",
-    "*",
-    "/",
-    "%",
-    "+",
-    ">",
-    ">=",
-    "<",
-    "<=",
-    "==",
-    "!=",
-    "&&",
-    "||"
+  [ "!"
+  , "-"
+  , "*"
+  , "/"
+  , "%"
+  , "+"
+  , ">"
+  , ">="
+  , "<"
+  , "<="
+  , "=="
+  , "!="
+  , "&&"
+  , "||"
   ]
 
 escapeChars :: [Char]
@@ -169,33 +169,33 @@ waccSymbolDesc :: SymbolDesc
 waccSymbolDesc =
   SymbolDesc
     { hardKeywords =
-        S.fromList keywords,
-      hardOperators =
-        S.fromList operators,
-      caseSensitive = True
+        S.fromList keywords
+    , hardOperators =
+        S.fromList operators
+    , caseSensitive = True
     }
 
 waccNumericDesc :: NumericDesc
 waccNumericDesc =
   NumericDesc
-    { literalBreakChar = NoBreakChar,
-      leadingDotAllowed = False,
-      trailingDotAllowed = False,
-      leadingZerosAllowed = True,
-      positiveSign = PlusOptional,
-      integerNumbersCanBeHexadecimal = False,
-      integerNumbersCanBeBinary = False,
-      integerNumbersCanBeOctal = False,
-      realNumbersCanBeBinary = False,
-      realNumbersCanBeHexadecimal = False,
-      realNumbersCanBeOctal = False,
-      hexadecimalLeads = S.empty,
-      octalLeads = S.empty,
-      binaryLeads = S.empty,
-      decimalExponentDesc = NoExponents,
-      hexadecimalExponentDesc = NoExponents,
-      octalExponentDesc = NoExponents,
-      binaryExponentDesc = NoExponents
+    { literalBreakChar = NoBreakChar
+    , leadingDotAllowed = False
+    , trailingDotAllowed = False
+    , leadingZerosAllowed = True
+    , positiveSign = PlusOptional
+    , integerNumbersCanBeHexadecimal = False
+    , integerNumbersCanBeBinary = False
+    , integerNumbersCanBeOctal = False
+    , realNumbersCanBeBinary = False
+    , realNumbersCanBeHexadecimal = False
+    , realNumbersCanBeOctal = False
+    , hexadecimalLeads = S.empty
+    , octalLeads = S.empty
+    , binaryLeads = S.empty
+    , decimalExponentDesc = NoExponents
+    , hexadecimalExponentDesc = NoExponents
+    , octalExponentDesc = NoExponents
+    , binaryExponentDesc = NoExponents
     }
 
 waccTextDesc :: TextDesc
@@ -203,32 +203,32 @@ waccTextDesc =
   TextDesc
     { escapeSequences =
         EscapeDesc
-          { escBegin = '\\',
-            literals = S.fromList escapeChars,
-            mapping = M.empty,
-            decimalEscape = NumericIllegal,
-            octalEscape = NumericIllegal,
-            hexadecimalEscape = NumericIllegal,
-            binaryEscape = NumericIllegal,
-            emptyEscape = Nothing,
-            gapsSupported = False
-          },
-      characterLiteralEnd = '\'',
-      stringEnds = S.fromList [("\"", "\"")],
-      multiStringEnds = S.empty,
-      graphicCharacter = Just (`elem` graphicChars)
+          { escBegin = '\\'
+          , literals = S.fromList escapeChars
+          , mapping = M.empty
+          , decimalEscape = NumericIllegal
+          , octalEscape = NumericIllegal
+          , hexadecimalEscape = NumericIllegal
+          , binaryEscape = NumericIllegal
+          , emptyEscape = Nothing
+          , gapsSupported = False
+          }
+    , characterLiteralEnd = '\''
+    , stringEnds = S.fromList [("\"", "\"")]
+    , multiStringEnds = S.empty
+    , graphicCharacter = Just (`elem` graphicChars)
     }
 
 waccSpaceDesc :: SpaceDesc
 waccSpaceDesc =
   SpaceDesc
-    { lineCommentStart = "#",
-      lineCommentAllowsEOF = True,
-      multiLineCommentStart = "",
-      multiLineCommentEnd = "",
-      multiLineNestedComments = False,
-      space = Just isSpace,
-      whitespaceIsContextDependent = False
+    { lineCommentStart = "#"
+    , lineCommentAllowsEOF = True
+    , multiLineCommentStart = ""
+    , multiLineCommentEnd = ""
+    , multiLineNestedComments = False
+    , space = Just isSpace
+    , whitespaceIsContextDependent = False
     }
 
 errorConfig :: ErrorConfig
@@ -236,35 +236,42 @@ errorConfig =
   defaultErrorConfig
     { labelSymbol =
         M.fromList
-          [ ( "}",
-              labelAndReason
+          [
+            ( "}"
+            , labelAndReason
                 (S.singleton "closing brace")
                 "unclosed brace"
-            ),
-            ("(", label (S.singleton "opening parenthesis")),
-            ( ")",
-              labelAndReason
+            )
+          , ("(", label (S.singleton "opening parenthesis"))
+          ,
+            ( ")"
+            , labelAndReason
                 (S.singleton "closing bracket")
                 "unclosed bracket"
-            ),
-            ("[", label (S.singleton "array index")),
-            ("!", label (S.singleton "not")),
-            ("=", label (S.singleton "assignment")),
-            ("+", label (S.singleton "binary operator")),
-            ("-", label (S.singleton "binary operator")),
-            ("*", label (S.singleton "binary operator")),
-            ("/", label (S.singleton "binary operator")),
-            ("%", label (S.singleton "binary operator")),
-            (">", label (S.singleton "binary operator")),
-            ("<", label (S.singleton "binary operator")),
-            (">=", label (S.singleton "binary operator")),
-            ("<=", label (S.singleton "binary operator")),
-            ("==", label (S.singleton "binary operator")),
-            ("!=", label (S.singleton "binary operator")),
-            ("&&", label (S.singleton "binary operator")),
-            ("||", label (S.singleton "binary operator"))
-          ],
-      labelEscapeEnd =
+            )
+          , ("[", label (S.singleton "array index"))
+          , ("!", label (S.singleton "not"))
+          , ("=", label (S.singleton "assignment"))
+          , ("+", label (S.singleton "binary operator"))
+          , ("-", label (S.singleton "binary operator"))
+          , ("*", label (S.singleton "binary operator"))
+          , ("/", label (S.singleton "binary operator"))
+          , ("%", label (S.singleton "binary operator"))
+          , (">", label (S.singleton "binary operator"))
+          , ("<", label (S.singleton "binary operator"))
+          , (">=", label (S.singleton "binary operator"))
+          , ("<=", label (S.singleton "binary operator"))
+          , ("==", label (S.singleton "binary operator"))
+          , ("!=", label (S.singleton "binary operator"))
+          , ("&&", label (S.singleton "binary operator"))
+          , ("||", label (S.singleton "binary operator"))
+          , ("bool", label (S.singleton "type"))
+          , ("char", label (S.singleton "type"))
+          , ("int", label (S.singleton "type"))
+          , ("pair", label (S.singleton "type"))
+          , ("string", label (S.singleton "type"))
+          ]
+    , labelEscapeEnd =
         labelAndReason
           (S.fromList ["escape sequence"])
           "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
@@ -274,11 +281,11 @@ lexer :: Lexer
 lexer =
   mkLexerWithErrorConfig
     LexicalDesc
-      { nameDesc = waccNameDesc,
-        symbolDesc = waccSymbolDesc,
-        numericDesc = waccNumericDesc,
-        textDesc = waccTextDesc,
-        spaceDesc = waccSpaceDesc
+      { nameDesc = waccNameDesc
+      , symbolDesc = waccSymbolDesc
+      , numericDesc = waccNumericDesc
+      , textDesc = waccTextDesc
+      , spaceDesc = waccSpaceDesc
       }
     errorConfig
 
