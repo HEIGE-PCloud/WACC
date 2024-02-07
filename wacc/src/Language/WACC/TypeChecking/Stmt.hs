@@ -83,11 +83,13 @@ Otherwise, 'BAny' is returned.
 -}
 checkStmt :: (Ord fnident) => Stmt fnident ident -> TypingM fnident ident BType
 checkStmt Skip = pure BAny
-checkStmt (Decl t v rv) = do
-  vt <- typeOf v
-  t' <- tryUnify vt $ fix t
-  rvt <- checkRValue rv
-  tryUnify rvt t'
+checkStmt (Decl t v rv) =
+  [ BAny
+  | vt <- typeOf v
+  , t' <- tryUnify vt $ fix t
+  , rvt <- checkRValue rv
+  , _ <- tryUnify rvt t'
+  ]
 checkStmt (Asgn lv rv) =
   BAny <$ (tryUnify <$> checkRValue rv <*> checkLValue lv)
 checkStmt (Read lv) = BAny <$ checkLValue lv
