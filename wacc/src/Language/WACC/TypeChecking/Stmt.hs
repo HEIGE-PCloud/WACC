@@ -91,7 +91,11 @@ checkStmt (Decl t v rv) =
   , _ <- tryUnify rvt t'
   ]
 checkStmt (Asgn lv rv) =
-  BAny <$ (tryUnify <$> checkRValue rv <*> checkLValue lv)
+  [ BAny
+  | rvt <- checkRValue rv
+  , lvt <- checkLValue lv
+  , _ <- tryUnify rvt lvt
+  ]
 checkStmt (Read lv) = BAny <$ checkLValue lv
 checkStmt (Free x) = [BAny | t <- checkExpr x, t `elem` heapAllocatedTypes]
 checkStmt (Return x) = checkExpr x
