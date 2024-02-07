@@ -32,6 +32,9 @@ checkLValue' = testTypingM . checkLValue
 checkRValue' :: RValue () BType -> Maybe BType
 checkRValue' = testTypingM . checkRValue
 
+checkPairElem' :: PairElem BType -> Maybe BType
+checkPairElem' = testTypingM . checkPairElem
+
 intExpr :: Expr BType
 intExpr = WAtom $ IntLit 0 undefined
 
@@ -161,5 +164,14 @@ test =
                 checkRValue' (RVCall () [intExpr, boolExpr, intExpr])
                   @?= Nothing
             ]
+        ]
+    , testGroup
+        "checkPairElem"
+        [ testProperty "extracts correct fst type" $
+            \t1 t2 ->
+              checkPairElem' (FstElem (LVIdent $ BKnownPair t1 t2)) == Just t1
+        , testProperty "extracts correct snd type" $
+            \t1 t2 ->
+              checkPairElem' (SndElem (LVIdent $ BKnownPair t1 t2)) == Just t2
         ]
     ]
