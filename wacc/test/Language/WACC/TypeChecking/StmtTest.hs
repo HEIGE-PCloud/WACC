@@ -13,16 +13,24 @@ import Language.WACC.AST.Expr
 import Language.WACC.AST.Stmt
 import Language.WACC.AST.WType
 import Language.WACC.TypeChecking.BType
-import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
 import Language.WACC.TypeChecking.Stmt
 import Test
 
-checkStmt' :: Stmt () BType -> Maybe BType
-checkStmt' stmt = case runTypingM (checkStmt stmt) id fnMap of
-  (mt, _, _) -> mt
+testTypingM :: TypingM () BType a -> Maybe a
+testTypingM action = case runTypingM action id fnMap of
+  (mx, _, _) -> mx
   where
-    fnMap = singleton () (FnType [BInt] BBool)
+    fnMap = singleton () (FnType [BInt, BBool] BBool)
+
+checkStmt' :: Stmt () BType -> Maybe BType
+checkStmt' = testTypingM . checkStmt
+
+checkLValue' :: LValue BType -> Maybe BType
+checkLValue' = testTypingM . checkLValue
+
+checkRValue' :: RValue () BType -> Maybe BType
+checkRValue' = testTypingM . checkRValue
 
 intExpr :: Expr BType
 intExpr = WAtom $ IntLit 0 undefined
@@ -108,5 +116,50 @@ test =
             \t -> checkStmt' (While boolExpr [Return $ varExpr t]) == Just t
         , testProperty "begin end propagates return types" $
             \t -> checkStmt' (BeginEnd [Return $ varExpr t]) == Just t
+        ]
+    , testGroup
+        "checkLValue"
+        [ testProperty "LVIdent looks up variable types" $
+            \t -> checkLValue' (LVIdent t) == Just t
+        ]
+    , testGroup
+        "checkRValue"
+        [ testProperty "RVExpr propagates expression types" $
+            \t -> checkRValue' (RVExpr $ varExpr t) == Just t
+        , testGroup
+            "RVArrayLit"
+            [ testCase "accepts empty arrays" $
+                checkRValue' (RVArrayLit []) @?= Just (BArray BAny)
+            , testProperty "accepts arrays of homogeneous expressions" $
+                \n t ->
+                  let
+                    n' = abs n + 1
+                    xs = replicate n' $ varExpr t
+                  in
+                    checkRValue' (RVArrayLit xs) == Just (BArray t)
+            , testProperty "rejects arrays of heterogeneous expressions" $
+                \n ->
+                  let
+                    n' = abs n + 1
+                    xs = replicate n' intExpr ++ [boolExpr]
+                  in
+                    checkRValue' (RVArrayLit xs) == Nothing
+            ]
+        , testProperty "RVNewPair creates correct pair types" $
+            \t1 t2 ->
+              checkRValue' (RVNewPair (varExpr t1) (varExpr t2))
+                == Just (BKnownPair t1 t2)
+        , testGroup
+            "RVCall"
+            [ testCase "accepts calls with parameters of correct types" $
+                checkRValue' (RVCall () [intExpr, boolExpr]) @?= Just BBool
+            , testCase "rejects calls with parameters of incorrect types" $
+                checkRValue' (RVCall () [boolExpr, intExpr]) @?= Nothing
+            , testCase "rejects calls with fewer parameters than signature" $
+                checkRValue' (RVCall () [intExpr]) @?= Nothing
+            , testCase "rejects calls with more parameters than signature" $
+                checkRValue' (RVCall () [intExpr, boolExpr, intExpr])
+                  @?= Nothing
+            ]
         ]
     ]
