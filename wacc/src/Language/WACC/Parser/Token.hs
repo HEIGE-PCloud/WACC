@@ -6,6 +6,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
 import Text.Gigaparsec.Char (char, digit)
+import qualified Text.Gigaparsec.Errors.Combinator as E (label)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -248,6 +249,7 @@ errorConfig =
                 (S.fromList ["closing bracket"])
                 "unclosed bracket"
             )
+          , ("!", label (S.fromList ["not"]))
           , ("=", label (S.fromList ["assignment"]))
           , ("+", label (S.fromList ["arithmetic operator"]))
           , ("-", label (S.fromList ["arithmetic operator"]))
@@ -309,7 +311,10 @@ sym :: String -> Parsec ()
 sym = T.sym lexeme
 
 negateOp :: Parsec ()
-negateOp = T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit)))
+negateOp =
+  E.label
+    (S.singleton "negation")
+    (T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit))))
 
 graphicChars :: [Char]
 graphicChars = ['\32' ..] \\ ['\\', '\"', '\'']
