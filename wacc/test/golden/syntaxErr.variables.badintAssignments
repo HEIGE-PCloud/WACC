@@ -1,6 +1,22 @@
-(line 12, column 14):
+# bad integer assignments - multiple syntax errors
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int x = 22 0 ;
+  int y = 1A4
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/variables/badintAssignments.wacc (line 12, column 14):
   unexpected "0"
-  expected !=, ";", %, &&, *, +, -, /, <, <=, ==, >, >=, digit, end, or ||
+  expected ";", binary operator, or end
   >begin
   >  int x = 22 0 ;
                 ^

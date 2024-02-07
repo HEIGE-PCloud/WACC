@@ -1,6 +1,19 @@
-(line 11, column 11):
+# skip typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin skp end
+
+
+In test/wacc_examples/invalid/syntaxErr/basic/skpErr.wacc (line 11, column 11):
   unexpected "e"
-  expected "=" or "["
+  expected array index or assignment
   >
   >begin skp end
              ^

@@ -1,7 +1,23 @@
-(line 12, column 13):
-  unexpected "\H"
-  expected " "; "!"; "#"; "$"; "%"; "&"; "("; ")"; "*"; "+"; ","; "-"; "."; "/"; "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9"; ":"; ";"; "<"; "="; ">"; "?"; "@"; "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M"; "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"; "["; "\""; "\'"; "\0"; "\\"; "\b"; "\f"; "\n"; "\r"; "\t"; "]"; "^"; "_"; "`"; "a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m"; "n"; "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z"; "{"; "|"; "}"; or "~"
+# program has unacceptable escape character
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  char a = '\H'
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/basic/badEscape.wacc (line 12, column 14):
+  unexpected "H"
+  expected escape sequence
+  valid escape sequences are \0, \n, \t, \b, \f, \r, \", \' or \\
   >begin
   >  char a = '\H'
-               ^^
+                ^
   >end

@@ -1,6 +1,25 @@
-(line 15, column 12):
+# function calls are not first-class expressions
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int f() is
+    return 0 
+  end
+  int x = f() + f()
+end
+	
+
+
+In test/wacc_examples/invalid/syntaxErr/function/funcExpr.wacc (line 15, column 12):
   unexpected "()"
-  expected !=, ";", "[", %, &&, *, +, -, /, <, <=, ==, >, >=, end, or ||
+  expected ";", array index, binary operator, or end
   >  end
   >  int x = f() + f()
               ^^

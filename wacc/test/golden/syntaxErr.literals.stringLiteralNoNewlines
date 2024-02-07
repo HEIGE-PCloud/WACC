@@ -1,6 +1,22 @@
-(line 12, column 22):
+# Strings cannot be split across lines
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+    string s = "hello
+ world"
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/literals/stringLiteralNoNewlines.wacc (line 12, column 22):
   unexpected newline
-  expected " "; "!"; """; "#"; "$"; "%"; "&"; "("; ")"; "*"; "+"; ","; "-"; "."; "/"; "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9"; ":"; ";"; "<"; "="; ">"; "?"; "@"; "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M"; "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"; "["; "\""; "\'"; "\0"; "\\"; "\b"; "\f"; "\n"; "\r"; "\t"; "]"; "^"; "_"; "`"; "a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m"; "n"; "o"; "p"; "q"; "r"; "s"; "t"; "u"; "v"; "w"; "x"; "y"; "z"; "{"; "|"; "}"; or "~"
+  expected """ or string character
   >begin
   >    string s = "hello
                         ^

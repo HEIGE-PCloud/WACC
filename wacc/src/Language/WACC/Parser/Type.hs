@@ -10,10 +10,12 @@ module Language.WACC.Parser.Type
   )
 where
 
+import qualified Data.Set as Set
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Common ()
 import Text.Gigaparsec (Parsec, many, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
+import Text.Gigaparsec.Errors.Combinator (label)
 import Text.Gigaparsec.Expr.Chain (postfix1)
 import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
@@ -32,7 +34,7 @@ $( deriveLiftedConstructors
 
 -- | > <type> ::= <base-type> | <array-type> | <pair-type>
 wType :: Parsec WType
-wType = mkWType (baseType <|> pairType) (many "[]")
+wType = mkWType (baseType <|> pairType) (_arrayType (many "[]"))
 
 mkWType :: Parsec WType -> Parsec [()] -> Parsec WType
 mkWType = liftA2 (foldr (const WArray))
@@ -66,3 +68,6 @@ pairElemType :: Parsec WType
 pairElemType =
   mkWType baseType (many squareBrackets)
     <|> ("pair" *> (mkWType pairBrackets (some squareBrackets) <|> mkWErasedPair))
+
+_arrayType :: Parsec a -> Parsec a
+_arrayType = label (Set.singleton "array type")

@@ -1,4 +1,20 @@
-(line 12, column 15):
+# call snd on a null pair literal
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int i = snd null;
+  println i
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/pairs/sndNull.wacc (line 12, column 15):
   unexpected keyword null
   expected fst, identifier, or snd
   >begin

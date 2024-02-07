@@ -11,7 +11,7 @@ import Language.WACC.Parser.Token (fully)
 import Test.Common (syntaxErrTests, takeBaseName)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
-import Text.Gigaparsec (Result (Failure, Success), parse)
+import Text.Gigaparsec (Result (Failure, Success), parseFromFile)
 
 goldenBasePath :: FilePath
 goldenBasePath = "test/golden"
@@ -30,10 +30,11 @@ runSyntaxCheck path = goldenVsStringDiff testname diff goldenPath testAction
     goldenPath = goldenBasePath ++ "/" ++ testname
     testAction = do
       input <- readFile path
-      return (fromString (syntaxCheck input))
+      res <- parseFromFile (fully program) path
+      return (fromString (input ++ "\n\n" ++ syntaxCheck res))
 
-syntaxCheck :: String -> String
-syntaxCheck source = case parse (fully program) source of
+syntaxCheck :: Result a b -> a
+syntaxCheck res = case res of
   Success _ -> error "syntax check should fail but succeeded"
   Failure err -> err
 

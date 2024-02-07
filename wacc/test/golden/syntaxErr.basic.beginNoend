@@ -1,6 +1,20 @@
-(line 12, column 1):
+# begin missing closing end
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin skip
+
+
+In test/wacc_examples/invalid/syntaxErr/basic/beginNoend.wacc (line 12, column 1):
   unexpected end of input
-  expected ";", end, or end of skip
+  expected ";" or end
+  unclosed main body
   >begin skip
   >
    ^

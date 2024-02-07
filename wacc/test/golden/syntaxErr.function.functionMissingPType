@@ -1,6 +1,25 @@
-(line 12, column 9):
+# program missing parameter type in function
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int f(x) is
+    return 0 
+  end
+  int x = call f(1)
+end	
+
+
+In test/wacc_examples/invalid/syntaxErr/function/functionMissingPType.wacc (line 12, column 9):
   unexpected "x"
-  expected ")", bool, char, int, pair, or string
+  expected closing bracket or type
+  unclosed bracket
   >begin
   >  int f(x) is
            ^

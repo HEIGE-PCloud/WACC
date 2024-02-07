@@ -1,6 +1,23 @@
-(line 12, column 8):
+# while typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  whil false do
+    skip
+  done
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/while/whilErr.wacc (line 12, column 8):
   unexpected "f"
-  expected "=" or "["
+  expected array index or assignment
   >begin
   >  whil false do
           ^

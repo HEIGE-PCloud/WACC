@@ -1,4 +1,21 @@
-(line 12, column 17):
+# do typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  while false doo
+    skip
+  done
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/while/dooErr.wacc (line 12, column 17):
   unexpected "o"
   expected end of do
   >begin

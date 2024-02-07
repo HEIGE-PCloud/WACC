@@ -1,6 +1,23 @@
-(line 14, column 1):
+# while missing closing done
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  while false do
+    skip
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/while/whileNodone.wacc (line 14, column 1):
   unexpected "end"
-  expected ";", done, or end of skip
+  expected ";" or done
+  unclosed while loop
   >    skip
   >end
    ^^^

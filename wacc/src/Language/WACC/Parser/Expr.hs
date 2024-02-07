@@ -14,17 +14,19 @@ module Language.WACC.Parser.Expr
   )
 where
 
+import Data.Set (fromList)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Token
-  ( decimal
+  ( charLiteral
+  , decimal
   , identifier
   , negateOp
-  , validChars
+  , stringLiteral
   )
-import Text.Gigaparsec (Parsec, atomic, many, ($>), (<|>))
-import Text.Gigaparsec.Char (char, string)
+import Text.Gigaparsec (Parsec, many, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option)
+import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -77,38 +79,31 @@ $( deriveDeferredConstructors
 
 -- | > <int-liter> ::= <int-sign>? <digit>+
 intLiter :: Parsec (WAtom i)
-intLiter = mkIntLit decimal
+intLiter = mkIntLit' decimal
 
 -- | > <bool-liter> ::= "true" | "false"
 boolLiter :: Parsec (WAtom i)
-boolLiter = mkBoolLit (("true" $> True) <|> ("false" $> False))
-
-{- | > <character> ::= any-graphic-ASCII-character-except-'\'-'''-'"'
- > (graphic 𝑔 ≥' ')
- >                   | '\' ⟨escaped-char⟩
--}
-character :: Parsec Char
-character = last <$> choice [atomic (string c) | c <- validChars]
+boolLiter = mkBoolLit' (("true" $> True) <|> ("false" $> False))
 
 -- | > <char-liter> ::= ''' <character> '''
 charLiter :: Parsec (WAtom i)
-charLiter = char '\'' *> mkCharLit character <* "'"
+charLiter = mkCharLit' charLiteral
 
 -- | > <string-liter> ::= '"' <character>* '"'
 stringLiter :: Parsec (WAtom i)
-stringLiter = mkStringLit (char '\"' *> many character <* "\"")
+stringLiter = mkStringLit' stringLiteral
 
 -- | > <null-liter> ::= "null"
 pairLiter :: Parsec (WAtom i)
-pairLiter = "null" >> mkNull
+pairLiter = "null" >> mkNull'
 
 -- | > <ident> ::= ('_'|'a'-'z'|'A'-'Z')('_'|'a'-'z'|'A'-'Z'|'0'-'9')*
 ident :: Parsec (WAtom String)
-ident = mkIdent identifier
+ident = mkIdent' identifier
 
 -- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
 arrayElem :: Parsec (WAtom String)
-arrayElem = mkArrayElem (mkArrayIndex identifier (many ("[" *> expr <* "]")))
+arrayElem = mkArrayElem' (mkArrayIndex identifier (many ("[" *> expr <* "]")))
 
 {- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
  >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
@@ -139,22 +134,50 @@ mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
 -}
 expr :: Parsec (Expr String)
 expr =
-  precedence
-    ( Atom atom
-        >+ ops
-          Prefix
-          [ mkNot <* "!"
-          , mkNegate <* negateOp
-          , mkLen <* "len"
-          , mkOrd <* "ord"
-          , mkChr <* "chr"
-          ]
-        >+ ops InfixL [mkMul <* "*", mkMod <* "%", mkDiv <* "/"]
-        >+ ops InfixL [mkAdd <* "+", mkSub <* "-"]
-        >+ ops
-          InfixN
-          [mkGTE <* ">=", mkGT <* ">", mkLTE <* "<=", mkLT <* "<"]
-        >+ ops InfixN [mkEq <* "==", mkIneq <* "!="]
-        >+ ops InfixR ["&&" *> mkAnd]
-        >+ ops InfixR ["||" *> mkOr]
-    )
+  mkExpr' $
+    precedence
+      ( Atom atom
+          >+ ops
+            Prefix
+            [ mkNot <* "!"
+            , mkNegate <* negateOp
+            , mkLen <* "len"
+            , mkOrd <* "ord"
+            , mkChr <* "chr"
+            ]
+          >+ ops InfixL [mkMul <* "*", mkMod <* "%", mkDiv <* "/"]
+          >+ ops InfixL [mkAdd <* "+", mkSub <* "-"]
+          >+ ops
+            InfixN
+            [mkGTE <* ">=", mkGT <* ">", mkLTE <* "<=", mkLT <* "<"]
+          >+ ops InfixN [mkEq <* "==", mkIneq <* "!="]
+          >+ ops InfixR [mkAnd <* "&&"]
+          >+ ops InfixR [mkOr <* "||"]
+      )
+
+mkIntLit' :: Parsec Integer -> Parsec (WAtom ident)
+mkIntLit' = label (fromList ["integer"]) . mkIntLit
+
+mkBoolLit' :: Parsec Bool -> Parsec (WAtom ident)
+mkBoolLit' = label (fromList ["boolean"]) . mkBoolLit
+
+mkCharLit' :: Parsec Char -> Parsec (WAtom ident)
+mkCharLit' = label (fromList ["character literal"]) . mkCharLit
+
+mkStringLit' :: Parsec String -> Parsec (WAtom ident)
+mkStringLit' = label (fromList ["strings"]) . mkStringLit
+
+mkNull' :: Parsec (WAtom ident)
+mkNull' = label (fromList ["null"]) mkNull
+
+mkIdent' :: Parsec String -> Parsec (WAtom String)
+mkIdent' = label (fromList ["identifier"]) . mkIdent
+
+mkExpr' :: Parsec a -> Parsec a
+mkExpr' =
+  explain
+    "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses"
+    . label (fromList ["expression"])
+
+mkArrayElem' :: Parsec (ArrayIndex String) -> Parsec (WAtom String)
+mkArrayElem' = label (fromList ["array element"]) . mkArrayElem

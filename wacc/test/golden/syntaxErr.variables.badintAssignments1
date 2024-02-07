@@ -1,6 +1,21 @@
-(line 12, column 14):
+# bad integer assignment - whitespace should delimit ints
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int x = 22 0
+end 
+
+
+In test/wacc_examples/invalid/syntaxErr/variables/badintAssignments1.wacc (line 12, column 14):
   unexpected "0"
-  expected !=, ";", %, &&, *, +, -, /, <, <=, ==, >, >=, digit, end, or ||
+  expected ";", binary operator, or end
   >begin
   >  int x = 22 0
                 ^
