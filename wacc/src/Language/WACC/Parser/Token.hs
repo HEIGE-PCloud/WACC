@@ -82,7 +82,8 @@ import Text.Gigaparsec.Token.Descriptions
   )
 import Text.Gigaparsec.Token.Errors
   ( ErrorConfig
-      ( labelEscapeEnd
+      ( labelCharAsciiEnd
+      , labelEscapeEnd
       , labelSymbol
       )
   , LabelConfigurable (label)
@@ -273,8 +274,9 @@ errorConfig =
           ]
     , labelEscapeEnd =
         labelAndReason
-          (S.fromList ["escape sequence"])
+          (S.singleton "escape sequence")
           "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
+    , labelCharAsciiEnd = label (S.singleton "end of character literal")
     }
 
 lexer :: Lexer
