@@ -255,7 +255,7 @@ ifElse = mkIfElse ("if" *> expr <* "then") stmts ("else" *> stmts <* "fi")
 
 -- | > <while> ::= "while" <expr> "do" <stmts> "done"
 while :: Parsec (Stmt String String)
-while = mkWhile ("while" *> expr <* "do") (stmts <* "done")
+while = mkWhile ("while" *> expr <* ("do" <|> _missingDo)) (stmts <* "done")
 
 -- | > <begin-end> ::= "begin" <stmts> "end"
 beginEnd :: Parsec (Stmt String String)
@@ -283,3 +283,6 @@ _emptyProgram = verifiedExplain (const "missing main program body") "end"
 
 _unclosedEnd :: String -> Parsec b
 _unclosedEnd place = verifiedExplain (const $ "unclosed " ++ place) eof
+
+_missingDo :: Parsec b
+_missingDo = verifiedExplain (const "the condition of a while loop must be closed with `do`") stmts
