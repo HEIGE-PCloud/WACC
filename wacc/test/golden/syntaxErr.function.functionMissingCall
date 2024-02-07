@@ -17,10 +17,12 @@ end
 
 
 
-In test/wacc_examples/invalid/syntaxErr/function/functionMissingCall.wacc (line 15, column 12):
-  unexpected "()"
-  expected ";", array index, binary operator, or end
+In test/wacc_examples/invalid/syntaxErr/function/functionMissingCall.wacc (line 15, column 11):
+  unexpected "f()"
+  expected expression
+  expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
+  function calls may not appear in expressions and must use `call`
   >  end
   >  int x = f()
-              ^^
+             ^^^
   >end

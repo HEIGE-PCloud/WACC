@@ -246,9 +246,8 @@ errorConfig =
           , ("(", label (S.singleton "opening parenthesis"))
           ,
             ( ")"
-            , labelAndReason
+            , label
                 (S.singleton "closing bracket")
-                "unclosed bracket"
             )
           , ("[", label (S.singleton "array index"))
           , ("!", label (S.singleton "not"))

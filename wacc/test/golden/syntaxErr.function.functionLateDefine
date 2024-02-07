@@ -23,10 +23,10 @@ end
 	
 
 
-In test/wacc_examples/invalid/syntaxErr/function/functionLateDefine.wacc (line 17, column 8):
-  unexpected "("
-  expected assignment
+In test/wacc_examples/invalid/syntaxErr/function/functionLateDefine.wacc (line 17, column 3):
+  unexpected "int"
+  function declaration must be at the beginning of the program
   >  println x ;
   >  int g() is
-          ^
+     ^^^
   >    return 1

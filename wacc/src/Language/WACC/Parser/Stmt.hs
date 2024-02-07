@@ -35,7 +35,14 @@ import Language.WACC.Parser.Type (wType)
 import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
-import Text.Gigaparsec.Errors.Patterns (preventativeExplain, verifiedExplain)
+import Text.Gigaparsec.Errors.ErrorGen
+  ( ErrorGen (SpecializedGen, adjustWidth, messages)
+  )
+import Text.Gigaparsec.Errors.Patterns
+  ( preventWith
+  , preventativeExplain
+  , verifiedExplain
+  )
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
 $( deriveLiftedConstructors
@@ -84,7 +91,9 @@ stmts' :: Parsec [Stmt String String]
 stmts' = many (";" *> (stmt <|> _extraSemiColon))
 
 parseFuncPreix :: Parsec ((WType, String), Bool)
-parseFuncPreix = mkFunc' $ wType <~> identifier <~> (("(" $> True) <|> ("=" $> False))
+parseFuncPreix =
+  _checkFunc
+    *> mkFunc' (wType <~> identifier <~> (("(" $> True) <|> ("=" $> False)))
 
 parseProgPrefix :: Parsec (Maybe ((WType, String), Bool))
 parseProgPrefix = option parseFuncPreix
@@ -226,20 +235,21 @@ stmts = mkStmts ((stmt <|> _extraSemiColon) `sepBy1` ";")
 -}
 stmt :: Parsec (Stmt String String)
 stmt =
-  choice
-    [ "skip" *> mkSkip
-    , decl
-    , asgn
-    , "read" *> mkRead lValue
-    , "free" *> mkFree expr
-    , "return" *> mkReturn expr
-    , "exit" *> mkExit expr
-    , "print" *> mkPrint expr
-    , "println" *> mkPrintLn (expr <|> _arrayLiteral)
-    , ifElse
-    , while
-    , beginEnd
-    ]
+  _funcLateDefine
+    *> choice
+      [ "skip" *> mkSkip
+      , decl
+      , asgn
+      , "read" *> mkRead lValue
+      , "free" *> mkFree expr
+      , "return" *> mkReturn expr
+      , "exit" *> mkExit expr
+      , "print" *> mkPrint expr
+      , "println" *> mkPrintLn (expr <|> _arrayLiteral <|> _pairLookup)
+      , ifElse
+      , while
+      , beginEnd
+      ]
 
 -- | > <decl> ::= <type> <ident> '=' <rvalue>
 decl :: Parsec (Stmt String String)
@@ -310,6 +320,12 @@ _extraSemiColon =
 _arrayLiteral :: Parsec b
 _arrayLiteral = verifiedExplain (const "array literals can only appear in assignments") "["
 
+_pairLookup :: Parsec b
+_pairLookup =
+  verifiedExplain
+    (const "tuple extraction is only allowed in assignments")
+    ("fst" <|> "snd")
+
 _else :: Parsec ()
 _else = explain "all if statements must have an else clause" "else"
 
@@ -318,3 +334,19 @@ _fi = explain "unclosed if statement" "fi"
 
 _then :: Parsec ()
 _then = explain "the condition of an if statement must be closed with `then`" "then"
+
+_checkFunc :: Parsec ()
+_checkFunc =
+  preventWith
+    ( SpecializedGen
+        { messages = \x -> ["function declaration for `" ++ x ++ "` missing type"]
+        , adjustWidth = const id
+        }
+    )
+    (identifier <* "()")
+
+_funcLateDefine :: Parsec ()
+_funcLateDefine =
+  preventativeExplain
+    (const "function declaration must be at the beginning of the program")
+    func

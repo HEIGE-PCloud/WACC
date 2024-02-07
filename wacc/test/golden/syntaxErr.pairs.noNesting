@@ -13,10 +13,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/pairs/noNesting.wacc (line 12, column 27):
-  unexpected ","
-  expected array index
+In test/wacc_examples/invalid/syntaxErr/pairs/noNesting.wacc (line 12, column 10):
+  unexpected "pair(int,"
+  pair types may not be nested
   >begin
   >    pair(pair(int, string), char) p = null
-                             ^
+            ^^^^^^^^^
   >end
