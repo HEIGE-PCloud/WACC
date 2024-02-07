@@ -19,6 +19,7 @@ end
 In test/wacc_examples/invalid/syntaxErr/if/ifNoelse.wacc (line 15, column 3):
   unexpected "fi"
   expected ";" or else
+  all if statements must have an else clause
   >    skip
   >  fi
      ^^

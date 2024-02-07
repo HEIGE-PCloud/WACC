@@ -2,16 +2,16 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Language.WACC.Parser.Stmt
-  ( program
-  , func
-  , paramList
-  , param
-  , stmts
-  , lValue
-  , rValue
-  , argList
-  , pairElem
-  , arrayLiter
+  ( program,
+    func,
+    paramList,
+    param,
+    stmts,
+    lValue,
+    rValue,
+    argList,
+    pairElem,
+    arrayLiter,
   )
 where
 
@@ -21,11 +21,11 @@ import qualified Data.Set as Set
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
 import Language.WACC.AST.Prog (Func (..), Prog (Main))
 import Language.WACC.AST.Stmt
-  ( LValue (..)
-  , PairElem (..)
-  , RValue (..)
-  , Stmt (..)
-  , Stmts
+  ( LValue (..),
+    PairElem (..),
+    RValue (..),
+    Stmt (..),
+    Stmts,
   )
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Parser.Common ()
@@ -39,29 +39,29 @@ import Text.Gigaparsec.Errors.Patterns (preventativeExplain, verifiedExplain)
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 
 $( deriveLiftedConstructors
-    "mk"
-    [ 'LVPairElem
-    , 'FstElem
-    , 'SndElem
-    , 'RVExpr
-    , 'RVArrayLit
-    , 'RVPairElem
-    , 'Skip
-    , 'Read
-    , 'Free
-    , 'Return
-    , 'Exit
-    , 'Print
-    , 'PrintLn
-    , 'IfElse
-    , 'While
-    , 'BeginEnd
-    , 'RVNewPair
-    , 'Decl
-    , 'Asgn
-    , 'RVCall
-    , 'Func
-    ]
+     "mk"
+     [ 'LVPairElem,
+       'FstElem,
+       'SndElem,
+       'RVExpr,
+       'RVArrayLit,
+       'RVPairElem,
+       'Skip,
+       'Read,
+       'Free,
+       'Return,
+       'Exit,
+       'Print,
+       'PrintLn,
+       'IfElse,
+       'While,
+       'BeginEnd,
+       'RVNewPair,
+       'Decl,
+       'Asgn,
+       'RVCall,
+       'Func
+     ]
  )
 
 -- | > program ::= "begin" <func>* <stmt> "end"
@@ -101,20 +101,20 @@ parseProgRest (Just ((wtype, ident), False)) = do
 mkMain1 :: Stmts fnident ident -> Prog fnident ident
 mkMain1 = Main []
 
-mkMain2
-  :: WType
-  -> String
-  -> ([(WType, String)], Stmts String String)
-  -> Prog String String
-  -> Prog String String
+mkMain2 ::
+  WType ->
+  String ->
+  ([(WType, String)], Stmts String String) ->
+  Prog String String ->
+  Prog String String
 mkMain2 wtype ident (params, ss) (Main fs sts) = Main (Func wtype ident params ss : fs) sts
 
-mkMain3
-  :: WType
-  -> String
-  -> RValue String String
-  -> [Stmt String String]
-  -> Prog String String
+mkMain3 ::
+  WType ->
+  String ->
+  RValue String String ->
+  [Stmt String String] ->
+  Prog String String
 mkMain3 wtype ident rvalue sts = Main [] (fromList (Decl wtype ident rvalue : sts))
 
 -- | > func ::= <type> <identifier> '(' <paramList>? ')' 'is' <stmt> 'end'
@@ -158,8 +158,8 @@ lValue =
   choice
     [lValueOrIdent, mkLVPairElem pairElem]
 
-mkIdentOrArrayElem
-  :: Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (LValue String)
+mkIdentOrArrayElem ::
+  Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (LValue String)
 mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem' str (Just e) = LVArrayElem (ArrayIndex str e)
@@ -175,11 +175,11 @@ arrayIndex = label (Set.singleton "array index")
 rValue :: Parsec (RValue String String)
 rValue =
   choice
-    [ mkRVExpr expr
-    , mkRVArrayLit arrayLiter
-    , newPair
-    , mkRVPairElem pairElem
-    , fnCall
+    [ mkRVExpr expr,
+      mkRVArrayLit arrayLiter,
+      newPair,
+      mkRVPairElem pairElem,
+      fnCall
     ]
 
 arrayLiter :: Parsec [Expr String]
@@ -211,34 +211,33 @@ mkStmts = label (Set.fromList ["statement"]) . fmap fromList
 stmts :: Parsec (Stmts String String)
 stmts = mkStmts ((stmt <|> _extraSemiColon) `sepBy1` ";")
 
-{- | > <stmt> ::= "skip"
->              | <decl>
->              | <asgn>
->              | "read" <lvalue>
->              | "free" <expr>
->              | "return" <expr>
->              | "exit" <expr>
->              | "print" <expr>
->              | "println" <expr>
->              | <if-else>
->              | <while>
->              | <begin-end>
--}
+-- | > <stmt> ::= "skip"
+-- >              | <decl>
+-- >              | <asgn>
+-- >              | "read" <lvalue>
+-- >              | "free" <expr>
+-- >              | "return" <expr>
+-- >              | "exit" <expr>
+-- >              | "print" <expr>
+-- >              | "println" <expr>
+-- >              | <if-else>
+-- >              | <while>
+-- >              | <begin-end>
 stmt :: Parsec (Stmt String String)
 stmt =
   choice
-    [ "skip" *> mkSkip
-    , decl
-    , asgn
-    , "read" *> mkRead lValue
-    , "free" *> mkFree expr
-    , "return" *> mkReturn expr
-    , "exit" *> mkExit expr
-    , "print" *> mkPrint expr
-    , "println" *> mkPrintLn (expr <|> _arrayLiteral)
-    , ifElse
-    , while
-    , beginEnd
+    [ "skip" *> mkSkip,
+      decl,
+      asgn,
+      "read" *> mkRead lValue,
+      "free" *> mkFree expr,
+      "return" *> mkReturn expr,
+      "exit" *> mkExit expr,
+      "print" *> mkPrint expr,
+      "println" *> mkPrintLn (expr <|> _arrayLiteral),
+      ifElse,
+      while,
+      beginEnd
     ]
 
 -- | > <decl> ::= <type> <ident> '=' <rvalue>
@@ -251,7 +250,7 @@ asgn = mkAsgn (lValue <* "=") rValue
 
 -- | > <if-else> ::= "if" <expr> "then" <stmts> "else" <stmts> "fi"
 ifElse :: Parsec (Stmt String String)
-ifElse = mkIfElse ("if" *> expr <* "then") stmts ("else" *> stmts <* "fi")
+ifElse = mkIfElse ("if" *> expr <* "then") stmts (_else *> stmts <* "fi")
 
 -- | > <while> ::= "while" <expr> "do" <stmts> "done"
 while :: Parsec (Stmt String String)
@@ -309,3 +308,6 @@ _extraSemiColon =
 
 _arrayLiteral :: Parsec b
 _arrayLiteral = verifiedExplain (const "array literals can only appear in assignments") "["
+
+_else :: Parsec ()
+_else = explain "all if statements must have an else clause" "else"
