@@ -40,6 +40,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , dlist
     , gigaparsec
     , recursion-schemes
     , transformers
@@ -55,6 +56,7 @@ executable compile
   build-depends:
       base >=4.7 && <5
     , containers
+    , dlist
     , gigaparsec
     , recursion-schemes
     , transformers
@@ -88,6 +90,7 @@ test-suite wacc-test
     , containers
     , deepseq
     , directory
+    , dlist
     , generic-arbitrary
     , gigaparsec
     , process

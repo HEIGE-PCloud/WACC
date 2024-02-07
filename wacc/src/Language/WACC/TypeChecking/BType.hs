@@ -11,6 +11,7 @@ module Language.WACC.TypeChecking.BType
   , fix
   , orderedTypes
   , heapAllocatedTypes
+  , FnType (..)
   )
 where
 
@@ -133,3 +134,8 @@ unify :: BType -> BType -> Maybe BType
 -- Accept char[] where string is expected.
 unify (BArray bt) BString = BString <$ unifyParam bt BChar
 unify bt1 bt2 = unifyParam bt1 bt2
+
+{- |
+A WACC function type.
+-}
+data FnType = FnType {paramTypes :: [BType], retType :: BType}

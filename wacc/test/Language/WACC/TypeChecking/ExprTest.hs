@@ -6,12 +6,13 @@ module Language.WACC.TypeChecking.ExprTest
   )
 where
 
-import Control.Monad.Trans.State (evalStateT)
+import Control.Monad.Trans.Except (runExceptT)
+import Control.Monad.Trans.RWS (runRWS)
 import Data.Foldable (traverse_)
-import Data.Map (Map, fromList)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
+import Language.WACC.TypeChecking.State
 import Test
 import Prelude hiding (GT, LT)
 
@@ -35,14 +36,21 @@ btypes =
 forEachBType :: (BType -> Assertion) -> Assertion
 forEachBType = flip traverse_ btypes
 
-vars :: Map BType BType
-vars = fromList $ fmap (\x -> (x, x)) btypes
-
 checkAtom' :: WAtom BType -> Maybe BType
-checkAtom' atom = evalStateT (checkAtom atom) vars
+checkAtom' atom = case runRWS (runExceptT $ checkAtom'' atom) id mempty of
+  (Right mt, _, _) -> Just mt
+  _ -> Nothing
+  where
+    checkAtom'' :: WAtom BType -> TypingM () BType BType
+    checkAtom'' = checkAtom
 
 checkExpr' :: Expr BType -> Maybe BType
-checkExpr' x = evalStateT (checkExpr x) vars
+checkExpr' expr = case runRWS (runExceptT $ checkExpr'' expr) id mempty of
+  (Right mt, _, _) -> Just mt
+  _ -> Nothing
+  where
+    checkExpr'' :: Expr BType -> TypingM () BType BType
+    checkExpr'' = checkExpr
 
 intExpr :: Expr BType
 intExpr = WAtom $ IntLit 0 undefined

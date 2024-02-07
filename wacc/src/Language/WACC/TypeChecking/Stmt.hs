@@ -1,4 +1,5 @@
 {-# LANGUAGE MonadComprehensions #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {- |
 Type checking actions for WACC statements.
@@ -18,24 +19,25 @@ import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
 
-unifyPair :: (Ord ident) => LValue ident -> TypingM ident (BType, BType)
-unifyPair lv =
-  [ (t1, t2)
-  | lvt <- checkLValue lv
-  , BKnownPair t1 t2 <- tryUnify (BKnownPair BAny BAny) lvt
-  ]
+unifyPair :: LValue ident -> TypingM fnident ident (BType, BType)
+unifyPair lv = do
+  lvt <- checkLValue lv
+  pt <- tryUnify (BKnownPair BAny BAny) lvt
+  case pt of
+    BKnownPair t1 t2 -> pure (t1, t2)
+    _ -> abort
 
 {- |
 Type check an element of a WACC @pair@.
 -}
-checkPairElem :: (Ord ident) => PairElem ident -> TypingM ident BType
+checkPairElem :: PairElem ident -> TypingM fnident ident BType
 checkPairElem (FstElem lv) = fst <$> unifyPair lv
 checkPairElem (SndElem lv) = snd <$> unifyPair lv
 
 {- |
 Type check a WACC @lvalue@.
 -}
-checkLValue :: (Ord ident) => LValue ident -> TypingM ident BType
+checkLValue :: LValue ident -> TypingM fnident ident BType
 checkLValue (LVIdent v) = typeOf v
 checkLValue (LVArrayElem ai) = checkArrayIndex ai
 checkLValue (LVPairElem pe) = checkPairElem pe
@@ -43,12 +45,17 @@ checkLValue (LVPairElem pe) = checkPairElem pe
 {- |
 Type check a WACC @rvalue@.
 -}
-checkRValue :: (Ord ident) => RValue fnident ident -> TypingM ident BType
+checkRValue
+  :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
 checkRValue (RVExpr x) = checkExpr x
 checkRValue (RVArrayLit xs) = BArray <$> unifyExprs BAny xs
 checkRValue (RVNewPair x1 x2) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe) = checkPairElem pe
-checkRValue (RVCall _ _) = undefined
+checkRValue (RVCall f xs) = do
+  FnType {..} <- typeOfFn f
+  ts <- mapM checkExpr xs
+  sequence_ $ zipWith tryUnify ts paramTypes
+  pure retType
 
 {- |
 @unifyStmts t0 (s1 :| [s2, ..., sn])@ attempts to unify @s1@ with @t0@ to obtain
@@ -56,7 +63,8 @@ checkRValue (RVCall _ _) = undefined
 
 If a unification fails, the traversal is aborted.
 -}
-unifyStmts :: (Ord ident) => BType -> Stmts fnident ident -> TypingM ident BType
+unifyStmts
+  :: (Ord fnident) => BType -> Stmts fnident ident -> TypingM fnident ident BType
 unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
 
 {- |
@@ -72,7 +80,7 @@ Type check a WACC statement.
 
 Otherwise, 'BAny' is returned.
 -}
-checkStmt :: (Ord ident) => Stmt fnident ident -> TypingM ident BType
+checkStmt :: (Ord fnident) => Stmt fnident ident -> TypingM fnident ident BType
 checkStmt Skip = pure BAny
 checkStmt (Decl t v rv) = do
   vt <- typeOf v
