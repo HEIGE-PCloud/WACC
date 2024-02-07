@@ -13,7 +13,7 @@ where
 import qualified Data.Set as Set
 import Language.WACC.AST.WType (WType (..))
 import Language.WACC.Parser.Common ()
-import Text.Gigaparsec (Parsec, many, some, (<|>))
+import Text.Gigaparsec (Parsec, many, notFollowedBy, some, (<|>))
 import Text.Gigaparsec.Combinator (choice)
 import Text.Gigaparsec.Errors.Combinator (label)
 import Text.Gigaparsec.Errors.Patterns (preventativeExplain)
@@ -75,4 +75,7 @@ _arrayType :: Parsec a -> Parsec a
 _arrayType = label (Set.singleton "array type")
 
 _nestedPair :: Parsec ()
-_nestedPair = preventativeExplain (const "pair types may not be nested") pairType
+_nestedPair =
+  preventativeExplain
+    (const "pair types may not be nested")
+    (pairType <* notFollowedBy "[]")
