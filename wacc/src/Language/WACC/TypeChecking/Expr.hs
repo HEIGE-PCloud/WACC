@@ -3,7 +3,13 @@
 {- |
 Type checking actions for WACC expressions.
 -}
-module Language.WACC.TypeChecking.Expr (checkAtom, checkExpr, unifyExprs) where
+module Language.WACC.TypeChecking.Expr
+  ( checkAtom
+  , checkExpr
+  , unifyExprs
+  , checkArrayIndex
+  )
+where
 
 import Control.Applicative (empty)
 import Control.Monad (foldM)
@@ -11,6 +17,15 @@ import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
 import Prelude hiding (GT, LT)
+
+{- |
+Type check a WACC array indexing subexpression.
+-}
+checkArrayIndex :: (Ord ident) => ArrayIndex ident -> TypingM ident BType
+checkArrayIndex (ArrayIndex v xs) = typeOf v >>= flip (foldM go) xs
+  where
+    go (BArray t) x = t <$ unifyExprs BInt [x]
+    go _ _ = empty
 
 {- |
 Type check an atomic WACC expression.
@@ -22,10 +37,7 @@ checkAtom (CharLit _) = pure BChar
 checkAtom (StringLit _) = pure BString
 checkAtom Null = pure (BKnownPair BAny BAny)
 checkAtom (Ident v) = typeOf v
-checkAtom (ArrayElem (ArrayIndex v xs)) = typeOf v >>= flip (foldM go) xs
-  where
-    go (BArray t) x = t <$ unifyExprs BInt [x]
-    go _ _ = empty
+checkAtom (ArrayElem ai) = checkArrayIndex ai
 
 {- |
 @unifyExprs t0 [x1, x2, ..., xn]@ attempts to unify @x1@ with @t0@ to obtain

@@ -3,7 +3,14 @@
 {- |
 Type checking actions for WACC statements.
 -}
-module Language.WACC.TypeChecking.Stmt (checkStmt, unifyStmts) where
+module Language.WACC.TypeChecking.Stmt
+  ( checkStmt
+  , unifyStmts
+  , checkLValue
+  , checkRValue
+  , checkPairElem
+  )
+where
 
 import Control.Monad (foldM)
 import Language.WACC.AST.Stmt
@@ -11,11 +18,37 @@ import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
 
-checkLValue :: (Ord ident) => LValue ident -> TypingM ident BType
-checkLValue = undefined
+unifyPair :: (Ord ident) => LValue ident -> TypingM ident (BType, BType)
+unifyPair lv =
+  [ (t1, t2)
+  | lvt <- checkLValue lv
+  , BKnownPair t1 t2 <- tryUnify (BKnownPair BAny BAny) lvt
+  ]
 
+{- |
+Type check an element of a WACC @pair@.
+-}
+checkPairElem :: (Ord ident) => PairElem ident -> TypingM ident BType
+checkPairElem (FstElem lv) = fst <$> unifyPair lv
+checkPairElem (SndElem lv) = snd <$> unifyPair lv
+
+{- |
+Type check a WACC @lvalue@.
+-}
+checkLValue :: (Ord ident) => LValue ident -> TypingM ident BType
+checkLValue (LVIdent v) = typeOf v
+checkLValue (LVArrayElem ai) = checkArrayIndex ai
+checkLValue (LVPairElem pe) = checkPairElem pe
+
+{- |
+Type check a WACC @rvalue@.
+-}
 checkRValue :: (Ord ident) => RValue fnident ident -> TypingM ident BType
-checkRValue = undefined
+checkRValue (RVExpr x) = checkExpr x
+checkRValue (RVArrayLit xs) = BArray <$> unifyExprs BAny xs
+checkRValue (RVNewPair x1 x2) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
+checkRValue (RVPairElem pe) = checkPairElem pe
+checkRValue (RVCall _ _) = undefined
 
 {- |
 @unifyStmts t0 (s1 :| [s2, ..., sn])@ attempts to unify @s1@ with @t0@ to obtain
