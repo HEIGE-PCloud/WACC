@@ -14,18 +14,17 @@ import qualified Data.DList as DL
 import Data.Either
 import qualified Data.Map as Map
 import Language.WACC.Parser.Prog
-import Language.WACC.Semantic.Scope
-import Test.Tasty
 import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
+import Test.Tasty
+import Language.WACC.Semantic.Scope 
 
-test_ignoreTest = testGroup "Scope Analysis Tests" [parent_tests, naming_fail_tests]
+test = testGroup "Scope Analysis Tests" [parent_tests, naming_fail_tests]
 
 hasErrored :: String -> Bool
-hasErrored code = (w :: DL.DList String) /= DL.empty
+hasErrored code = isLeft (scopeAnalysis t)
   where
     (Success t) = parse @String prog code
-    (a, s, w) = runRWS (runExceptT (renameProgram t)) (Map.empty, Map.empty) (DL.empty)
 
 badParentScope = "begin\nint x = 5 ;\nbegin\nbegin\nfree x\nend ;\nint[] x = [1]\nend\nend\n"
 

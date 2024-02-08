@@ -4,7 +4,7 @@
 The strategy for scope analysis is add all function names into a symbol table,
 analyse the @Stmt@ of each function and the main @Stmt@
 -}
-module Language.WACC.Semantic.Scope (renameProgram) where
+module Language.WACC.Semantic.Scope (scopeAnalysis) where
 
 import Control.Monad (foldM, liftM)
 import Control.Monad.RWS
