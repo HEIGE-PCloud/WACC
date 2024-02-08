@@ -51,12 +51,12 @@ checkRValue (RVExpr x _) = checkExpr x
 checkRValue (RVArrayLit xs _) = BArray <$> unifyExprs BAny xs
 checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe _) = checkPairElem pe
-checkRValue (RVCall f xs _) = do
+checkRValue (RVCall f xs p) = do
   FnType {..} <- typeOfFn f
   let
     actN = length paramTypes
     expN = length xs
-  unless (actN == expN) $ abortWithArityError actN expN undefined
+  unless (actN == expN) $ abortWithArityError actN expN p
   ts <- mapM checkExpr xs
   zipWithM_ tryUnify ts paramTypes
   pure retType
