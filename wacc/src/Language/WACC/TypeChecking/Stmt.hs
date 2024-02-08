@@ -13,7 +13,7 @@ module Language.WACC.TypeChecking.Stmt
   )
 where
 
-import Control.Monad (foldM, guard, zipWithM_)
+import Control.Monad (foldM, unless, zipWithM_)
 import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
@@ -53,7 +53,10 @@ checkRValue (RVNewPair x1 x2) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe) = checkPairElem pe
 checkRValue (RVCall f xs) = do
   FnType {..} <- typeOfFn f
-  guard $ length xs == length paramTypes
+  let
+    actN = length paramTypes
+    expN = length xs
+  unless (actN == expN) $ abortWithArityError actN expN undefined
   ts <- mapM checkExpr xs
   zipWithM_ tryUnify ts paramTypes
   pure retType
@@ -65,7 +68,10 @@ checkRValue (RVCall f xs) = do
 If a unification fails, the traversal is aborted.
 -}
 unifyStmts
-  :: (Ord fnident) => BType -> Stmts fnident ident -> TypingM fnident ident BType
+  :: (Ord fnident)
+  => BType
+  -> Stmts fnident ident
+  -> TypingM fnident ident BType
 unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
 
 {- |
