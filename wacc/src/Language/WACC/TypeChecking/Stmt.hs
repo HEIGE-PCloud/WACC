@@ -50,7 +50,7 @@ Type check a WACC @rvalue@.
 checkRValue
   :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
 checkRValue (RVExpr x _) = checkExpr x
-checkRValue (RVArrayLit xs _) = BArray <$> unifyExprs BAny xs
+checkRValue (RVArrayLit xs p) = BArray <$> unifyExprsAt p BAny xs
 checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe _) = checkPairElem pe
 checkRValue (RVCall f xs p) = do
