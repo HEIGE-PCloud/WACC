@@ -10,7 +10,7 @@ import Data.Char (isSpace)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Set (Set, toList)
 import Data.String (IsString (fromString))
-import Language.WACC.Parser.Token (keywords, nonlexeme, space)
+import Language.WACC.Parser.Token (keywords, nonlexeme, operators)
 import Text.Gigaparsec (Parsec, Result, parseFromFile, ($>))
 import Text.Gigaparsec.Errors.DefaultErrorBuilder
   ( StringBuilder (..)
@@ -61,6 +61,7 @@ import Text.Gigaparsec.Errors.ErrorBuilder
   )
 import Text.Gigaparsec.Errors.TokenExtractors
 import qualified Text.Gigaparsec.Token.Lexer as T
+import Text.Gigaparsec.Char (whitespace)
 
 parseFromFileWithError :: Parsec a -> FilePath -> IO (Result Error a)
 parseFromFileWithError = parseFromFile
@@ -133,14 +134,14 @@ instance ErrorBuilder Error where
   endOfInput = endOfInputDefault
 
   unexpectedToken :: NonEmpty Char -> Word -> Bool -> Token
-  unexpectedToken = lexToken xs (tillNextWhitespace True isSpace)
+  unexpectedToken = lexToken ps (tillNextWhitespace True isSpace)
     where
-      xs = map (\x -> T.sym nonlexeme x $> ("keyword " ++ x)) keywords
-        ++ 
-        [ ("integer " ++) . show <$> T.decimal (T.integer nonlexeme)
-        -- , ("identifier " ++) <$> T.identifier (T.names nonlexeme)
-        , ("character " ++) . show <$> T.ascii (T.charLiteral nonlexeme)
-        , ("string " ++) . show <$> T.ascii (T.stringLiteral nonlexeme)
-        , T.whiteSpace space $> "whitespace"
-        ]
-          
+      ps =
+        map (\x -> T.sym nonlexeme x $> ("keyword " ++ x)) keywords
+          ++ map (\x -> T.sym nonlexeme x $> ("operator " ++ x)) operators
+          ++ [ ("integer " ++) . show <$> T.decimal (T.integer nonlexeme)
+             , -- , ("identifier " ++) <$> T.identifier (T.names nonlexeme)
+               ("character " ++) . show <$> T.ascii (T.charLiteral nonlexeme)
+             , ("string " ++) . show <$> T.ascii (T.stringLiteral nonlexeme)
+             , whitespace $> "whitespace"
+             ]
