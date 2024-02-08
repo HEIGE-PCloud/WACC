@@ -10,6 +10,7 @@ module Language.WACC.TypeChecking.State
   , typeOfFn
   , setFnType
   , abort
+  , abortActual
   , tryUnify
   , TypeError (..)
   , reportAt

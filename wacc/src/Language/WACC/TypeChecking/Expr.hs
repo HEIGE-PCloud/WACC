@@ -11,7 +11,6 @@ module Language.WACC.TypeChecking.Expr
   )
 where
 
-import Control.Applicative (empty)
 import Control.Monad (foldM)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
@@ -23,10 +22,11 @@ import Prelude hiding (GT, LT)
 Type check a WACC array indexing subexpression.
 -}
 checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
-checkArrayIndex (ArrayIndex v xs _) = typeOf v >>= flip (foldM go) xs
+checkArrayIndex (ArrayIndex v xs p) =
+  reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
   where
     go (BArray t) x = t <$ unifyExprs BInt [x]
-    go _ _ = empty
+    go t _ = abortActual t
 
 {- |
 Type check an atomic WACC expression.
