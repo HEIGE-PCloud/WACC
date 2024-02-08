@@ -60,7 +60,7 @@ checkRValue (RVCall f xs p) = do
     expN = length xs
   unless (actN == expN) $ abortWithArityError actN expN p
   ts <- mapM checkExpr xs
-  zipWithM_ tryUnify ts paramTypes
+  zipWithM_ (\xt pt -> reportAt p pt $ tryUnify xt pt) ts paramTypes
   pure retType
 
 {- |
