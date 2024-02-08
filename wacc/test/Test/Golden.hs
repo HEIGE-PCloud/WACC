@@ -6,7 +6,7 @@ module Test.Golden
 where
 
 import Data.ByteString.Lazy.UTF8 (fromString)
-import Language.WACC.Error (Error (Error), parseFromFileWithError)
+import Language.WACC.Error (Error (Error), parseWithError, printError)
 import Language.WACC.Parser.Stmt (program)
 import Language.WACC.Parser.Token (fully)
 import Test.Common (syntaxErrTests, takeBaseName)
@@ -31,15 +31,15 @@ runSyntaxCheck path = goldenVsStringDiff testname diff goldenPath testAction
     goldenPath = goldenBasePath ++ "/" ++ testname
     testAction = do
       input <- readFile path
-      res <- parseFromFileWithError (fully program) path
-      return (fromString (input ++ "\n\n" ++ syntaxCheck res))
+      let res = parseWithError (fully program) input
+      return (fromString (input ++ "\n\n" ++ syntaxCheck res path (lines input)))
 
-syntaxCheck :: Result Error b -> String
-syntaxCheck res = case res of
+syntaxCheck :: Result Error b -> FilePath -> [String] -> String
+syntaxCheck res path lines = case res of
   Success _ -> error "syntax check should fail but succeeded"
-  Failure (Error err) -> err
+  Failure err -> printError path lines err
 
-test =
+test_testIgnored =
   testGroup
     "goldenTests"
     [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]
