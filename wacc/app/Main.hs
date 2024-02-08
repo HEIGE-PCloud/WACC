@@ -55,7 +55,8 @@ runScopeAnalysis ast = do
 runTypeCheck :: (Prog Fnident Vident, VarST) -> IO ()
 runTypeCheck (ast, sb) = do
   let
-    (_, _, err) = runTypingM (checkProg ast) (\ident -> ((fix (fst (sb ! ident))))) undefined
+    (_, _, err) =
+      runTypingM (checkProg ast) (\ident -> ((fix (fst (sb ! ident))))) mempty
   if null err then exitSuccess else exitWithSemanticError
 
 usageAndExit :: IO ()

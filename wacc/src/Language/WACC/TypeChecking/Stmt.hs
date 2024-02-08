@@ -15,6 +15,7 @@ module Language.WACC.TypeChecking.Stmt
 where
 
 import Control.Monad (foldM, unless, zipWithM_)
+import Data.List.NonEmpty (sort)
 import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
@@ -56,8 +57,8 @@ checkRValue (RVPairElem pe _) = checkPairElem pe
 checkRValue (RVCall f xs p) = do
   FnType {..} <- typeOfFn f
   let
-    actN = length paramTypes
-    expN = length xs
+    actN = length xs
+    expN = length paramTypes
   unless (actN == expN) $ abortWithArityError actN expN p
   ts <- mapM checkExpr xs
   zipWithM_ (\xt pt -> reportAt p pt $ tryUnify xt pt) ts paramTypes
@@ -74,7 +75,7 @@ unifyStmts
   => BType
   -> Stmts fnident ident
   -> TypingM fnident ident BType
-unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
+unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Pos' with a @unifyStmts@ action.
