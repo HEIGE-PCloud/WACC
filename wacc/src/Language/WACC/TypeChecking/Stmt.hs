@@ -7,17 +7,19 @@ Type checking actions for WACC statements.
 module Language.WACC.TypeChecking.Stmt
   ( checkStmt
   , unifyStmts
+  , unifyStmtsAt
   , checkLValue
   , checkRValue
   , checkPairElem
   )
 where
 
-import Control.Monad (foldM, guard, zipWithM_)
+import Control.Monad (foldM, unless, zipWithM_)
 import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
+import Text.Gigaparsec.Position (Pos)
 
 unifyPair :: LValue ident -> TypingM fnident ident (BType, BType)
 unifyPair lv = do
@@ -48,14 +50,17 @@ Type check a WACC @rvalue@.
 checkRValue
   :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
 checkRValue (RVExpr x _) = checkExpr x
-checkRValue (RVArrayLit xs _) = BArray <$> unifyExprs BAny xs
+checkRValue (RVArrayLit xs p) = BArray <$> unifyExprsAt p BAny xs
 checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe _) = checkPairElem pe
-checkRValue (RVCall f xs _) = do
+checkRValue (RVCall f xs p) = do
   FnType {..} <- typeOfFn f
-  guard $ length xs == length paramTypes
+  let
+    actN = length paramTypes
+    expN = length xs
+  unless (actN == expN) $ abortWithArityError actN expN p
   ts <- mapM checkExpr xs
-  zipWithM_ tryUnify ts paramTypes
+  zipWithM_ (\xt pt -> reportAt p pt $ tryUnify xt pt) ts paramTypes
   pure retType
 
 {- |
@@ -65,8 +70,22 @@ checkRValue (RVCall f xs _) = do
 If a unification fails, the traversal is aborted.
 -}
 unifyStmts
-  :: (Ord fnident) => BType -> Stmts fnident ident -> TypingM fnident ident BType
+  :: (Ord fnident)
+  => BType
+  -> Stmts fnident ident
+  -> TypingM fnident ident BType
 unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
+
+{- |
+Associate a 'Pos' with a @unifyStmts@ action.
+-}
+unifyStmtsAt
+  :: (Ord fnident)
+  => Pos
+  -> BType
+  -> Stmts fnident ident
+  -> TypingM fnident ident BType
+unifyStmtsAt p t ss = reportAt p t $ unifyStmts t ss
 
 {- |
 Type check a WACC statement.
@@ -83,18 +102,20 @@ Otherwise, 'BAny' is returned.
 -}
 checkStmt :: (Ord fnident) => Stmt fnident ident -> TypingM fnident ident BType
 checkStmt (Skip _) = pure BAny
-checkStmt (Decl t v rv _) =
+checkStmt (Decl wt v rv p) =
   [ BAny
   | vt <- typeOf v
-  , t' <- tryUnify vt $ fix t
+  , t' <- reportAt p t $ tryUnify vt t
   , rvt <- checkRValue rv
-  , _ <- tryUnify rvt t'
+  , _ <- reportAt p t $ tryUnify rvt t'
   ]
-checkStmt (Asgn lv rv _) =
+  where
+    t = fix wt
+checkStmt (Asgn lv rv p) =
   [ BAny
   | rvt <- checkRValue rv
   , lvt <- checkLValue lv
-  , _ <- tryUnify rvt lvt
+  , _ <- reportAt p lvt $ tryUnify rvt lvt
   ]
 checkStmt (Read lv _) = BAny <$ checkLValue lv
 checkStmt (Free x _) =
@@ -107,12 +128,13 @@ checkStmt (Free x _) =
   , t' `elem` heapAllocatedTypes
   ]
 checkStmt (Return x _) = checkExpr x
-checkStmt (Exit x _) = BAny <$ unifyExprs BInt [x]
+checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x
 checkStmt (PrintLn x _) = BAny <$ checkExpr x
-checkStmt (IfElse x ifBody elseBody _) = do
-  _ <- unifyExprs BBool [x]
-  t <- unifyStmts BAny ifBody
-  unifyStmts t elseBody
-checkStmt (While x body _) = unifyExprs BBool [x] *> unifyStmts BAny body
-checkStmt (BeginEnd body _) = unifyStmts BAny body
+checkStmt (IfElse x ifBody elseBody p) = do
+  _ <- unifyExprsAt p BBool [x]
+  t <- unifyStmtsAt p BAny ifBody
+  unifyStmtsAt p t elseBody
+checkStmt (While x body p) =
+  unifyExprsAt p BBool [x] *> unifyStmtsAt p BAny body
+checkStmt (BeginEnd body p) = unifyStmtsAt p BAny body

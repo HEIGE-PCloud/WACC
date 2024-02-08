@@ -64,24 +64,47 @@ test =
         , testGroup
             "declaration"
             [ testCase "accepts identical type" $
-                checkStmt' (Decl WInt BInt (RVExpr intExpr undefined) undefined) @?= pure BAny
+                checkStmt' (Decl WInt BInt (RVExpr intExpr undefined) undefined)
+                  @?= pure BAny
             , testCase "accepts compatible type" $
-                checkStmt' (Decl wIntPair bIntPair (RVExpr nullExpr undefined) undefined)
+                checkStmt'
+                  ( Decl
+                      wIntPair
+                      bIntPair
+                      (RVExpr nullExpr undefined)
+                      undefined
+                  )
                   @?= pure BAny
             , testCase "rejects incompatible type" $
-                checkStmt' (Decl WInt BInt (RVExpr nullExpr undefined) undefined) @?= Left 1
+                checkStmt'
+                  (Decl WInt BInt (RVExpr nullExpr undefined) undefined)
+                  @?= Left 1
             ]
         , testGroup
             "assignment"
             [ testCase "accepts identical type" $
-                checkStmt' (Asgn (LVIdent BInt undefined) (RVExpr intExpr undefined) undefined)
+                checkStmt'
+                  ( Asgn
+                      (LVIdent BInt undefined)
+                      (RVExpr intExpr undefined)
+                      undefined
+                  )
                   @?= pure BAny
             , testCase "accepts compatible type" $
                 checkStmt'
-                  (Asgn (LVIdent bIntPair undefined) (RVExpr nullExpr undefined) undefined)
+                  ( Asgn
+                      (LVIdent bIntPair undefined)
+                      (RVExpr nullExpr undefined)
+                      undefined
+                  )
                   @?= pure BAny
             , testCase "rejects incompatible type" $
-                checkStmt' (Asgn (LVIdent BInt undefined) (RVExpr nullExpr undefined) undefined)
+                checkStmt'
+                  ( Asgn
+                      (LVIdent BInt undefined)
+                      (RVExpr nullExpr undefined)
+                      undefined
+                  )
                   @?= Left 1
             ]
         , testProperty "ignores read" $
@@ -89,19 +112,23 @@ test =
         , testGroup
             "free"
             [ testProperty "accepts arrays" $
-                \t -> checkStmt' (Free (varExpr $ BArray t) undefined) == pure BAny
+                \t ->
+                  checkStmt' (Free (varExpr $ BArray t) undefined) == pure BAny
             , testCase "accepts erased pairs" $
                 checkStmt' (Free (varExpr BErasedPair) undefined) @?= pure BAny
             , testProperty "accepts known pairs" $
                 \t1 t2 ->
-                  checkStmt' (Free (varExpr $ BKnownPair t1 t2) undefined) == pure BAny
+                  checkStmt' (Free (varExpr $ BKnownPair t1 t2) undefined)
+                    == pure BAny
             ]
         , testProperty "return type is propagated" $
             \t -> checkStmt' (Return (varExpr t) undefined) == pure t
         , testGroup
             "exit"
-            [ testCase "accepts ints" $ checkStmt' (Exit intExpr undefined) @?= pure BAny
-            , testCase "rejects bools" $ checkStmt' (Exit boolExpr undefined) @?= Left 1
+            [ testCase "accepts ints" $
+                checkStmt' (Exit intExpr undefined) @?= pure BAny
+            , testCase "rejects bools" $
+                checkStmt' (Exit boolExpr undefined) @?= Left 1
             ]
         , testProperty "ignores print" $
             \t -> checkStmt' (Print (varExpr t) undefined) == pure BAny
@@ -110,7 +137,8 @@ test =
         , testGroup
             "if then else fi"
             [ testCase "accepts skips" $
-                checkStmt' (IfElse boolExpr [Skip undefined] [Skip undefined] undefined)
+                checkStmt'
+                  (IfElse boolExpr [Skip undefined] [Skip undefined] undefined)
                   @?= pure BAny
             , testProperty "accepts identical return types" $
                 \t ->
@@ -120,15 +148,23 @@ test =
                     checkStmt' (IfElse boolExpr body body undefined) == pure t
             , testCase "rejects incompatible return types" $
                 checkStmt'
-                  ( IfElse boolExpr [Return intExpr undefined] [Return boolExpr undefined] undefined
+                  ( IfElse
+                      boolExpr
+                      [Return intExpr undefined]
+                      [Return boolExpr undefined]
+                      undefined
                   )
                   @?= Left 1
             ]
         , testProperty "while do done propagates return types" $
             \t ->
-              checkStmt' (While boolExpr [Return (varExpr t) undefined] undefined) == pure t
+              checkStmt'
+                (While boolExpr [Return (varExpr t) undefined] undefined)
+                == pure t
         , testProperty "begin end propagates return types" $
-            \t -> checkStmt' (BeginEnd [Return (varExpr t) undefined] undefined) == pure t
+            \t ->
+              checkStmt' (BeginEnd [Return (varExpr t) undefined] undefined)
+                == pure t
         ]
     , testGroup
         "checkLValue"
@@ -165,9 +201,11 @@ test =
         , testGroup
             "RVCall"
             [ testCase "accepts calls with parameters of correct types" $
-                checkRValue' (RVCall () [intExpr, boolExpr] undefined) @?= pure BBool
+                checkRValue' (RVCall () [intExpr, boolExpr] undefined)
+                  @?= pure BBool
             , testCase "rejects calls with parameters of incorrect types" $
-                checkRValue' (RVCall () [boolExpr, intExpr] undefined) @?= Left 1
+                checkRValue' (RVCall () [boolExpr, intExpr] undefined)
+                  @?= Left 1
             , testCase "rejects calls with fewer parameters than signature" $
                 checkRValue' (RVCall () [intExpr] undefined) @?= Left 1
             , testCase "rejects calls with more parameters than signature" $
@@ -179,11 +217,13 @@ test =
         "checkPairElem"
         [ testProperty "extracts correct fst type" $
             \t1 t2 ->
-              checkPairElem' (FstElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
+              checkPairElem'
+                (FstElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
                 == pure t1
         , testProperty "extracts correct snd type" $
             \t1 t2 ->
-              checkPairElem' (SndElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
+              checkPairElem'
+                (SndElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
                 == pure t2
         ]
     ]

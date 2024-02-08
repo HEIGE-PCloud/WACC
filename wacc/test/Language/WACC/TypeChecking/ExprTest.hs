@@ -215,16 +215,19 @@ test =
     , testGroup
         "checkArrayIndex"
         [ testCase "elements of an int[] are ints" $
-            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr] undefined) @?= pure BInt
+            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr] undefined)
+              @?= pure BInt
         , testCase "elements of an int[][] are int[]s" $
-            checkArrayIndex' (ArrayIndex (BArray (BArray BInt)) [intExpr] undefined)
+            checkArrayIndex'
+              (ArrayIndex (BArray (BArray BInt)) [intExpr] undefined)
               @?= pure (BArray BInt)
         , testCase "elements of elements of an int[][] are ints" $
             checkArrayIndex'
               (ArrayIndex (BArray (BArray BInt)) [intExpr, intExpr] undefined)
               @?= pure BInt
         , testCase "providing too many indices fails the check" $
-            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr, intExpr] undefined)
+            checkArrayIndex'
+              (ArrayIndex (BArray BInt) [intExpr, intExpr] undefined)
               @?= Left 1
         , testCase "string indexing is not supported" $
             checkArrayIndex' (ArrayIndex BString [intExpr] undefined) @?= Left 1
