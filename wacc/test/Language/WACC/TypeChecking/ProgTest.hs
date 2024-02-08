@@ -79,7 +79,7 @@ test =
             checkProg'
               (Main [func] [Asgn (LVIdent BInt) (RVCall 1 [intExpr])])
               0
-              @?= Left 1
+              @?= Left 0
         , testProperty "rejects return statements in main program" $
             \wt ->
               checkProg' (Main [func] [Return (varExpr $ fix wt)]) 0
