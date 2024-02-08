@@ -30,13 +30,13 @@ checkProg' :: Prog Int BType -> Int -> Maybe FnType
 checkProg' = testTypingM . checkProg
 
 intExpr :: Expr BType
-intExpr = WAtom $ IntLit 0 undefined
+intExpr = WAtom (IntLit 0) undefined
 
 boolExpr :: Expr BType
-boolExpr = WAtom $ BoolLit False undefined
+boolExpr = WAtom (BoolLit False) undefined
 
 varExpr :: BType -> Expr BType
-varExpr = WAtom . Ident
+varExpr = flip WAtom undefined . Ident
 
 func :: Func Int BType
 func = Func WInt 0 [(WInt, BInt)] [Return intExpr]

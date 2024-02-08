@@ -48,19 +48,19 @@ checkArrayIndex' :: ArrayIndex BType -> Maybe BType
 checkArrayIndex' = testTypingM . checkArrayIndex
 
 intExpr :: Expr BType
-intExpr = WAtom $ IntLit 0 undefined
+intExpr = WAtom (IntLit 0) undefined
 
 boolExpr :: Expr BType
-boolExpr = WAtom $ BoolLit False undefined
+boolExpr = WAtom (BoolLit False) undefined
 
 charExpr :: Expr BType
-charExpr = WAtom $ CharLit 'C'
+charExpr = WAtom (CharLit 'C') undefined
 
 stringExpr :: Expr BType
-stringExpr = WAtom $ StringLit "String"
+stringExpr = WAtom (StringLit "String") undefined
 
 varExpr :: BType -> Expr BType
-varExpr = WAtom . Ident
+varExpr = flip WAtom undefined . Ident
 
 showType :: BType -> String
 showType BAny = "T"
@@ -78,22 +78,23 @@ mkBad :: BType -> BType
 mkBad BInt = BBool
 mkBad _ = BInt
 
-testUnOp :: String -> (Expr BType -> Expr BType) -> BType -> BType -> TestTree
+testUnOp
+  :: String -> (Expr BType -> a -> Expr BType) -> BType -> BType -> TestTree
 testUnOp name op t ret =
   testGroup
     name
     [ testCase
         (concat ["accepts ", showType t, "s and returns ", showType ret, "s"])
-        $ checkExpr' (op $ varExpr t) @?= Just ret
+        $ checkExpr' (op (varExpr t) undefined) @?= Just ret
     , testCase ("rejects " ++ showType bad ++ "s") $
-        checkExpr' (op $ varExpr bad) @?= Nothing
+        checkExpr' (op (varExpr bad) undefined) @?= Nothing
     ]
   where
     bad = mkBad t
 
 testBinOp
   :: String
-  -> (Expr BType -> Expr BType -> Expr BType)
+  -> (Expr BType -> Expr BType -> a -> Expr BType)
   -> [(BType, BType, BType)]
   -> TestTree
 testBinOp name op ts = testGroup name $ ts >>= mkCases
@@ -107,7 +108,7 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
               , "s"
               ]
           )
-          $ checkExpr' (op (varExpr t1) (varExpr t2)) @?= Just ret
+          $ checkExpr' (op (varExpr t1) (varExpr t2) undefined) @?= Just ret
       , testCase
           ( concat
               [ "rejects "
@@ -115,7 +116,7 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
               , "s (left only)"
               ]
           )
-          $ checkExpr' (op (varExpr bad1) (varExpr t2)) @?= Nothing
+          $ checkExpr' (op (varExpr bad1) (varExpr t2) undefined) @?= Nothing
       , testCase
           ( concat
               [ "rejects "
@@ -123,7 +124,7 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
               , "s (right only)"
               ]
           )
-          $ checkExpr' (op (varExpr t1) (varExpr bad2)) @?= Nothing
+          $ checkExpr' (op (varExpr t1) (varExpr bad2) undefined) @?= Nothing
       ]
       where
         accepts
@@ -142,9 +143,9 @@ test =
         [ testGroup
             "literals"
             [ testProperty "int literals are ints" $
-                \i -> checkAtom' (IntLit i undefined) == Just BInt
+                \i -> checkAtom' (IntLit i) == Just BInt
             , testProperty "bool literals are bools" $
-                \b -> checkAtom' (BoolLit b undefined) == Just BBool
+                \b -> checkAtom' (BoolLit b) == Just BBool
             , testProperty "char literals are chars" $
                 \c -> checkAtom' (CharLit c) == Just BChar
             , testProperty "string literals are strings" $

@@ -36,13 +36,16 @@ checkPairElem' :: PairElem BType -> Maybe BType
 checkPairElem' = testTypingM . checkPairElem
 
 intExpr :: Expr BType
-intExpr = WAtom $ IntLit 0 undefined
+intExpr = WAtom (IntLit 0) undefined
 
 boolExpr :: Expr BType
-boolExpr = WAtom $ BoolLit False undefined
+boolExpr = WAtom (BoolLit False) undefined
+
+nullExpr :: Expr BType
+nullExpr = WAtom Null undefined
 
 varExpr :: BType -> Expr BType
-varExpr = WAtom . Ident
+varExpr = flip WAtom undefined . Ident
 
 bIntPair :: BType
 bIntPair = BKnownPair BInt BInt
@@ -62,21 +65,20 @@ test =
             [ testCase "accepts identical type" $
                 checkStmt' (Decl WInt BInt (RVExpr intExpr)) @?= Just BAny
             , testCase "accepts compatible type" $
-                checkStmt' (Decl wIntPair bIntPair (RVExpr $ WAtom Null))
+                checkStmt' (Decl wIntPair bIntPair (RVExpr nullExpr))
                   @?= Just BAny
             , testCase "rejects incompatible type" $
-                checkStmt' (Decl WInt BInt (RVExpr $ WAtom Null)) @?= Nothing
+                checkStmt' (Decl WInt BInt (RVExpr nullExpr)) @?= Nothing
             ]
         , testGroup
             "assignment"
             [ testCase "accepts identical type" $
                 checkStmt' (Asgn (LVIdent BInt) (RVExpr intExpr)) @?= Just BAny
             , testCase "accepts compatible type" $
-                checkStmt' (Asgn (LVIdent bIntPair) (RVExpr $ WAtom Null))
+                checkStmt' (Asgn (LVIdent bIntPair) (RVExpr nullExpr))
                   @?= Just BAny
             , testCase "rejects incompatible type" $
-                checkStmt' (Asgn (LVIdent BInt) (RVExpr $ WAtom Null))
-                  @?= Nothing
+                checkStmt' (Asgn (LVIdent BInt) (RVExpr nullExpr)) @?= Nothing
             ]
         , testProperty "ignores read" $
             \t -> checkStmt' (Read (LVIdent t)) == Just BAny
