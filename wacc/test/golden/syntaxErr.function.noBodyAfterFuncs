@@ -17,9 +17,9 @@ end
 
 
 In test/wacc_examples/invalid/syntaxErr/function/noBodyAfterFuncs.wacc (line 15, column 1):
-  unexpected keyword end
-  expected function declaration or statement
-  >  end
-  >end
-   ^^^
-  >	
+unexpected keyword end
+expected function declaration or statement
+>   end
+> end
+> ^^^
+> 	

@@ -44,6 +44,7 @@ library
       base >=4.7 && <5
     , containers
     , dlist
+    , extra
     , gigaparsec
     , mtl
     , recursion-schemes
@@ -61,6 +62,7 @@ executable compile
       base >=4.7 && <5
     , containers
     , dlist
+    , extra
     , gigaparsec
     , mtl
     , recursion-schemes
@@ -100,6 +102,7 @@ test-suite wacc-test
     , deepseq
     , directory
     , dlist
+    , extra
     , generic-arbitrary
     , gigaparsec
     , mtl

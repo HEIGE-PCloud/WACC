@@ -18,8 +18,8 @@ end
 
 
 In test/wacc_examples/invalid/syntaxErr/function/badlyNamed.wacc (line 12, column 3):
-  function declaration for `intf` missing type
-  >begin
-  >  intf() is
-     ^^^^^^^
-  >    return 42
+function declaration for `intf` missing type
+> begin
+>   intf() is
+>   ^^^^^^^
+>     return 42

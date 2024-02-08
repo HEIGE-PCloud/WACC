@@ -40,7 +40,7 @@ syntaxCheck res path lines = case res of
   Success _ -> error "syntax check should fail but succeeded"
   Failure err -> printError path lines err
 
-test_testIgnored =
+test =
   testGroup
     "goldenTests"
     [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]

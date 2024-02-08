@@ -23,9 +23,9 @@ end
 
 
 In test/wacc_examples/invalid/syntaxErr/function/thisIsNotC.wacc (line 12, column 13):
-  unexpected operator *
-  expected array type or identifier
-  >begin
-  >  int f(int *x) is 
-               ^
-  >    *x = *x + 1;
+unexpected operator *
+expected array type or identifier
+> begin
+>   int f(int *x) is 
+>             ^
+>     *x = *x + 1;
