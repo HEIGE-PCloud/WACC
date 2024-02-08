@@ -15,6 +15,7 @@ module Language.WACC.TypeChecking.Stmt
 where
 
 import Control.Monad (foldM, unless, zipWithM_)
+import Data.List.NonEmpty (sort)
 import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
@@ -74,7 +75,7 @@ unifyStmts
   => BType
   -> Stmts fnident ident
   -> TypingM fnident ident BType
-unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
+unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Pos' with a @unifyStmts@ action.

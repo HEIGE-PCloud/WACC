@@ -13,6 +13,7 @@ module Language.WACC.TypeChecking.Expr
 where
 
 import Control.Monad (foldM)
+import Data.List (sort)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
@@ -48,7 +49,7 @@ checkAtom (ArrayElem ai _) = checkArrayIndex ai
 If a unification fails, the traversal is aborted.
 -}
 unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
-unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t
+unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Pos' with a @unifyExprs@ action.
