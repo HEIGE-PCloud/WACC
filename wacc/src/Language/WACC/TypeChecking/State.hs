@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedLists #-}
+
 {- |
 Type checking monad and actions.
 -}
@@ -10,14 +12,15 @@ module Language.WACC.TypeChecking.State
   , abort
   , tryUnify
   , TypeError (..)
+  , reportAt
   )
 where
 
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
-import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS)
+import Control.Monad.Trans.Except (ExceptT, catchE, runExceptT, throwE)
+import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS, tell)
 import Data.DList (DList)
-import Data.Map (Map, insert, unionWith, (!?))
+import Data.Map (Map, insert, (!?))
 import Language.WACC.TypeChecking.BType (BType, FnType, unify)
 import Text.Gigaparsec.Position (Pos)
 
@@ -33,13 +36,7 @@ data TypeError = TypeError
   -- ^ The position of the ill-typed expression or statement.
   }
 
-newtype TypeErrors = TypeErrors (Map Integer (DList TypeError))
-
-instance Semigroup TypeErrors where
-  TypeErrors es1 <> TypeErrors es2 = TypeErrors (unionWith (<>) es1 es2)
-
-instance Monoid TypeErrors where
-  mempty = TypeErrors mempty
+type TypeErrors = DList TypeError
 
 type FnTypes fnident = Map fnident FnType
 
@@ -47,7 +44,7 @@ type FnTypes fnident = Map fnident FnType
 Type checking monad.
 -}
 type TypingM fnident ident =
-  ExceptT () (RWS (ident -> BType) TypeErrors (FnTypes fnident))
+  ExceptT (Maybe BType) (RWS (ident -> BType) TypeErrors (FnTypes fnident))
 
 {- |
 Run a type checking action.
@@ -86,11 +83,28 @@ setFnType f t = lift $ modify (insert f t)
 Abort a type check.
 -}
 abort :: TypingM fnident ident a
-abort = throwE ()
+abort = throwE Nothing
+
+{- |
+Abort a type check, saving an invalid actual type.
+-}
+abortActual :: BType -> TypingM fnident ident a
+abortActual = throwE . pure
 
 {- |
 @tryUnify actT expT@ attempts to unify an actual type @actT@ with an expected
 type @expT@, aborting the type check on failure.
 -}
 tryUnify :: BType -> BType -> TypingM fnident ident BType
-tryUnify actT expT = maybe abort pure $ unify actT expT
+tryUnify actT expT = maybe (abortActual actT) pure $ unify actT expT
+
+{- |
+@reportAt p expT action@ runs @action@ and reports a 'TypeError' at @p@ if the
+action is aborted with a saved invalid actual type (see 'abortActual').
+-}
+reportAt
+  :: Pos -> BType -> TypingM fnident ident a -> TypingM fnident ident a
+reportAt p expT action = catchE action report
+  where
+    report (Just actT) = lift (tell [TypeError actT expT p]) *> throwE Nothing
+    report exc = throwE exc

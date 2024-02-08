@@ -18,6 +18,7 @@ import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
 import Test.Tasty
 import Language.WACC.Semantic.Scope 
+import Language.WACC.Parser.Token
 
 test = testGroup "Scope Analysis Tests" [parent_tests, naming_fail_tests]
 
