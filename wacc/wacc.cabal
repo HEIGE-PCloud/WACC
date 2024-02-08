@@ -31,6 +31,7 @@ library
       Language.WACC.Parser.Type
       Language.WACC.TypeChecking.BType
       Language.WACC.TypeChecking.Expr
+      Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
   other-modules:
