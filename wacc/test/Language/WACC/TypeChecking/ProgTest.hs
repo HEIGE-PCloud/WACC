@@ -26,11 +26,23 @@ testTypingM action = case runTypingM action id mempty of
 checkFunc' :: Func Int BType -> Int -> Maybe FnType
 checkFunc' = testTypingM . checkFunc
 
+checkProg' :: Prog Int BType -> Int -> Maybe FnType
+checkProg' = testTypingM . checkProg
+
+intExpr :: Expr BType
+intExpr = WAtom $ IntLit 0 undefined
+
 boolExpr :: Expr BType
 boolExpr = WAtom $ BoolLit False undefined
 
 varExpr :: BType -> Expr BType
 varExpr = WAtom . Ident
+
+func :: Func Int BType
+func = Func WInt 0 [(WInt, BInt)] [Return intExpr]
+
+funcType :: FnType
+funcType = FnType [BInt] BInt
 
 test :: TestTree
 test =
@@ -50,5 +62,27 @@ test =
                   == Just (FnType pts rt)
         , testCase "rejects incompatible return statements in body" $
             checkFunc' (Func WInt 0 [] [Return boolExpr]) 0 @?= Nothing
+        ]
+    , testGroup
+        "checkProg"
+        [ testCase "accepts valid function calls" $
+            checkProg'
+              (Main [func] [Asgn (LVIdent BInt) (RVCall 0 [intExpr])])
+              0
+              @?= Just funcType
+        , testCase "accepts invalid function calls" $
+            checkProg'
+              (Main [func] [Asgn (LVIdent BInt) (RVCall 0 [boolExpr])])
+              0
+              @?= Nothing
+        , testCase "rejects unknown function calls" $
+            checkProg'
+              (Main [func] [Asgn (LVIdent BInt) (RVCall 1 [intExpr])])
+              0
+              @?= Nothing
+        , testProperty "rejects return statements in main program" $
+            \wt ->
+              checkProg' (Main [func] [Return (varExpr $ fix wt)]) 0
+                == Nothing
         ]
     ]
