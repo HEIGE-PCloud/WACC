@@ -26,6 +26,7 @@ import qualified Data.DList as DList
 import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
 import Data.Map hiding (null, singleton, toList)
 import qualified Data.Map as Map
+import Language.WACC.Error
 import Language.WACC.AST
   ( ArrayIndex (..)
   , Expr (..)
@@ -68,8 +69,6 @@ instance Eq Vident where
 instance Ord Vident where
   (Vident n1 _) <= (Vident n2 _) = n1 <= n1
 
-type Error = String
-
 type SuperST = Map String (Integer, Pos)
 
 type LocalST = Map String (Integer, Pos)
@@ -106,7 +105,7 @@ renameFuncOrErr str pos constr = do
   case funcST !? str of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report pos (str ++ "was not previously declared")
+      report (notDecl str) pos (length str)
       return undefined
 
 renameOrErr :: String -> Pos -> (Integer -> a) -> Analysis a
@@ -115,7 +114,7 @@ renameOrErr str pos constr = do
   case getDecl str localST superST of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report pos (str ++ " was not previously declared")
+      report (notDecl str) pos (length str)
       return undefined
 
 renameArrayIndex :: ArrayIndex String -> Analysis (ArrayIndex Vident)
@@ -183,8 +182,11 @@ insertDecl pos t str = do
 getST :: Analysis (LocalST, SuperST)
 getST = (,) <$> gets fst <*> asks fst
 
-report :: Pos -> String -> Analysis ()
-report pos str = tell (Data.DList.singleton ("Line " ++ show pos ++ ": " ++ str), mempty)
+alreadyDecl str origPos = str ++ " was already defined in " ++ show origPos ++ "."
+notDecl str = str ++ " was not declared."
+
+report :: String -> Pos -> Int -> Analysis ()
+report str pos len = tell (Data.DList.singleton (Error str pos (toEnum len)), mempty)
 
 renameStmt :: Stmt String String -> Analysis (Stmt Fnident Vident)
 renameStmt (Skip p) = pure (Skip p)
@@ -193,7 +195,7 @@ renameStmt (Decl t str rv pos) = do
   (localST, superST) <- getST
   case getDecl str localST superST of
     Nothing -> Control.Monad.void (insertDecl pos t str)
-    (Just (_, posOrig)) -> report pos (str ++ "already defined in line " ++ show posOrig)
+    (Just (_, posOrig)) -> report (alreadyDecl str posOrig) pos (length str)
   n <- gets snd
   return (Decl t (Vident n str) rv' pos) -- Should I return a bogus node?
 renameStmt (Asgn lv rv p) = do
@@ -240,7 +242,6 @@ renameFunc (Func t str params ls pos) = do
   funcST <- asks snd
   let
     (n, _) = funcST ! str
-  --  Just (n, pos) -> report pos (str ++ " already declared in line " ++ show pos)
   ls' <- renameStmts ls
   return (Func t (Fnident n str) params' ls' pos)
 
@@ -273,7 +274,7 @@ foo = foldM bar (Just Map.empty)
     bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
       Just (_, origPos) -> do
         tell . DList.singleton $
-          show pos ++ ": " ++ str ++ " already defined in " ++ show origPos
+          Error (alreadyDecl str origPos) pos (toEnum (length str)) 
         return Nothing
       Nothing -> do
         n <- freshN
