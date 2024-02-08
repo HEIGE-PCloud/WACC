@@ -3,7 +3,13 @@
 {- |
 Type checking actions for WACC expressions.
 -}
-module Language.WACC.TypeChecking.Expr (checkAtom, checkExpr, unifyExprs) where
+module Language.WACC.TypeChecking.Expr
+  ( checkAtom
+  , checkExpr
+  , unifyExprs
+  , checkArrayIndex
+  )
+where
 
 import Control.Applicative (empty)
 import Control.Monad (foldM)
@@ -13,19 +19,25 @@ import Language.WACC.TypeChecking.State
 import Prelude hiding (GT, LT)
 
 {- |
+Type check a WACC array indexing subexpression.
+-}
+checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
+checkArrayIndex (ArrayIndex v xs) = typeOf v >>= flip (foldM go) xs
+  where
+    go (BArray t) x = t <$ unifyExprs BInt [x]
+    go _ _ = empty
+
+{- |
 Type check an atomic WACC expression.
 -}
-checkAtom :: (Ord ident) => WAtom ident -> TypingM ident BType
+checkAtom :: WAtom ident -> TypingM fnident ident BType
 checkAtom (IntLit _ _) = pure BInt
 checkAtom (BoolLit _ _) = pure BBool
 checkAtom (CharLit _) = pure BChar
 checkAtom (StringLit _) = pure BString
 checkAtom Null = pure (BKnownPair BAny BAny)
 checkAtom (Ident v) = typeOf v
-checkAtom (ArrayElem (ArrayIndex v xs)) = typeOf v >>= flip (foldM go) xs
-  where
-    go (BArray t) x = t <$ unifyExprs BInt [x]
-    go _ _ = empty
+checkAtom (ArrayElem ai) = checkArrayIndex ai
 
 {- |
 @unifyExprs t0 [x1, x2, ..., xn]@ attempts to unify @x1@ with @t0@ to obtain
@@ -33,13 +45,13 @@ checkAtom (ArrayElem (ArrayIndex v xs)) = typeOf v >>= flip (foldM go) xs
 
 If a unification fails, the traversal is aborted.
 -}
-unifyExprs :: (Ord ident) => BType -> [Expr ident] -> TypingM ident BType
+unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
 unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t
 
 {- |
 Type check a composite WACC expression.
 -}
-checkExpr :: (Ord ident) => Expr ident -> TypingM ident BType
+checkExpr :: Expr ident -> TypingM fnident ident BType
 checkExpr (WAtom atom) = checkAtom atom
 checkExpr (Not x) = unifyExprs BBool [x]
 checkExpr (Negate x) = unifyExprs BInt [x]

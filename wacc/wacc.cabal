@@ -31,6 +31,7 @@ library
       Language.WACC.TypeChecking.BType
       Language.WACC.TypeChecking.Expr
       Language.WACC.TypeChecking.State
+      Language.WACC.TypeChecking.Stmt
   other-modules:
       Paths_wacc
   hs-source-dirs:
@@ -39,6 +40,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , dlist
     , gigaparsec
     , recursion-schemes
     , transformers
@@ -54,6 +56,7 @@ executable compile
   build-depends:
       base >=4.7 && <5
     , containers
+    , dlist
     , gigaparsec
     , recursion-schemes
     , transformers
@@ -66,6 +69,7 @@ test-suite wacc-test
   other-modules:
       Language.WACC.TypeChecking.BTypeTest
       Language.WACC.TypeChecking.ExprTest
+      Language.WACC.TypeChecking.StmtTest
       Test
       Test.Arbitrary
       Test.Common
@@ -87,6 +91,7 @@ test-suite wacc-test
     , containers
     , deepseq
     , directory
+    , dlist
     , generic-arbitrary
     , gigaparsec
     , process

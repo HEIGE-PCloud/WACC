@@ -6,12 +6,11 @@ module Language.WACC.TypeChecking.ExprTest
   )
 where
 
-import Control.Monad.Trans.State (evalStateT)
 import Data.Foldable (traverse_)
-import Data.Map (Map, fromList)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
+import Language.WACC.TypeChecking.State
 import Test
 import Prelude hiding (GT, LT)
 
@@ -35,14 +34,18 @@ btypes =
 forEachBType :: (BType -> Assertion) -> Assertion
 forEachBType = flip traverse_ btypes
 
-vars :: Map BType BType
-vars = fromList $ fmap (\x -> (x, x)) btypes
+testTypingM :: TypingM () BType a -> Maybe a
+testTypingM action = case runTypingM action id mempty of
+  (mx, _, _) -> mx
 
 checkAtom' :: WAtom BType -> Maybe BType
-checkAtom' atom = evalStateT (checkAtom atom) vars
+checkAtom' = testTypingM . checkAtom
 
 checkExpr' :: Expr BType -> Maybe BType
-checkExpr' x = evalStateT (checkExpr x) vars
+checkExpr' = testTypingM . checkExpr
+
+checkArrayIndex' :: ArrayIndex BType -> Maybe BType
+checkArrayIndex' = testTypingM . checkArrayIndex
 
 intExpr :: Expr BType
 intExpr = WAtom $ IntLit 0 undefined
@@ -151,30 +154,6 @@ test =
             ]
         , testCase "looks up variable types" $
             forEachBType (\t -> checkAtom' (Ident t) @?= Just t)
-        , testGroup
-            "array elements"
-            [ testCase "elements of an int[] are ints" $
-                checkAtom' (ArrayElem (ArrayIndex (BArray BInt) [intExpr]))
-                  @?= Just BInt
-            , testCase "elements of an int[][] are int[]s" $
-                checkAtom'
-                  (ArrayElem (ArrayIndex (BArray (BArray BInt)) [intExpr]))
-                  @?= Just (BArray BInt)
-            , testCase "elements of elements of an int[][] are ints" $
-                checkAtom'
-                  ( ArrayElem
-                      (ArrayIndex (BArray (BArray BInt)) [intExpr, intExpr])
-                  )
-                  @?= Just BInt
-            , testCase "providing too many indices fails the check" $
-                checkAtom'
-                  (ArrayElem (ArrayIndex (BArray BInt) [intExpr, intExpr]))
-                  @?= Nothing
-            , testCase "string indexing is not supported" $
-                checkAtom'
-                  (ArrayElem (ArrayIndex BString [intExpr]))
-                  @?= Nothing
-            ]
         ]
     , testGroup
         "checkExpr"
@@ -230,5 +209,22 @@ test =
             , testBinOp "_&&_ (and)" And [(BBool, BBool, BBool)]
             , testBinOp "_||_ (or)" Or [(BBool, BBool, BBool)]
             ]
+        ]
+    , testGroup
+        "checkArrayIndex"
+        [ testCase "elements of an int[] are ints" $
+            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr]) @?= Just BInt
+        , testCase "elements of an int[][] are int[]s" $
+            checkArrayIndex' (ArrayIndex (BArray (BArray BInt)) [intExpr])
+              @?= Just (BArray BInt)
+        , testCase "elements of elements of an int[][] are ints" $
+            checkArrayIndex'
+              (ArrayIndex (BArray (BArray BInt)) [intExpr, intExpr])
+              @?= Just BInt
+        , testCase "providing too many indices fails the check" $
+            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr, intExpr])
+              @?= Nothing
+        , testCase "string indexing is not supported" $
+            checkArrayIndex' (ArrayIndex BString [intExpr]) @?= Nothing
         ]
     ]
