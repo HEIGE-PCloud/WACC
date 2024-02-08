@@ -16,6 +16,7 @@ module Language.WACC.TypeChecking.BType
 where
 
 import Data.Functor.Foldable (cata)
+import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import Language.WACC.AST (WType, WTypeF (..))
 
@@ -137,6 +138,13 @@ unify :: BType -> BType -> Maybe BType
 -- Accept char[] where string is expected.
 unify (BArray bt) BString = BString <$ unifyParam bt BChar
 unify bt1 bt2 = unifyParam bt1 bt2
+
+{- |
+This instance is used to provide an 'Control.Applicative.Alternative' instance
+for 'Language.WACC.TypeChecking.State.TypingM'.
+-}
+instance Semigroup BType where
+  bt1 <> bt2 = fromMaybe BAny $ unify bt1 bt2
 
 {- |
 A WACC function type.
