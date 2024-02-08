@@ -96,7 +96,6 @@ import Text.Gigaparsec.Token.Lexer
   , Lexeme
   , Lexer
   , Names
-  , Space
   , TextParsers (ascii)
   , mkLexerWithErrorConfig
   )
