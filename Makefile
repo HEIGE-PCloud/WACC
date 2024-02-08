@@ -1,11 +1,13 @@
-STACK=stack $(STACK_FLAGS)
-
 compile:
-	$(STACK) update
-	$(STACK) install --local-bin-path . wacc:exe:compile
+	stack update
+	stack install --local-bin-path . wacc:exe:compile
+
+build-test:
+	stack update
+	stack build --test --no-run-tests
 
 test-all:
-	$(STACK) test \
+	stack test \
 		--test-arguments --hide-successes \
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
@@ -16,7 +18,7 @@ test-all:
 		--test-arguments --quickcheck-max-size=10
 
 integration-test: compile
-	$(STACK) test \
+	stack test \
 		--test-arguments --hide-successes \
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
@@ -26,7 +28,7 @@ integration-test: compile
 		--test-arguments '--pattern "$$0 ~ /integrationTests/ && $$0 !~ /semanticErr/"'
 
 unit-test:
-	$(STACK) test \
+	stack test \
 		--test-arguments --hide-successes \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=1m \
@@ -36,7 +38,7 @@ unit-test:
 
 # Use `ACCEPT=1 make golden-test` to accept the changes
 golden-test:
-	$(STACK) test \
+	stack test \
 		--test-arguments --hide-successes \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=1s \
@@ -45,7 +47,7 @@ golden-test:
 		$(if $(ACCEPT), --test-arguments --accept)
 
 ghci-test:
-	$(STACK) ghci --ghci-options -isrc --ghci-options -itest wacc:wacc-test
+	stack ghci --ghci-options -isrc --ghci-options -itest wacc:wacc-test
 
 clean:
 	$(RM) compile

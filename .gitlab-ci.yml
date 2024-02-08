@@ -50,7 +50,7 @@ lint:
 
 build:
   script:
-    - make STACK_FLAGS=--system-ghc
+    - make build-test
   stage: build
   variables:
     BUILD_CACHE_POLICY: 'pull-push'
@@ -64,7 +64,7 @@ code_quality:
 
 integration-test:
   script:
-    - make integration-test STACK_FLAGS=--system-ghc
+    - make integration-test
   stage: test
   artifacts:
     when: always
@@ -76,7 +76,7 @@ integration-test:
 
 unit-test:
   script:
-    - make unit-test STACK_FLAGS=--system-ghc
+    - make unit-test
   stage: test
   artifacts:
     when: always
