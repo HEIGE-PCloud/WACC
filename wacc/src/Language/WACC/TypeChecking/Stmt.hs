@@ -18,6 +18,7 @@ import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
+import Text.Gigaparsec.Position (Pos)
 
 unifyPair :: LValue ident -> TypingM fnident ident (BType, BType)
 unifyPair lv = do
@@ -74,6 +75,14 @@ unifyStmts
   -> TypingM fnident ident BType
 unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
 
+unifyStmtsAt
+  :: (Ord fnident)
+  => Pos
+  -> BType
+  -> Stmts fnident ident
+  -> TypingM fnident ident BType
+unifyStmtsAt p t ss = reportAt p t $ unifyStmts t ss
+
 {- |
 Type check a WACC statement.
 
@@ -116,9 +125,9 @@ checkStmt (Return x _) = checkExpr x
 checkStmt (Exit x _) = BAny <$ unifyExprs BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x
 checkStmt (PrintLn x _) = BAny <$ checkExpr x
-checkStmt (IfElse x ifBody elseBody _) = do
+checkStmt (IfElse x ifBody elseBody p) = do
   _ <- unifyExprs BBool [x]
-  t <- unifyStmts BAny ifBody
-  unifyStmts t elseBody
-checkStmt (While x body _) = unifyExprs BBool [x] *> unifyStmts BAny body
-checkStmt (BeginEnd body _) = unifyStmts BAny body
+  t <- unifyStmtsAt p BAny ifBody
+  unifyStmtsAt p t elseBody
+checkStmt (While x body p) = unifyExprs BBool [x] *> unifyStmtsAt p BAny body
+checkStmt (BeginEnd body p) = unifyStmtsAt p BAny body
