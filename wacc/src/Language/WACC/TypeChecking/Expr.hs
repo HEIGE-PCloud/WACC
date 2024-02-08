@@ -23,7 +23,7 @@ import Prelude hiding (GT, LT)
 Type check a WACC array indexing subexpression.
 -}
 checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
-checkArrayIndex (ArrayIndex v xs) = typeOf v >>= flip (foldM go) xs
+checkArrayIndex (ArrayIndex v xs _) = typeOf v >>= flip (foldM go) xs
   where
     go (BArray t) x = t <$ unifyExprs BInt [x]
     go _ _ = empty
@@ -32,13 +32,13 @@ checkArrayIndex (ArrayIndex v xs) = typeOf v >>= flip (foldM go) xs
 Type check an atomic WACC expression.
 -}
 checkAtom :: WAtom ident -> TypingM fnident ident BType
-checkAtom (IntLit _) = pure BInt
-checkAtom (BoolLit _) = pure BBool
-checkAtom (CharLit _) = pure BChar
-checkAtom (StringLit _) = pure BString
-checkAtom Null = pure (BKnownPair BAny BAny)
-checkAtom (Ident v) = typeOf v
-checkAtom (ArrayElem ai) = checkArrayIndex ai
+checkAtom (IntLit _ _) = pure BInt
+checkAtom (BoolLit _ _) = pure BBool
+checkAtom (CharLit _ _) = pure BChar
+checkAtom (StringLit _ _) = pure BString
+checkAtom (Null _) = pure (BKnownPair BAny BAny)
+checkAtom (Ident v _) = typeOf v
+checkAtom (ArrayElem ai _) = checkArrayIndex ai
 
 {- |
 @unifyExprs t0 [x1, x2, ..., xn]@ attempts to unify @x1@ with @t0@ to obtain

@@ -31,27 +31,27 @@ unifyPair lv = do
 Type check an element of a WACC @pair@.
 -}
 checkPairElem :: PairElem ident -> TypingM fnident ident BType
-checkPairElem (FstElem lv) = fst <$> unifyPair lv
-checkPairElem (SndElem lv) = snd <$> unifyPair lv
+checkPairElem (FstElem lv _) = fst <$> unifyPair lv
+checkPairElem (SndElem lv _) = snd <$> unifyPair lv
 
 {- |
 Type check a WACC @lvalue@.
 -}
 checkLValue :: LValue ident -> TypingM fnident ident BType
-checkLValue (LVIdent v) = typeOf v
-checkLValue (LVArrayElem ai) = checkArrayIndex ai
-checkLValue (LVPairElem pe) = checkPairElem pe
+checkLValue (LVIdent v _) = typeOf v
+checkLValue (LVArrayElem ai _) = checkArrayIndex ai
+checkLValue (LVPairElem pe _) = checkPairElem pe
 
 {- |
 Type check a WACC @rvalue@.
 -}
 checkRValue
   :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
-checkRValue (RVExpr x) = checkExpr x
-checkRValue (RVArrayLit xs) = BArray <$> unifyExprs BAny xs
-checkRValue (RVNewPair x1 x2) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
-checkRValue (RVPairElem pe) = checkPairElem pe
-checkRValue (RVCall f xs) = do
+checkRValue (RVExpr x _) = checkExpr x
+checkRValue (RVArrayLit xs _) = BArray <$> unifyExprs BAny xs
+checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
+checkRValue (RVPairElem pe _) = checkPairElem pe
+checkRValue (RVCall f xs _) = do
   FnType {..} <- typeOfFn f
   let
     actN = length paramTypes
@@ -88,22 +88,22 @@ Type check a WACC statement.
 Otherwise, 'BAny' is returned.
 -}
 checkStmt :: (Ord fnident) => Stmt fnident ident -> TypingM fnident ident BType
-checkStmt Skip = pure BAny
-checkStmt (Decl t v rv) =
+checkStmt (Skip _) = pure BAny
+checkStmt (Decl t v rv _) =
   [ BAny
   | vt <- typeOf v
   , t' <- tryUnify vt $ fix t
   , rvt <- checkRValue rv
   , _ <- tryUnify rvt t'
   ]
-checkStmt (Asgn lv rv) =
+checkStmt (Asgn lv rv _) =
   [ BAny
   | rvt <- checkRValue rv
   , lvt <- checkLValue lv
   , _ <- tryUnify rvt lvt
   ]
-checkStmt (Read lv) = BAny <$ checkLValue lv
-checkStmt (Free x) =
+checkStmt (Read lv _) = BAny <$ checkLValue lv
+checkStmt (Free x _) =
   [ BAny
   | t <- checkExpr x
   , let
@@ -112,13 +112,13 @@ checkStmt (Free x) =
         _ -> t
   , t' `elem` heapAllocatedTypes
   ]
-checkStmt (Return x) = checkExpr x
-checkStmt (Exit x) = BAny <$ unifyExprs BInt [x]
-checkStmt (Print x) = BAny <$ checkExpr x
-checkStmt (PrintLn x) = BAny <$ checkExpr x
-checkStmt (IfElse x ifBody elseBody) = do
+checkStmt (Return x _) = checkExpr x
+checkStmt (Exit x _) = BAny <$ unifyExprs BInt [x]
+checkStmt (Print x _) = BAny <$ checkExpr x
+checkStmt (PrintLn x _) = BAny <$ checkExpr x
+checkStmt (IfElse x ifBody elseBody _) = do
   _ <- unifyExprs BBool [x]
   t <- unifyStmts BAny ifBody
   unifyStmts t elseBody
-checkStmt (While x body) = unifyExprs BBool [x] *> unifyStmts BAny body
-checkStmt (BeginEnd body) = unifyStmts BAny body
+checkStmt (While x body _) = unifyExprs BBool [x] *> unifyStmts BAny body
+checkStmt (BeginEnd body _) = unifyStmts BAny body

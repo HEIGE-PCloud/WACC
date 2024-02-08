@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 {- |
 WACC expressions.
 -}
@@ -10,27 +12,28 @@ WACC array indexing subexpressions.
 
 > <ident>[<expr>]...
 -}
-data ArrayIndex ident = ArrayIndex ident [Expr ident] deriving (Eq, Show)
+data ArrayIndex ident = ArrayIndex ident [Expr ident] Pos
+  deriving (Eq, Show, Functor)
 
 {- |
 Atomic WACC expressions.
 -}
 data WAtom ident
   = -- | @int@ literals.
-    IntLit Integer
+    IntLit Integer Pos
   | -- | @bool@ literals.
-    BoolLit Bool
+    BoolLit Bool Pos
   | -- | @char@ literals.
-    CharLit Char
+    CharLit Char Pos
   | -- | @string@ literals.
-    StringLit String
+    StringLit String Pos
   | -- | > null
-    Null
+    Null Pos
   | -- | > <ident>
-    Ident ident
+    Ident ident Pos
   | -- | > <ident>[<expr>]...
-    ArrayElem (ArrayIndex ident)
-  deriving (Eq, Show)
+    ArrayElem (ArrayIndex ident) Pos
+  deriving (Eq, Show, Functor)
 
 {- |
 Composite WACC expressions.
@@ -74,4 +77,4 @@ data Expr ident
     And (Expr ident) (Expr ident) Pos
   | -- | > <expr> || <expr>
     Or (Expr ident) (Expr ident) Pos
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)

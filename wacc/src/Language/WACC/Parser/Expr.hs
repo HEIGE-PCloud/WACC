@@ -39,6 +39,7 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
+import Text.Gigaparsec.Position (Pos, pos)
 import Prelude hiding (GT, LT)
 
 $( deriveLiftedConstructors
@@ -77,6 +78,16 @@ $( deriveDeferredConstructors
     , 'Or
     ]
  )
+
+liftA4
+  :: (Applicative f)
+  => (a -> b -> c -> d -> e)
+  -> f a
+  -> f b
+  -> f c
+  -> f d
+  -> f e
+liftA4 f a b c d = f <$> a <*> b <*> c <*> d
 
 -- | > <int-liter> ::= <int-sign>? <digit>+
 intLiter :: Parsec (WAtom i)
@@ -117,17 +128,23 @@ atom =
     , mkWAtom charLiter
     , mkWAtom stringLiter
     , mkWAtom pairLiter
-    , mkWAtom (mkIdentOrArrayElem identifier (option (many ("[" *> expr <* "]"))))
+    , mkWAtom
+        (mkIdentOrArrayElem pos identifier pos (option (many ("[" *> expr <* "]"))))
     , "(" *> expr <* ")"
     ]
 
 mkIdentOrArrayElem
-  :: Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (WAtom String)
-mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
+  :: Parsec Pos
+  -> Parsec String
+  -> Parsec Pos
+  -> Parsec (Maybe [Expr String])
+  -> Parsec (WAtom String)
+mkIdentOrArrayElem = liftA4 mkIdentOrArrayElem'
   where
-    mkIdentOrArrayElem' :: String -> Maybe [Expr String] -> WAtom String
-    mkIdentOrArrayElem' str (Just e) = ArrayElem (ArrayIndex str e)
-    mkIdentOrArrayElem' str Nothing = Ident str
+    mkIdentOrArrayElem'
+      :: Pos -> String -> Pos -> Maybe [Expr String] -> WAtom String
+    mkIdentOrArrayElem' p str p' (Just e) = ArrayElem (ArrayIndex str e p') p
+    mkIdentOrArrayElem' p str p' Nothing = Ident str p
 
 {- | > <expr> ::= <unary-oper> <expr>
  >              | <expr> <binary-oper> <expr>

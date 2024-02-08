@@ -9,6 +9,7 @@ author:
 dependencies:
   - base >= 4.7 && < 5
   - containers
+  - mtl
   - dlist
   - gigaparsec
   - recursion-schemes
@@ -61,6 +62,7 @@ tests:
       - tasty-hspec
       - tasty-hunit
       - tasty-quickcheck
+      - tasty-hunit
       - tasty-ant-xml
       - tasty-golden
       - wacc

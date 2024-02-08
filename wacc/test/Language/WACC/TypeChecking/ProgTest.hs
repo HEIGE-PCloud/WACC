@@ -30,16 +30,16 @@ checkProg' :: Prog Int BType -> Int -> Either Int FnType
 checkProg' = testTypingM . checkProg
 
 intExpr :: Expr BType
-intExpr = WAtom (IntLit 0) undefined
+intExpr = WAtom (IntLit 0 undefined) undefined
 
 boolExpr :: Expr BType
-boolExpr = WAtom (BoolLit False) undefined
+boolExpr = WAtom (BoolLit False undefined) undefined
 
 varExpr :: BType -> Expr BType
-varExpr = flip WAtom undefined . Ident
+varExpr = flip WAtom undefined . (`Ident` undefined)
 
 func :: Func Int BType
-func = Func WInt 0 [(WInt, BInt)] [Return intExpr]
+func = Func WInt 0 [(WInt, BInt)] [Return intExpr undefined] undefined
 
 funcType :: FnType
 funcType = FnType [BInt] BInt
@@ -57,32 +57,65 @@ test =
                 rt = fix rwt
               in
                 checkFunc'
-                  (Func rwt i (mkParam <$> pwts) [Return $ varExpr rt])
+                  ( Func
+                      rwt
+                      i
+                      (mkParam <$> pwts)
+                      [Return (varExpr rt) undefined]
+                      undefined
+                  )
                   i
                   == pure (FnType pts rt)
         , testCase "rejects incompatible return statements in body" $
-            checkFunc' (Func WInt 0 [] [Return boolExpr]) 0 @?= Left 1
+            checkFunc' (Func WInt 0 [] [Return boolExpr undefined] undefined) 0
+              @?= Left 1
         ]
     , testGroup
         "checkProg"
         [ testCase "accepts valid function calls" $
             checkProg'
-              (Main [func] [Asgn (LVIdent BInt) (RVCall 0 [intExpr])])
+              ( Main
+                  [func]
+                  [ Asgn
+                      (LVIdent BInt undefined)
+                      (RVCall 0 [intExpr] undefined)
+                      undefined
+                  ]
+                  undefined
+              )
               0
               @?= pure funcType
         , testCase "accepts invalid function calls" $
             checkProg'
-              (Main [func] [Asgn (LVIdent BInt) (RVCall 0 [boolExpr])])
+              ( Main
+                  [func]
+                  [ Asgn
+                      (LVIdent BInt undefined)
+                      (RVCall 0 [boolExpr] undefined)
+                      undefined
+                  ]
+                  undefined
+              )
               0
               @?= Left 1
         , testCase "rejects unknown function calls" $
             checkProg'
-              (Main [func] [Asgn (LVIdent BInt) (RVCall 1 [intExpr])])
+              ( Main
+                  [func]
+                  [ Asgn
+                      (LVIdent BInt undefined)
+                      (RVCall 1 [intExpr] undefined)
+                      undefined
+                  ]
+                  undefined
+              )
               0
               @?= Left 0
         , testProperty "rejects return statements in main program" $
             \wt ->
-              checkProg' (Main [func] [Return (varExpr $ fix wt)]) 0
+              checkProg'
+                (Main [func] [Return (varExpr $ fix wt) undefined] undefined)
+                0
                 == Left 1
         ]
     ]

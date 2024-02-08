@@ -49,19 +49,19 @@ checkArrayIndex' :: ArrayIndex BType -> Either Int BType
 checkArrayIndex' = testTypingM . checkArrayIndex
 
 intExpr :: Expr BType
-intExpr = WAtom (IntLit 0) undefined
+intExpr = WAtom (IntLit 0 undefined) undefined
 
 boolExpr :: Expr BType
-boolExpr = WAtom (BoolLit False) undefined
+boolExpr = WAtom (BoolLit False undefined) undefined
 
 charExpr :: Expr BType
-charExpr = WAtom (CharLit 'C') undefined
+charExpr = WAtom (CharLit 'C' undefined) undefined
 
 stringExpr :: Expr BType
-stringExpr = WAtom (StringLit "String") undefined
+stringExpr = WAtom (StringLit "String" undefined) undefined
 
 varExpr :: BType -> Expr BType
-varExpr = flip WAtom undefined . Ident
+varExpr = flip WAtom undefined . (`Ident` undefined)
 
 showType :: BType -> String
 showType BAny = "T"
@@ -144,18 +144,18 @@ test =
         [ testGroup
             "literals"
             [ testProperty "int literals are ints" $
-                \i -> checkAtom' (IntLit i) == pure BInt
+                \i -> checkAtom' (IntLit i undefined) == pure BInt
             , testProperty "bool literals are bools" $
-                \b -> checkAtom' (BoolLit b) == pure BBool
+                \b -> checkAtom' (BoolLit b undefined) == pure BBool
             , testProperty "char literals are chars" $
-                \c -> checkAtom' (CharLit c) == pure BChar
+                \c -> checkAtom' (CharLit c undefined) == pure BChar
             , testProperty "string literals are strings" $
-                \s -> checkAtom' (StringLit s) == pure BString
+                \s -> checkAtom' (StringLit s undefined) == pure BString
             , testCase "null is a literal for any pair type" $
-                checkAtom' Null @?= pure (BKnownPair BAny BAny)
+                checkAtom' (Null undefined) @?= pure (BKnownPair BAny BAny)
             ]
         , testCase "looks up variable types" $
-            forEachBType (\t -> checkAtom' (Ident t) @?= pure t)
+            forEachBType (\t -> checkAtom' (Ident t undefined) @?= pure t)
         ]
     , testGroup
         "checkExpr"
@@ -215,18 +215,21 @@ test =
     , testGroup
         "checkArrayIndex"
         [ testCase "elements of an int[] are ints" $
-            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr]) @?= pure BInt
+            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr] undefined)
+              @?= pure BInt
         , testCase "elements of an int[][] are int[]s" $
-            checkArrayIndex' (ArrayIndex (BArray (BArray BInt)) [intExpr])
+            checkArrayIndex'
+              (ArrayIndex (BArray (BArray BInt)) [intExpr] undefined)
               @?= pure (BArray BInt)
         , testCase "elements of elements of an int[][] are ints" $
             checkArrayIndex'
-              (ArrayIndex (BArray (BArray BInt)) [intExpr, intExpr])
+              (ArrayIndex (BArray (BArray BInt)) [intExpr, intExpr] undefined)
               @?= pure BInt
         , testCase "providing too many indices fails the check" $
-            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr, intExpr])
+            checkArrayIndex'
+              (ArrayIndex (BArray BInt) [intExpr, intExpr] undefined)
               @?= Left 1
         , testCase "string indexing is not supported" $
-            checkArrayIndex' (ArrayIndex BString [intExpr]) @?= Left 1
+            checkArrayIndex' (ArrayIndex BString [intExpr] undefined) @?= Left 1
         ]
     ]

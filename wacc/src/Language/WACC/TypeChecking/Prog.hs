@@ -15,7 +15,7 @@ Type check a WACC function.
 Records the type of the function in the 'TypingM' state on success.
 -}
 checkFunc :: (Ord fnident) => Func fnident ident -> TypingM fnident ident ()
-checkFunc (Func rwt f pwts ss) = do
+checkFunc (Func rwt f pwts ss _) = do
   let
     rt = fix rwt
   setFnType f (FnType (fix . fst <$> pwts) rt)
@@ -26,7 +26,7 @@ checkFunc (Func rwt f pwts ss) = do
 Type check a WACC program.
 -}
 checkProg :: (Ord fnident) => Prog fnident ident -> TypingM fnident ident ()
-checkProg (Main fs ss) = do
+checkProg (Main fs ss _) = do
   mapM_ checkFunc fs
   t <- unifyStmts BAny ss
   when (t /= BAny) abort
