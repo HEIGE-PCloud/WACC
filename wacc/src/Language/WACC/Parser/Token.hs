@@ -96,6 +96,7 @@ import Text.Gigaparsec.Token.Lexer
   , Lexeme
   , Lexer
   , Names
+  , Space
   , TextParsers (ascii)
   , mkLexerWithErrorConfig
   )
@@ -228,7 +229,7 @@ waccSpaceDesc =
     , multiLineCommentStart = ""
     , multiLineCommentEnd = ""
     , multiLineNestedComments = False
-    , space = Just isSpace
+    , Text.Gigaparsec.Token.Descriptions.space = Just isSpace
     , whitespaceIsContextDependent = False
     }
 
@@ -293,6 +294,9 @@ lexer =
 lexeme :: Lexeme
 lexeme = T.lexeme lexer
 
+nonlexeme :: Lexeme
+nonlexeme = T.nonlexeme lexer
+
 names :: Names
 names = T.names lexeme
 
@@ -316,6 +320,9 @@ fully = T.fully lexer
 
 sym :: String -> Parsec ()
 sym = T.sym lexeme
+
+space :: Space
+space = T.space lexer
 
 negateOp :: Parsec ()
 negateOp =
