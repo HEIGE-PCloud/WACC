@@ -26,7 +26,6 @@ import qualified Data.DList as DList
 import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
 import Data.Map hiding (null, singleton, toList)
 import qualified Data.Map as Map
-import Language.WACC.Error
 import Language.WACC.AST
   ( ArrayIndex (..)
   , Expr (..)
@@ -40,6 +39,7 @@ import Language.WACC.AST
   , WAtom (..)
   )
 import Language.WACC.AST.WType (WType)
+import Language.WACC.Error
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT, reverse, unzip)
 
@@ -111,7 +111,7 @@ renameFuncOrErr str pos constr = do
 renameOrErr :: String -> Pos -> (Integer -> a) -> Analysis a
 renameOrErr str pos constr = do
   (localST, superST) <- getST
-  case getDecl str localST superST of
+  case getDecl str localST (Just superST) of
     Just (n, _) -> return $ constr n
     Nothing -> do
       report (notDecl str) pos (length str)
@@ -164,13 +164,15 @@ freshN = do
   modify $ mapPair id (+ 1)
   gets ctr
 
-getDecl :: String -> LocalST -> SuperST -> Maybe (Integer, Pos)
-getDecl str localST superST = case localVal of
+getDecl :: String -> LocalST -> Maybe SuperST -> Maybe (Integer, Pos)
+getDecl str localST maybeSuperST = case localVal of
   Nothing -> superVal
   x -> x
   where
     localVal = localST !? str
-    superVal = superST !? str
+    superVal = case maybeSuperST of
+      Nothing -> Nothing
+      Just superST -> superST !? str
 
 insertDecl :: Pos -> WType -> String -> Analysis Ctr
 insertDecl pos t str = do
@@ -183,6 +185,7 @@ getST :: Analysis (LocalST, SuperST)
 getST = (,) <$> gets fst <*> asks fst
 
 alreadyDecl str origPos = str ++ " was already defined in " ++ show origPos ++ "."
+
 notDecl str = str ++ " was not declared."
 
 report :: String -> Pos -> Int -> Analysis ()
@@ -193,9 +196,9 @@ renameStmt (Skip p) = pure (Skip p)
 renameStmt (Decl t str rv pos) = do
   rv' <- renameRValue rv
   (localST, superST) <- getST
-  case getDecl str localST superST of
+  case getDecl str localST Nothing of
     Nothing -> Control.Monad.void (insertDecl pos t str)
-    (Just (_, posOrig)) -> report (alreadyDecl str posOrig) pos (length str)
+    (Just (_, posOrig)) -> report (alreadyDecl str posOrig) pos 1
   n <- gets snd
   return (Decl t (Vident n str) rv' pos) -- Should I return a bogus node?
 renameStmt (Asgn lv rv p) = do
@@ -274,7 +277,7 @@ foo = foldM bar (Just Map.empty)
     bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
       Just (_, origPos) -> do
         tell . DList.singleton $
-          Error (alreadyDecl str origPos) pos (toEnum (length str)) 
+          Error (alreadyDecl str origPos) pos (toEnum (length str))
         return Nothing
       Nothing -> do
         n <- freshN
