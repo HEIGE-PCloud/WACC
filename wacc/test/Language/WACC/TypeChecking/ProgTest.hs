@@ -18,15 +18,15 @@ import Test
 mkParam :: WType -> (WType, BType)
 mkParam wt = (wt, fix wt)
 
-testTypingM :: TypingM Int BType () -> Int -> Maybe FnType
+testTypingM :: TypingM Int BType () -> Int -> Either Int FnType
 testTypingM action = case runTypingM action id mempty of
-  (Nothing, _, _) -> const Nothing
-  (_, fs, _) -> (fs !?)
+  (Just _, fs, es) | null es -> maybe (Left 0) pure . (fs !?)
+  (_, _, es) -> const . Left $ length es
 
-checkFunc' :: Func Int BType -> Int -> Maybe FnType
+checkFunc' :: Func Int BType -> Int -> Either Int FnType
 checkFunc' = testTypingM . checkFunc
 
-checkProg' :: Prog Int BType -> Int -> Maybe FnType
+checkProg' :: Prog Int BType -> Int -> Either Int FnType
 checkProg' = testTypingM . checkProg
 
 intExpr :: Expr BType
@@ -59,9 +59,9 @@ test =
                 checkFunc'
                   (Func rwt i (mkParam <$> pwts) [Return $ varExpr rt])
                   i
-                  == Just (FnType pts rt)
+                  == pure (FnType pts rt)
         , testCase "rejects incompatible return statements in body" $
-            checkFunc' (Func WInt 0 [] [Return boolExpr]) 0 @?= Nothing
+            checkFunc' (Func WInt 0 [] [Return boolExpr]) 0 @?= Left 1
         ]
     , testGroup
         "checkProg"
@@ -69,20 +69,20 @@ test =
             checkProg'
               (Main [func] [Asgn (LVIdent BInt) (RVCall 0 [intExpr])])
               0
-              @?= Just funcType
+              @?= pure funcType
         , testCase "accepts invalid function calls" $
             checkProg'
               (Main [func] [Asgn (LVIdent BInt) (RVCall 0 [boolExpr])])
               0
-              @?= Nothing
+              @?= Left 1
         , testCase "rejects unknown function calls" $
             checkProg'
               (Main [func] [Asgn (LVIdent BInt) (RVCall 1 [intExpr])])
               0
-              @?= Nothing
+              @?= Left 1
         , testProperty "rejects return statements in main program" $
             \wt ->
               checkProg' (Main [func] [Return (varExpr $ fix wt)]) 0
-                == Nothing
+                == Left 1
         ]
     ]

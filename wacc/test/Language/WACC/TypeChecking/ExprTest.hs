@@ -34,17 +34,18 @@ btypes =
 forEachBType :: (BType -> Assertion) -> Assertion
 forEachBType = flip traverse_ btypes
 
-testTypingM :: TypingM () BType a -> Maybe a
+testTypingM :: TypingM () BType a -> Either Int a
 testTypingM action = case runTypingM action id mempty of
-  (mx, _, _) -> mx
+  (Just x, _, es) | null es -> Right x
+  (_, _, es) -> Left $ length es
 
-checkAtom' :: WAtom BType -> Maybe BType
+checkAtom' :: WAtom BType -> Either Int BType
 checkAtom' = testTypingM . checkAtom
 
-checkExpr' :: Expr BType -> Maybe BType
+checkExpr' :: Expr BType -> Either Int BType
 checkExpr' = testTypingM . checkExpr
 
-checkArrayIndex' :: ArrayIndex BType -> Maybe BType
+checkArrayIndex' :: ArrayIndex BType -> Either Int BType
 checkArrayIndex' = testTypingM . checkArrayIndex
 
 intExpr :: Expr BType
@@ -85,9 +86,9 @@ testUnOp name op t ret =
     name
     [ testCase
         (concat ["accepts ", showType t, "s and returns ", showType ret, "s"])
-        $ checkExpr' (op (varExpr t) undefined) @?= Just ret
+        $ checkExpr' (op (varExpr t) undefined) @?= pure ret
     , testCase ("rejects " ++ showType bad ++ "s") $
-        checkExpr' (op (varExpr bad) undefined) @?= Nothing
+        checkExpr' (op (varExpr bad) undefined) @?= Left 1
     ]
   where
     bad = mkBad t
@@ -108,7 +109,7 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
               , "s"
               ]
           )
-          $ checkExpr' (op (varExpr t1) (varExpr t2) undefined) @?= Just ret
+          $ checkExpr' (op (varExpr t1) (varExpr t2) undefined) @?= pure ret
       , testCase
           ( concat
               [ "rejects "
@@ -116,7 +117,7 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
               , "s (left only)"
               ]
           )
-          $ checkExpr' (op (varExpr bad1) (varExpr t2) undefined) @?= Nothing
+          $ checkExpr' (op (varExpr bad1) (varExpr t2) undefined) @?= Left 1
       , testCase
           ( concat
               [ "rejects "
@@ -124,7 +125,7 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
               , "s (right only)"
               ]
           )
-          $ checkExpr' (op (varExpr t1) (varExpr bad2) undefined) @?= Nothing
+          $ checkExpr' (op (varExpr t1) (varExpr bad2) undefined) @?= Left 1
       ]
       where
         accepts
@@ -143,30 +144,30 @@ test =
         [ testGroup
             "literals"
             [ testProperty "int literals are ints" $
-                \i -> checkAtom' (IntLit i) == Just BInt
+                \i -> checkAtom' (IntLit i) == pure BInt
             , testProperty "bool literals are bools" $
-                \b -> checkAtom' (BoolLit b) == Just BBool
+                \b -> checkAtom' (BoolLit b) == pure BBool
             , testProperty "char literals are chars" $
-                \c -> checkAtom' (CharLit c) == Just BChar
+                \c -> checkAtom' (CharLit c) == pure BChar
             , testProperty "string literals are strings" $
-                \s -> checkAtom' (StringLit s) == Just BString
+                \s -> checkAtom' (StringLit s) == pure BString
             , testCase "null is a literal for any pair type" $
-                checkAtom' Null @?= Just (BKnownPair BAny BAny)
+                checkAtom' Null @?= pure (BKnownPair BAny BAny)
             ]
         , testCase "looks up variable types" $
-            forEachBType (\t -> checkAtom' (Ident t) @?= Just t)
+            forEachBType (\t -> checkAtom' (Ident t) @?= pure t)
         ]
     , testGroup
         "checkExpr"
         [ testGroup
             "atoms"
-            [ testCase "int atoms are ints" $ checkExpr' intExpr @?= Just BInt
+            [ testCase "int atoms are ints" $ checkExpr' intExpr @?= pure BInt
             , testCase "bool atoms are bools" $
-                checkExpr' boolExpr @?= Just BBool
+                checkExpr' boolExpr @?= pure BBool
             , testCase "char atoms are chars" $
-                checkExpr' charExpr @?= Just BChar
+                checkExpr' charExpr @?= pure BChar
             , testCase "string atoms are strings" $
-                checkExpr' stringExpr @?= Just BString
+                checkExpr' stringExpr @?= pure BString
             ]
         , testGroup
             "unary operators"
@@ -214,18 +215,18 @@ test =
     , testGroup
         "checkArrayIndex"
         [ testCase "elements of an int[] are ints" $
-            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr]) @?= Just BInt
+            checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr]) @?= pure BInt
         , testCase "elements of an int[][] are int[]s" $
             checkArrayIndex' (ArrayIndex (BArray (BArray BInt)) [intExpr])
-              @?= Just (BArray BInt)
+              @?= pure (BArray BInt)
         , testCase "elements of elements of an int[][] are ints" $
             checkArrayIndex'
               (ArrayIndex (BArray (BArray BInt)) [intExpr, intExpr])
-              @?= Just BInt
+              @?= pure BInt
         , testCase "providing too many indices fails the check" $
             checkArrayIndex' (ArrayIndex (BArray BInt) [intExpr, intExpr])
-              @?= Nothing
+              @?= Left 1
         , testCase "string indexing is not supported" $
-            checkArrayIndex' (ArrayIndex BString [intExpr]) @?= Nothing
+            checkArrayIndex' (ArrayIndex BString [intExpr]) @?= Left 1
         ]
     ]
