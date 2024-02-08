@@ -44,12 +44,14 @@ runParse filename = do
     res = parseWithError (fully program) sourceCode
   case res of
     Failure err -> putStrLn (printError filename (lines sourceCode) err) >> exitWithSyntaxError
-    Success ast -> runScopeAnalysis ast
+    Success ast -> runScopeAnalysis filename sourceCode ast
 
-runScopeAnalysis :: Prog String String -> IO ()
-runScopeAnalysis ast = do
+runScopeAnalysis :: String -> String -> Prog String String -> IO ()
+runScopeAnalysis filename sourceCode ast = do
   case scopeAnalysis ast of
-    Left err -> exitWithSemanticError
+    Left errs -> do
+      mapM (\err -> putStrLn (printError filename (lines sourceCode) err)) errs
+      exitWithSemanticError
     Right res -> runTypeCheck res
 
 runTypeCheck :: (Prog Fnident Vident, VarST) -> IO ()

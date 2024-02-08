@@ -39,6 +39,7 @@ import Language.WACC.AST
   , WAtom (..)
   )
 import Language.WACC.AST.WType (WType)
+import Language.WACC.Error
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT, reverse, unzip)
 
@@ -50,10 +51,10 @@ data Fnident = Fnident Integer String
   deriving (Show)
 
 instance Eq Fnident where
-  (Fnident n1 _) == (Fnident n2 _) = n1 == n1
+  (Fnident n1 _) == (Fnident n2 _) = n1 == n2
 
 instance Ord Fnident where
-  (Fnident n1 _) <= (Fnident n2 _) = n1 <= n1
+  (Fnident n1 _) <= (Fnident n2 _) = n1 <= n2
 
 {- |
 The @Integer  acts as a UID (which will not clash with @Fnident@s either)
@@ -63,12 +64,10 @@ data Vident = Vident Integer String
   deriving (Show)
 
 instance Eq Vident where
-  (Vident n1 _) == (Vident n2 _) = n1 == n1
+  (Vident n1 _) == (Vident n2 _) = n1 == n2
 
 instance Ord Vident where
-  (Vident n1 _) <= (Vident n2 _) = n1 <= n1
-
-type Error = String
+  (Vident n1 _) <= (Vident n2 _) = n1 <= n2
 
 type SuperST = Map String (Integer, Pos)
 
@@ -106,16 +105,16 @@ renameFuncOrErr str pos constr = do
   case funcST !? str of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report pos (str ++ "was not previously declared")
+      report (notDecl str) pos (length str)
       return undefined
 
 renameOrErr :: String -> Pos -> (Integer -> a) -> Analysis a
 renameOrErr str pos constr = do
   (localST, superST) <- getST
-  case getDecl str localST superST of
+  case getDecl str localST (Just superST) of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report pos (str ++ " was not previously declared")
+      report (notDecl str) pos (length str)
       return undefined
 
 renameArrayIndex :: ArrayIndex String -> Analysis (ArrayIndex Vident)
@@ -165,13 +164,15 @@ freshN = do
   modify $ mapPair id (+ 1)
   gets ctr
 
-getDecl :: String -> LocalST -> SuperST -> Maybe (Integer, Pos)
-getDecl str localST superST = case localVal of
+getDecl :: String -> LocalST -> Maybe SuperST -> Maybe (Integer, Pos)
+getDecl str localST maybeSuperST = case localVal of
   Nothing -> superVal
   x -> x
   where
     localVal = localST !? str
-    superVal = superST !? str
+    superVal = case maybeSuperST of
+      Nothing -> Nothing
+      Just superST -> superST !? str
 
 insertDecl :: Pos -> WType -> String -> Analysis Ctr
 insertDecl pos t str = do
@@ -183,17 +184,21 @@ insertDecl pos t str = do
 getST :: Analysis (LocalST, SuperST)
 getST = (,) <$> gets fst <*> asks fst
 
-report :: Pos -> String -> Analysis ()
-report pos str = tell (Data.DList.singleton ("Line " ++ show pos ++ ": " ++ str), mempty)
+alreadyDecl str origPos = str ++ " was already defined in " ++ show origPos ++ "."
+
+notDecl str = str ++ " was not declared."
+
+report :: String -> Pos -> Int -> Analysis ()
+report str pos len = tell (Data.DList.singleton (Error str pos (toEnum len)), mempty)
 
 renameStmt :: Stmt String String -> Analysis (Stmt Fnident Vident)
 renameStmt (Skip p) = pure (Skip p)
 renameStmt (Decl t str rv pos) = do
   rv' <- renameRValue rv
   (localST, superST) <- getST
-  case getDecl str localST superST of
+  case getDecl str localST Nothing of
     Nothing -> Control.Monad.void (insertDecl pos t str)
-    (Just (_, posOrig)) -> report pos (str ++ "already defined in line " ++ show posOrig)
+    (Just (_, posOrig)) -> report (alreadyDecl str posOrig) pos 1
   n <- gets snd
   return (Decl t (Vident n str) rv' pos) -- Should I return a bogus node?
 renameStmt (Asgn lv rv p) = do
@@ -236,11 +241,10 @@ renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
   ns <- mapM (uncurry $ insertDecl pos) params
   let
-    params' = (mapPair id) . Vident <$> ns <*> params
+    params' = zipWith ((mapPair id) . Vident) ns params
   funcST <- asks snd
   let
     (n, _) = funcST ! str
-  --  Just (n, pos) -> report pos (str ++ " already declared in line " ++ show pos)
   ls' <- renameStmts ls
   return (Func t (Fnident n str) params' ls' pos)
 
@@ -273,7 +277,7 @@ foo = foldM bar (Just Map.empty)
     bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
       Just (_, origPos) -> do
         tell . DList.singleton $
-          show pos ++ ": " ++ str ++ " already defined in " ++ show origPos
+          Error (alreadyDecl str origPos) pos (toEnum (length str))
         return Nothing
       Nothing -> do
         n <- freshN
