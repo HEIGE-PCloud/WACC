@@ -14,7 +14,6 @@ module Language.WACC.Parser.Expr
   )
 where
 
-
 import Data.Set (fromList)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
@@ -29,7 +28,6 @@ import Text.Gigaparsec (Parsec, many, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy)
 import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Errors.Patterns (preventativeExplain)
-import Text.Gigaparsec.Position (Pos, pos)
 import Text.Gigaparsec.Expr
   ( Fixity (InfixL, InfixN, InfixR, Prefix)
   , Prec (..)
@@ -41,6 +39,7 @@ import Text.Gigaparsec.Patterns
   ( deriveDeferredConstructors
   , deriveLiftedConstructors
   )
+import Text.Gigaparsec.Position (Pos, pos)
 import Prelude hiding (GT, LT)
 
 $( deriveLiftedConstructors
@@ -80,8 +79,14 @@ $( deriveDeferredConstructors
     ]
  )
 
-liftA4 :: Applicative f =>
-   (a -> b -> c -> d -> e) -> f a -> f b -> f c -> f d -> f e
+liftA4
+  :: (Applicative f)
+  => (a -> b -> c -> d -> e)
+  -> f a
+  -> f b
+  -> f c
+  -> f d
+  -> f e
 liftA4 f a b c d = f <$> a <*> b <*> c <*> d
 
 -- | > <int-liter> ::= <int-sign>? <digit>+
@@ -123,15 +128,21 @@ atom =
     , mkWAtom charLiter
     , mkWAtom stringLiter
     , mkWAtom pairLiter
-    , mkWAtom (mkIdentOrArrayElem pos identifier pos (option (many ("[" *> expr <* "]"))))
+    , mkWAtom
+        (mkIdentOrArrayElem pos identifier pos (option (many ("[" *> expr <* "]"))))
     , "(" *> expr <* ")"
     ]
 
 mkIdentOrArrayElem
-  :: Parsec Pos -> Parsec String -> Parsec Pos -> Parsec (Maybe [Expr String]) -> Parsec (WAtom String)
+  :: Parsec Pos
+  -> Parsec String
+  -> Parsec Pos
+  -> Parsec (Maybe [Expr String])
+  -> Parsec (WAtom String)
 mkIdentOrArrayElem = liftA4 mkIdentOrArrayElem'
   where
-    mkIdentOrArrayElem' :: Pos -> String -> Pos -> Maybe [Expr String] -> WAtom String
+    mkIdentOrArrayElem'
+      :: Pos -> String -> Pos -> Maybe [Expr String] -> WAtom String
     mkIdentOrArrayElem' p str p' (Just e) = ArrayElem (ArrayIndex str e p') p
     mkIdentOrArrayElem' p str p' Nothing = Ident str p
 

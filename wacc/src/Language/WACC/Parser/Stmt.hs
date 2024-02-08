@@ -14,6 +14,7 @@ module Language.WACC.Parser.Stmt
   , arrayLiter
   )
 where
+
 import Data.List.NonEmpty (fromList)
 import Data.List.NonEmpty as D (NonEmpty ((:|)), last)
 import qualified Data.Set as Set
@@ -72,8 +73,14 @@ $( deriveLiftedConstructors
     ]
  )
 
-liftA4 :: Applicative f =>
-   (a -> b -> c -> d -> e) -> f a -> f b -> f c -> f d -> f e
+liftA4
+  :: (Applicative f)
+  => (a -> b -> c -> d -> e)
+  -> f a
+  -> f b
+  -> f c
+  -> f d
+  -> f e
 liftA4 f a b c d = f <$> a <*> b <*> c <*> d
 
 -- | > program ::= "begin" <func>* <stmt> "end"
@@ -181,14 +188,23 @@ lValue =
     [lValueOrIdent, mkLVPairElem pairElem]
 
 mkIdentOrArrayElem
-  :: Parsec Pos -> Parsec String -> Parsec Pos -> Parsec (Maybe [Expr String]) -> Parsec (LValue String)
+  :: Parsec Pos
+  -> Parsec String
+  -> Parsec Pos
+  -> Parsec (Maybe [Expr String])
+  -> Parsec (LValue String)
 mkIdentOrArrayElem = liftA4 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem' p str p' (Just e) = LVArrayElem (ArrayIndex str e p') p
     mkIdentOrArrayElem' p str p' Nothing = LVIdent str p
 
 lValueOrIdent :: Parsec (LValue String)
-lValueOrIdent = mkIdentOrArrayElem pos identifier pos (option (many (arrayIndex "[" *> expr <* "]")))
+lValueOrIdent =
+  mkIdentOrArrayElem
+    pos
+    identifier
+    pos
+    (option (many (arrayIndex "[" *> expr <* "]")))
 
 arrayIndex :: Parsec a -> Parsec a
 arrayIndex = label (Set.singleton "array index")

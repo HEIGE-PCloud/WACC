@@ -14,11 +14,11 @@ import qualified Data.DList as DL
 import Data.Either
 import qualified Data.Map as Map
 import Language.WACC.Parser.Stmt
+import Language.WACC.Parser.Token
+import Language.WACC.Semantic.Scope
+import Test.Tasty
 import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
-import Test.Tasty
-import Language.WACC.Semantic.Scope 
-import Language.WACC.Parser.Token
 
 test = testGroup "Scope Analysis Tests" [parent_tests, naming_fail_tests]
 

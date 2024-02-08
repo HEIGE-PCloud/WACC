@@ -74,12 +74,15 @@ test =
         , testGroup
             "assignment"
             [ testCase "accepts identical type" $
-                checkStmt' (Asgn (LVIdent BInt undefined) (RVExpr intExpr undefined) undefined) @?= pure BAny
+                checkStmt' (Asgn (LVIdent BInt undefined) (RVExpr intExpr undefined) undefined)
+                  @?= pure BAny
             , testCase "accepts compatible type" $
-                checkStmt' (Asgn (LVIdent bIntPair undefined) (RVExpr nullExpr undefined) undefined)
+                checkStmt'
+                  (Asgn (LVIdent bIntPair undefined) (RVExpr nullExpr undefined) undefined)
                   @?= pure BAny
             , testCase "rejects incompatible type" $
-                checkStmt' (Asgn (LVIdent BInt undefined) (RVExpr nullExpr undefined) undefined) @?= Left 1
+                checkStmt' (Asgn (LVIdent BInt undefined) (RVExpr nullExpr undefined) undefined)
+                  @?= Left 1
             ]
         , testProperty "ignores read" $
             \t -> checkStmt' (Read (LVIdent t undefined) undefined) == pure BAny
@@ -107,7 +110,8 @@ test =
         , testGroup
             "if then else fi"
             [ testCase "accepts skips" $
-                checkStmt' (IfElse boolExpr [Skip undefined] [Skip undefined] undefined) @?= pure BAny
+                checkStmt' (IfElse boolExpr [Skip undefined] [Skip undefined] undefined)
+                  @?= pure BAny
             , testProperty "accepts identical return types" $
                 \t ->
                   let
@@ -115,11 +119,14 @@ test =
                   in
                     checkStmt' (IfElse boolExpr body body undefined) == pure t
             , testCase "rejects incompatible return types" $
-                checkStmt' (IfElse boolExpr [Return intExpr undefined] [Return boolExpr undefined] undefined)
+                checkStmt'
+                  ( IfElse boolExpr [Return intExpr undefined] [Return boolExpr undefined] undefined
+                  )
                   @?= Left 1
             ]
         , testProperty "while do done propagates return types" $
-            \t -> checkStmt' (While boolExpr [Return (varExpr t) undefined] undefined) == pure t
+            \t ->
+              checkStmt' (While boolExpr [Return (varExpr t) undefined] undefined) == pure t
         , testProperty "begin end propagates return types" $
             \t -> checkStmt' (BeginEnd [Return (varExpr t) undefined] undefined) == pure t
         ]
@@ -172,9 +179,11 @@ test =
         "checkPairElem"
         [ testProperty "extracts correct fst type" $
             \t1 t2 ->
-              checkPairElem' (FstElem (LVIdent (BKnownPair t1 t2) undefined) undefined) == pure t1
+              checkPairElem' (FstElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
+                == pure t1
         , testProperty "extracts correct snd type" $
             \t1 t2 ->
-              checkPairElem' (SndElem (LVIdent (BKnownPair t1 t2) undefined) undefined) == pure t2
+              checkPairElem' (SndElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
+                == pure t2
         ]
     ]

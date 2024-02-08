@@ -52,33 +52,47 @@ test =
         "checkFunc"
         [ testProperty "records correct parameter and return types" $
             \i pwts rwt ->
-              let pts = fix <$> pwts
-                  rt = fix rwt
-               in checkFunc'
-                    (Func rwt i (mkParam <$> pwts) [Return (varExpr rt) undefined] undefined)
-                    i
-                    == pure (FnType pts rt),
-          testCase "rejects incompatible return statements in body" $
+              let
+                pts = fix <$> pwts
+                rt = fix rwt
+              in
+                checkFunc'
+                  (Func rwt i (mkParam <$> pwts) [Return (varExpr rt) undefined] undefined)
+                  i
+                  == pure (FnType pts rt)
+        , testCase "rejects incompatible return statements in body" $
             checkFunc' (Func WInt 0 [] [Return boolExpr undefined] undefined) 0 @?= Left 1
-        ],
-      testGroup
+        ]
+    , testGroup
         "checkProg"
         [ testCase "accepts valid function calls" $
             checkProg'
-              (Main [func] [Asgn (LVIdent BInt undefined) (RVCall 0 [intExpr] undefined) undefined] undefined)
+              ( Main
+                  [func]
+                  [Asgn (LVIdent BInt undefined) (RVCall 0 [intExpr] undefined) undefined]
+                  undefined
+              )
               0
-              @?= pure funcType,
-          testCase "accepts invalid function calls" $
+              @?= pure funcType
+        , testCase "accepts invalid function calls" $
             checkProg'
-              (Main [func] [Asgn (LVIdent BInt undefined) (RVCall 0 [boolExpr] undefined) undefined] undefined)
+              ( Main
+                  [func]
+                  [Asgn (LVIdent BInt undefined) (RVCall 0 [boolExpr] undefined) undefined]
+                  undefined
+              )
               0
-              @?= Left 1,
-          testCase "rejects unknown function calls" $
+              @?= Left 1
+        , testCase "rejects unknown function calls" $
             checkProg'
-              (Main [func] [Asgn (LVIdent BInt undefined) (RVCall 1 [intExpr] undefined) undefined] undefined)
+              ( Main
+                  [func]
+                  [Asgn (LVIdent BInt undefined) (RVCall 1 [intExpr] undefined) undefined]
+                  undefined
+              )
               0
-              @?= Left 1,
-          testProperty "rejects return statements in main program" $
+              @?= Left 1
+        , testProperty "rejects return statements in main program" $
             \wt ->
               checkProg' (Main [func] [Return (varExpr $ fix wt) undefined] undefined) 0
                 == Left 1
