@@ -18,10 +18,9 @@ end
 
 
 In test/wacc_examples/invalid/syntaxErr/if/ifNofi.wacc (line 17, column 1):
-  unexpected keyword end
-  expected ";" or fi
-  unclosed if statement
-  >    skip
-  >end
-   ^^^
-  >
+unexpected keyword end
+expected ";" or fi
+unclosed if statement
+>     skip
+> end
+> ^^^

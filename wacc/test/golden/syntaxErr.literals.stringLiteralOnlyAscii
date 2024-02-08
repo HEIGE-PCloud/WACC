@@ -14,8 +14,8 @@ end
 
 
 In test/wacc_examples/invalid/syntaxErr/literals/stringLiteralOnlyAscii.wacc (line 12, column 17):
-  non-ascii characters in string literal, this is not allowed
-  >begin
-  >    string s = "héllo world"
-                   ^^^^^^^^^^^^
-  >end
+non-ascii characters in string literal, this is not allowed
+> begin
+>     string s = "héllo world"
+>                 ^^^^^^^^^^^^
+> end

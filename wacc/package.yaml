@@ -14,6 +14,7 @@ dependencies:
   - gigaparsec
   - recursion-schemes
   - transformers
+  - extra
 
 ghc-options:
   - -Wall

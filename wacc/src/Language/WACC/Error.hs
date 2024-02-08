@@ -7,6 +7,7 @@
 module Language.WACC.Error where
 
 import Data.List.NonEmpty (NonEmpty)
+import Data.List.Extra ((!?))
 import Data.Maybe (catMaybes)
 import Data.Set (Set, toList)
 import Data.String (IsString (fromString))
@@ -71,10 +72,20 @@ parseWithError = parse
 data Error = Error {errorMessage :: String, position :: Pos, width :: Word}
 
 printError :: FilePath -> [String] -> Error -> String
-printError filePath sourceCodeLines (Error errorMessage position width) = printHeader filePath position
+printError filePath sourceCodeLines (Error errorMessage position@(row, col) width) = printHeader filePath position ++ "\n" ++ errorMessage ++ "\n" ++ lineStr
+  where
+    prevLine = printLine (row - 2, col) sourceCodeLines
+    currline = printLine (row - 1, col) sourceCodeLines
+    caretLine = replicate (fromIntegral col - 1) ' ' ++ replicate (fromIntegral width) '^'
+    nextLine = printLine (row, col) sourceCodeLines
+    lines = map ("> " ++) $ catMaybes [prevLine, currline, Just caretLine, nextLine]
+    lineStr = unlines lines
 
 printPos :: Pos -> String
 printPos (x, y) = "(line " ++ show x ++ ", column " ++ show y ++ ")"
+
+printLine :: Pos -> [String] -> Maybe String
+printLine (row, _) lines = lines !? fromIntegral row
 
 printHeader :: FilePath -> Pos -> String
 printHeader filePath pos = "In " ++ filePath ++ " " ++ printPos pos ++ ":"
