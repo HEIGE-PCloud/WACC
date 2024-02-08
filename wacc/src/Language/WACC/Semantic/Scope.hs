@@ -6,7 +6,7 @@ analyse the @Stmt@ of each function and the main @Stmt@
 -}
 module Language.WACC.Semantic.Scope (scopeAnalysis) where
 
-import Control.Monad (foldM, liftM)
+import Control.Monad (foldM, liftM, void)
 import Control.Monad.RWS
   ( RWS
   , RWST
@@ -83,27 +83,27 @@ type Ctr = Integer
 type Analysis = RWS (SuperST, FuncST) (DList Error, VarST) (LocalST, Ctr)
 
 renamePairElem :: PairElem String -> Analysis (PairElem Vident)
-renamePairElem (FstElem lv) = FstElem <$> renameLValue lv
-renamePairElem (SndElem lv) = SndElem <$> renameLValue lv
+renamePairElem (FstElem lv p) = (`FstElem` p) <$> renameLValue lv
+renamePairElem (SndElem lv p) = (`SndElem` p) <$> renameLValue lv
 
 renameRValue :: RValue String String -> Analysis (RValue Fnident Vident)
-renameRValue (RVExpr e) = RVExpr <$> renameExpr e
-renameRValue (RVArrayLit es) = RVArrayLit <$> (mapM renameExpr es)
-renameRValue (RVNewPair e1 e2) = RVNewPair <$> renameExpr e1 <*> renameExpr e2
-renameRValue (RVPairElem pe) = RVPairElem <$> renamePairElem pe
+renameRValue (RVExpr e p) = (`RVExpr` p) <$> renameExpr e
+renameRValue (RVArrayLit es p) = (`RVArrayLit` p) <$> mapM renameExpr es
+renameRValue (RVNewPair e1 e2 p) = (\x y -> RVNewPair x y p) <$> renameExpr e1 <*> renameExpr e2
+renameRValue (RVPairElem pe p) = (`RVPairElem` p) <$> renamePairElem pe
 renameRValue (RVCall str es pos) = do
   es' <- mapM renameExpr es
   renameFuncOrErr str pos (\n -> RVCall (Fnident n str) es' pos)
 
 renameLValue :: LValue String -> Analysis (LValue Vident)
-renameLValue (LVIdent str pos) = renameOrErr str pos (\n -> (LVIdent (Vident n str) pos))
-renameLValue (LVArrayElem arrI) = LVArrayElem <$> renameArrayIndex arrI
-renameLValue (LVPairElem pe) = LVPairElem <$> renamePairElem pe
+renameLValue (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (Vident n str) pos)
+renameLValue (LVArrayElem arrI p) = (`LVArrayElem` p) <$> renameArrayIndex arrI
+renameLValue (LVPairElem pe p) = (`LVPairElem` p) <$> renamePairElem pe
 
 renameFuncOrErr :: String -> Pos -> (Integer -> a) -> Analysis a
 renameFuncOrErr str pos constr = do
   funcST <- asks snd
-  case (funcST !? str) of
+  case funcST !? str of
     Just (n, _) -> return $ constr n
     Nothing -> do
       report pos (str ++ "was not previously declared")
@@ -112,7 +112,7 @@ renameFuncOrErr str pos constr = do
 renameOrErr :: String -> Pos -> (Integer -> a) -> Analysis a
 renameOrErr str pos constr = do
   (localST, superST) <- getST
-  case (getDecl str localST superST) of
+  case getDecl str localST superST of
     Just (n, _) -> return $ constr n
     Nothing -> do
       report pos (str ++ " was not previously declared")
@@ -125,42 +125,42 @@ renameArrayIndex (ArrayIndex str es pos) = do
 
 renameAtom :: WAtom String -> Analysis (WAtom Vident)
 renameAtom (Ident str pos) = renameOrErr str pos (\n -> Ident (Vident n str) pos)
-renameAtom (ArrayElem arrI) = ArrayElem <$> (renameArrayIndex arrI)
-renameAtom (IntLit x) = pure (IntLit x)
-renameAtom (BoolLit x) = pure (BoolLit x)
-renameAtom (CharLit x) = pure (CharLit x)
-renameAtom (StringLit x) = pure (StringLit x)
-renameAtom Null = pure Null
+renameAtom (ArrayElem arrI p) = (`ArrayElem` p) <$> renameArrayIndex arrI
+renameAtom (IntLit x p) = pure (IntLit x p)
+renameAtom (BoolLit x p) = pure (BoolLit x p)
+renameAtom (CharLit x p) = pure (CharLit x p)
+renameAtom (StringLit x p) = pure (StringLit x p)
+renameAtom (Null p) = pure (Null p)
 
 -- renameAtom x = pure x -- TODO Doesn't work because x :: WAtom String. Is there some way to change this
 
 renameExpr :: Expr String -> Analysis (Expr Vident)
-renameExpr (WAtom atom) = WAtom <$> renameAtom atom
-renameExpr (Not e) = Not <$> renameExpr e
-renameExpr (Negate e) = Negate <$> renameExpr e
-renameExpr (Len e) = Len <$> renameExpr e
-renameExpr (Ord e) = Ord <$> renameExpr e
-renameExpr (Chr e) = Chr <$> renameExpr e
-renameExpr (Mul e1 e2) = Mul <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Div e1 e2) = Div <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Mod e1 e2) = Mod <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Add e1 e2) = Add <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Sub e1 e2) = Sub <$> renameExpr e1 <*> renameExpr e2
-renameExpr (GT e1 e2) = GT <$> renameExpr e1 <*> renameExpr e2
-renameExpr (GTE e1 e2) = GTE <$> renameExpr e1 <*> renameExpr e2
-renameExpr (LT e1 e2) = LT <$> renameExpr e1 <*> renameExpr e2
-renameExpr (LTE e1 e2) = LTE <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Eq e1 e2) = Eq <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Ineq e1 e2) = Ineq <$> renameExpr e1 <*> renameExpr e2
-renameExpr (And e1 e2) = And <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Or e1 e2) = Or <$> renameExpr e1 <*> renameExpr e2
+renameExpr (WAtom atom p) = (`WAtom` p) <$> renameAtom atom
+renameExpr (Not e p) = (`Not` p) <$> renameExpr e
+renameExpr (Negate e p) = (`Negate` p) <$> renameExpr e
+renameExpr (Len e p) = (`Len` p) <$> renameExpr e
+renameExpr (Ord e p) = (`Ord` p) <$> renameExpr e
+renameExpr (Chr e p) = (`Chr` p) <$> renameExpr e
+renameExpr (Mul e1 e2 p) = (\x y -> Mul x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Div e1 e2 p) = (\x y -> Div x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Mod e1 e2 p) = (\x y -> Mod x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Add e1 e2 p) = (\x y -> Add x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Sub e1 e2 p) = (\x y -> Sub x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (GT e1 e2 p) = (\x y -> GT x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (GTE e1 e2 p) = (\x y -> GTE x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (LT e1 e2 p) = (\x y -> LT x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (LTE e1 e2 p) = (\x y -> LTE x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Eq e1 e2 p) = (\x y -> Eq x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Ineq e1 e2 p) = (\x y -> Ineq x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (And e1 e2 p) = (\x y -> And x y p) <$> renameExpr e1 <*> renameExpr e2
+renameExpr (Or e1 e2 p) = (\x y -> Or x y p) <$> renameExpr e1 <*> renameExpr e2
 
 mapPair :: (a -> c) -> (b -> d) -> (a, b) -> (c, d)
 mapPair f g (x, y) = (f x, g y)
 
 ctr = snd
 
-freshN :: Analysis (Ctr)
+freshN :: Analysis Ctr
 freshN = do
   modify $ mapPair id (+ 1)
   gets ctr
@@ -173,10 +173,10 @@ getDecl str localST superST = case localVal of
     localVal = localST !? str
     superVal = superST !? str
 
-insertDecl :: Pos -> WType -> String -> Analysis (Ctr)
+insertDecl :: Pos -> WType -> String -> Analysis Ctr
 insertDecl pos t str = do
   n <- freshN
-  modify $ mapPair (\localST -> insert str (n, pos) localST) id
+  modify $ mapPair (insert str (n, pos)) id
   tell (mempty, Map.singleton (Vident n str) (t, pos))
   return n
 
@@ -184,40 +184,40 @@ getST :: Analysis (LocalST, SuperST)
 getST = (,) <$> gets fst <*> asks fst
 
 report :: Pos -> String -> Analysis ()
-report pos str = tell $ (Data.DList.singleton ("Line " ++ show pos ++ ": " ++ str), mempty)
+report pos str = tell (Data.DList.singleton ("Line " ++ show pos ++ ": " ++ str), mempty)
 
 renameStmt :: Stmt String String -> Analysis (Stmt Fnident Vident)
-renameStmt Skip = pure Skip
+renameStmt (Skip p) = pure (Skip p)
 renameStmt (Decl t str rv pos) = do
   rv' <- renameRValue rv
   (localST, superST) <- getST
-  case (getDecl str localST superST) of
-    Nothing -> insertDecl pos t str >> return ()
+  case getDecl str localST superST of
+    Nothing -> Control.Monad.void (insertDecl pos t str)
     (Just (_, posOrig)) -> report pos (str ++ "already defined in line " ++ show posOrig)
   n <- gets snd
   return (Decl t (Vident n str) rv' pos) -- Should I return a bogus node?
-renameStmt (Asgn lv rv) = do
+renameStmt (Asgn lv rv p) = do
   lv' <- renameLValue lv
   rv' <- renameRValue rv
-  return (Asgn lv' rv')
-renameStmt (Read lv) = do
+  return (Asgn lv' rv' p)
+renameStmt (Read lv p) = do
   lv' <- renameLValue lv
-  return (Read lv')
-renameStmt (Free e) = Free <$> renameExpr e
-renameStmt (Return e) = Return <$> renameExpr e
-renameStmt (Exit e) = Exit <$> renameExpr e
-renameStmt (Print e) = Print <$> renameExpr e
-renameStmt (PrintLn e) = PrintLn <$> renameExpr e
-renameStmt (IfElse e l1 l2) = do
+  return (Read lv' p)
+renameStmt (Free e p) = (`Free` p) <$> renameExpr e
+renameStmt (Return e p) = (`Return` p) <$> renameExpr e
+renameStmt (Exit e p) = (`Exit` p) <$> renameExpr e
+renameStmt (Print e p) = (`Print` p) <$> renameExpr e
+renameStmt (PrintLn e p) = (`PrintLn` p) <$> renameExpr e
+renameStmt (IfElse e l1 l2 p) = do
   e' <- renameExpr e
   l1' <- renameStmts l1
   l2' <- renameStmts l2
-  return (IfElse e' l1' l2')
-renameStmt (While e ls) = do
+  return (IfElse e' l1' l2' p)
+renameStmt (While e ls p) = do
   e' <- renameExpr e
   ls' <- renameStmts ls
-  return (While e' ls')
-renameStmt (BeginEnd ls) = BeginEnd <$> renameStmts ls
+  return (While e' ls' p)
+renameStmt (BeginEnd ls p) = (`BeginEnd` p) <$> renameStmts ls
 
 {- |
 make a new scope too
@@ -236,7 +236,7 @@ renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
   ns <- mapM (uncurry $ insertDecl pos) params
   let
-    params' = (((mapPair id) . Vident) <$> ns) <*> params
+    params' = (mapPair id) . Vident <$> ns <*> params
   funcST <- asks snd
   let
     (n, _) = funcST ! str
@@ -245,14 +245,14 @@ renameFunc (Func t str params ls pos) = do
   return (Func t (Fnident n str) params' ls' pos)
 
 renameProg :: Prog String String -> Analysis (Prog Fnident Vident)
-renameProg (Main fs ls) = do
+renameProg (Main fs ls p) = do
   fs' <- mapM renameFunc fs
   ls' <- renameStmts ls
-  return (Main fs' ls')
+  return (Main fs' ls' p)
 
 scopeAnalysis
   :: Prog String String -> Either [Error] (Prog Fnident Vident, VarST)
-scopeAnalysis p@(Main fs ls) = pass2 maybeFuncST
+scopeAnalysis p@(Main fs ls _) = pass2 maybeFuncST
   where
     (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
     pass2 :: Maybe FuncST -> Either [Error] (Prog Fnident Vident, VarST)
@@ -270,15 +270,15 @@ foo :: [Func String String] -> Pass1
 foo = foldM bar (Just Map.empty)
   where
     bar :: Maybe FuncST -> Func String String -> Pass1
-    bar (Just funcST) (Func _ str _ _ pos) = case (funcST !? str) of
+    bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
       Just (_, origPos) -> do
         tell . DList.singleton $
-          ((show pos) ++ ": " ++ str ++ " already defined in " ++ (show origPos))
+          show pos ++ ": " ++ str ++ " already defined in " ++ show origPos
         return Nothing
       Nothing -> do
         n <- freshN
         return (Just (insert str (n, pos) funcST))
     bar Nothing _ = return Nothing
     freshN = do
-      modify $ (+ 1)
+      modify (+ 1)
       get

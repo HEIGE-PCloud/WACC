@@ -19,7 +19,7 @@ WACC programs.
 -}
 data Prog fnident ident
   = -- | > 'begin' (func)* stmt 'end'
-    Main [Func fnident ident] (Stmts fnident ident)
+    Main [Func fnident ident] (Stmts fnident ident) Pos
   deriving (Eq, Show)
 
 {- |
