@@ -241,7 +241,7 @@ renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
   ns <- mapM (uncurry $ insertDecl pos) params
   let
-    params' = (mapPair id) . Vident <$> ns <*> params
+    params' = zipWith ((mapPair id) . Vident) ns params
   funcST <- asks snd
   let
     (n, _) = funcST ! str
