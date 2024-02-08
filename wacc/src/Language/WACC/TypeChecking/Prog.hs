@@ -30,4 +30,3 @@ checkProg (Main fs ss) = do
   mapM_ checkFunc fs
   t <- unifyStmts BAny ss
   when (t /= BAny) abort
-  pure ()
