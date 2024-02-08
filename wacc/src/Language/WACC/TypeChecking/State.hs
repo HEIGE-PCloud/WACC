@@ -10,9 +10,11 @@ module Language.WACC.TypeChecking.State
   , typeOfFn
   , setFnType
   , abort
+  , abortActual
   , tryUnify
   , TypeError (..)
   , reportAt
+  , abortWithArityError
   )
 where
 
@@ -27,14 +29,23 @@ import Text.Gigaparsec.Position (Pos)
 {- |
 A type error found during type checking.
 -}
-data TypeError = TypeError
-  { actual :: BType
-  -- ^ The type of the provided value.
-  , expected :: BType
-  -- ^ The expected type.
-  , pos :: Pos
-  -- ^ The position of the ill-typed expression or statement.
-  }
+data TypeError
+  = -- | Incompatible types.
+    IncompatibleTypesError
+      BType
+      -- ^ The type of the provided value.
+      BType
+      -- ^ The expected type.
+      Pos
+      -- ^ The position of the ill-typed expression or statement.
+  | -- | Invalid number of parameters in function call.
+    FunctionCallArityError
+      Int
+      -- ^ The arity of the ill-typed function call.
+      Int
+      -- ^ The declared arity of the function.
+      Pos
+      -- ^ The position of the ill-typed function call.
 
 type TypeErrors = DList TypeError
 
@@ -106,5 +117,13 @@ reportAt
   :: Pos -> BType -> TypingM fnident ident a -> TypingM fnident ident a
 reportAt p expT action = catchE action report
   where
-    report (Just actT) = lift (tell [TypeError actT expT p]) *> throwE Nothing
-    report exc = throwE exc
+    report (Just actT) =
+      lift (tell [IncompatibleTypesError actT expT p]) *> abort
+    report _ = abort
+
+{- |
+Report a 'FunctionCallArityError' and abort.
+-}
+abortWithArityError :: Int -> Int -> Pos -> TypingM fnident ident a
+abortWithArityError actN expN p =
+  lift (tell [FunctionCallArityError actN expN p]) *> abort

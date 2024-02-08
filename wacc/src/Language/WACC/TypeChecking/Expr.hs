@@ -7,25 +7,27 @@ module Language.WACC.TypeChecking.Expr
   ( checkAtom
   , checkExpr
   , unifyExprs
+  , unifyExprsAt
   , checkArrayIndex
   )
 where
 
-import Control.Applicative (empty)
 import Control.Monad (foldM)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
+import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
 {- |
 Type check a WACC array indexing subexpression.
 -}
 checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
-checkArrayIndex (ArrayIndex v xs _) = typeOf v >>= flip (foldM go) xs
+checkArrayIndex (ArrayIndex v xs p) =
+  reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
   where
     go (BArray t) x = t <$ unifyExprs BInt [x]
-    go _ _ = empty
+    go t _ = abortActual t
 
 {- |
 Type check an atomic WACC expression.
@@ -49,29 +51,35 @@ unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
 unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t
 
 {- |
+Associate a 'Pos' with a @unifyExprs@ action.
+-}
+unifyExprsAt :: Pos -> BType -> [Expr ident] -> TypingM fnident ident BType
+unifyExprsAt p t xs = reportAt p t $ unifyExprs t xs
+
+{- |
 Type check a composite WACC expression.
 -}
 checkExpr :: Expr ident -> TypingM fnident ident BType
 checkExpr (WAtom atom _) = checkAtom atom
-checkExpr (Not x _) = unifyExprs BBool [x]
-checkExpr (Negate x _) = unifyExprs BInt [x]
-checkExpr (Len x _) = BInt <$ unifyExprs (BArray BAny) [x]
-checkExpr (Ord x _) = BInt <$ unifyExprs BChar [x]
-checkExpr (Chr x _) = BChar <$ unifyExprs BInt [x]
-checkExpr (Mul x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Div x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Mod x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Add x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Sub x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (GT x y _) =
-  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (GTE x y _) =
-  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (LT x y _) =
-  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (LTE x y _) =
-  [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (Eq x y _) = BBool <$ unifyExprs BAny [x, y]
-checkExpr (Ineq x y _) = BBool <$ unifyExprs BAny [x, y]
-checkExpr (And x y _) = unifyExprs BBool [x] *> unifyExprs BBool [y]
-checkExpr (Or x y _) = unifyExprs BBool [x] *> unifyExprs BBool [y]
+checkExpr (Not x p) = unifyExprsAt p BBool [x]
+checkExpr (Negate x p) = unifyExprsAt p BInt [x]
+checkExpr (Len x p) = BInt <$ unifyExprsAt p (BArray BAny) [x]
+checkExpr (Ord x p) = BInt <$ unifyExprsAt p BChar [x]
+checkExpr (Chr x p) = BChar <$ unifyExprsAt p BInt [x]
+checkExpr (Mul x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
+checkExpr (Div x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
+checkExpr (Mod x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
+checkExpr (Add x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
+checkExpr (Sub x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
+checkExpr (GT x y p) =
+  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
+checkExpr (GTE x y p) =
+  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
+checkExpr (LT x y p) =
+  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
+checkExpr (LTE x y p) =
+  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
+checkExpr (Eq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
+checkExpr (Ineq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
+checkExpr (And x y p) = unifyExprsAt p BBool [x] *> unifyExprsAt p BBool [y]
+checkExpr (Or x y p) = unifyExprsAt p BBool [x] *> unifyExprsAt p BBool [y]

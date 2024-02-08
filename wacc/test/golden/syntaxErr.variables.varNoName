@@ -15,9 +15,9 @@ end
 
 
 In test/wacc_examples/invalid/syntaxErr/variables/varNoName.wacc (line 13, column 7):
-  unexpected "="
-  expected array type or identifier
-  >begin
-  >  int = 42
-         ^
-  >end
+unexpected "="
+expected array type or identifier
+> begin
+>   int = 42
+>       ^
+> end

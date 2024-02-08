@@ -57,11 +57,18 @@ test =
                 rt = fix rwt
               in
                 checkFunc'
-                  (Func rwt i (mkParam <$> pwts) [Return (varExpr rt) undefined] undefined)
+                  ( Func
+                      rwt
+                      i
+                      (mkParam <$> pwts)
+                      [Return (varExpr rt) undefined]
+                      undefined
+                  )
                   i
                   == pure (FnType pts rt)
         , testCase "rejects incompatible return statements in body" $
-            checkFunc' (Func WInt 0 [] [Return boolExpr undefined] undefined) 0 @?= Left 1
+            checkFunc' (Func WInt 0 [] [Return boolExpr undefined] undefined) 0
+              @?= Left 1
         ]
     , testGroup
         "checkProg"
@@ -69,7 +76,11 @@ test =
             checkProg'
               ( Main
                   [func]
-                  [Asgn (LVIdent BInt undefined) (RVCall 0 [intExpr] undefined) undefined]
+                  [ Asgn
+                      (LVIdent BInt undefined)
+                      (RVCall 0 [intExpr] undefined)
+                      undefined
+                  ]
                   undefined
               )
               0
@@ -78,7 +89,11 @@ test =
             checkProg'
               ( Main
                   [func]
-                  [Asgn (LVIdent BInt undefined) (RVCall 0 [boolExpr] undefined) undefined]
+                  [ Asgn
+                      (LVIdent BInt undefined)
+                      (RVCall 0 [boolExpr] undefined)
+                      undefined
+                  ]
                   undefined
               )
               0
@@ -87,14 +102,20 @@ test =
             checkProg'
               ( Main
                   [func]
-                  [Asgn (LVIdent BInt undefined) (RVCall 1 [intExpr] undefined) undefined]
+                  [ Asgn
+                      (LVIdent BInt undefined)
+                      (RVCall 1 [intExpr] undefined)
+                      undefined
+                  ]
                   undefined
               )
               0
-              @?= Left 1
+              @?= Left 0
         , testProperty "rejects return statements in main program" $
             \wt ->
-              checkProg' (Main [func] [Return (varExpr $ fix wt) undefined] undefined) 0
+              checkProg'
+                (Main [func] [Return (varExpr $ fix wt) undefined] undefined)
+                0
                 == Left 1
         ]
     ]
