@@ -229,7 +229,7 @@ waccSpaceDesc =
     , multiLineCommentStart = ""
     , multiLineCommentEnd = ""
     , multiLineNestedComments = False
-    , Text.Gigaparsec.Token.Descriptions.space = Just isSpace
+    , space = Just isSpace
     , whitespaceIsContextDependent = False
     }
 
@@ -320,9 +320,6 @@ fully = T.fully lexer
 
 sym :: String -> Parsec ()
 sym = T.sym lexeme
-
-space :: Space
-space = T.space lexer
 
 negateOp :: Parsec ()
 negateOp =
