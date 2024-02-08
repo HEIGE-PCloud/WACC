@@ -213,15 +213,15 @@ badPrintStatement = "begin\nint x = 5;\nbegin\nprint y\nend\nend\n"
 
 badPrintLnStatement = "begin\nint x = 5;\nbegin\nprintln y\nend\nend\n"
 
-badIfElseExprstatement = "begin\nint x = 5;\nbegin\nif y then x = 5 else x = 6\nend\nend\n"
+badIfElseExprstatement = "begin\nint x = 5;\nbegin\nif y then x = 5 else x = 6 fi\nend\nend\n"
 
-badIfElseStatementOneStatement = "begin\nint x = 5;\nbegin\nif true then y = 5 else skip\nend\nend\n"
+badIfElseStatementOneStatement = "begin\nint x = 5;\nbegin\nif true then y = 5 else skip fi\nend\nend\n"
 
-badIfElseStatementTwoStatement = "begin\nint x = 5;\nbegin\nif true then x = 5 else y = 6\nend\nend\n"
+badIfElseStatementTwoStatement = "begin\nint x = 5;\nbegin\nif true then x = 5 else y = 6 fi\nend\nend\n"
 
-badWhileExprStatement = "begin\nint x = 5;\nbegin\nwhile y do x = 5\nend\nend\n"
+badWhileExprStatement = "begin\nint x = 5;\nbegin\nwhile y do x = 5 done\nend\nend\n"
 
-badWhileStatementOneStatement = "begin\nint x = 5;\nbegin\nwhile true do y = 5\nend\nend\n"
+badWhileStatementOneStatement = "begin\nint x = 5;\nbegin\nwhile true do y = 5 done\nend\nend\n"
 
 rename_fail_statement_tests =
   testGroup
