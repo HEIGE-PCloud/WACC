@@ -12,13 +12,14 @@ module Language.WACC.AST.Prog (Prog (..), Func (..)) where
 
 import Language.WACC.AST.Stmt (Stmts)
 import Language.WACC.AST.WType (WType)
+import Text.Gigaparsec.Position (Pos)
 
 {- |
 WACC programs.
 -}
 data Prog fnident ident
   = -- | > 'begin' (func)* stmt 'end'
-    Main [Func fnident ident] (Stmts fnident ident)
+    Main [Func fnident ident] (Stmts fnident ident) Pos
   deriving (Eq, Show)
 
 {- |
@@ -31,4 +32,5 @@ data Func fnident ident
       fnident
       [(WType, ident)]
       (Stmts fnident ident)
+      Pos
   deriving (Eq, Show)

@@ -32,7 +32,7 @@ import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
+import Text.Gigaparsec (Parsec, eof, many, ($>), (<:>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
 import Text.Gigaparsec.Errors.ErrorGen
@@ -44,6 +44,7 @@ import Text.Gigaparsec.Errors.Patterns
   , verifiedExplain
   )
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
+import Text.Gigaparsec.Position (Pos, pos)
 
 $( deriveLiftedConstructors
     "mk"
@@ -68,8 +69,19 @@ $( deriveLiftedConstructors
     , 'Asgn
     , 'RVCall
     , 'Func
+    , 'Main
     ]
  )
+
+liftA4
+  :: (Applicative f)
+  => (a -> b -> c -> d -> e)
+  -> f a
+  -> f b
+  -> f c
+  -> f d
+  -> f e
+liftA4 f a b c d = f <$> a <*> b <*> c <*> d
 
 -- | > program ::= "begin" <func>* <stmt> "end"
 program :: Parsec (Prog String String)
@@ -99,32 +111,40 @@ parseProgPrefix :: Parsec (Maybe ((WType, String), Bool))
 parseProgPrefix = option parseFuncPreix
 
 parseProgRest :: Maybe ((WType, String), Bool) -> Parsec (Prog String String)
-parseProgRest Nothing = mkMain1 <$> stmts
+parseProgRest Nothing = mkMain1 stmts
 parseProgRest (Just ((wtype, ident), True)) = do
   (params, ss) <- func'
-  mkMain2 wtype ident (params, ss) <$> program'
+  p <- program'
+  mkMain2 wtype ident (params, ss) p
 parseProgRest (Just ((wtype, ident), False)) = do
   rvalue <- rValue
-  mkMain3 wtype ident rvalue <$> stmts'
+  s <- stmts'
+  mkMain3 wtype ident rvalue s
 
-mkMain1 :: Stmts fnident ident -> Prog fnident ident
-mkMain1 = Main []
+mkMain1 :: Parsec (Stmts fnident ident) -> Parsec (Prog fnident ident)
+mkMain1 = mkMain (pure [])
 
 mkMain2
   :: WType
-  -> String
-  -> ([(WType, String)], Stmts String String)
-  -> Prog String String
-  -> Prog String String
-mkMain2 wtype ident (params, ss) (Main fs sts) = Main (Func wtype ident params ss : fs) sts
+  -> fnident
+  -> ([(WType, ident)], Stmts fnident ident)
+  -> Prog fnident ident
+  -> Parsec (Prog fnident ident)
+mkMain2 wtype ident (params, ss) (Main fs sts _) =
+  mkMain
+    (mkFunc (pure wtype) (pure ident) (pure params) (pure ss) <:> pure fs)
+    (pure sts)
 
 mkMain3
   :: WType
-  -> String
-  -> RValue String String
-  -> [Stmt String String]
-  -> Prog String String
-mkMain3 wtype ident rvalue sts = Main [] (fromList (Decl wtype ident rvalue : sts))
+  -> ident
+  -> RValue fnident ident
+  -> [Stmt fnident ident]
+  -> Parsec (Prog fnident ident)
+mkMain3 wtype ident rvalue sts =
+  mkMain
+    (pure [])
+    (fromList <$> (mkDecl (pure wtype) (pure ident) (pure rvalue) <:> pure sts))
 
 -- | > func ::= <type> <identifier> '(' <paramList>? ')' 'is' <stmt> 'end'
 func :: Parsec (Func String String)
@@ -145,13 +165,13 @@ checkExit ss
           :| []
 
 funcExit :: Stmt fnident ident -> Bool
-funcExit (Return _) = True
-funcExit (Exit _) = True
-funcExit (IfElse _ s1 s2) =
+funcExit (Return _ _) = True
+funcExit (Exit _ _) = True
+funcExit (IfElse _ s1 s2 _) =
   funcExit (D.last s1)
     && funcExit (D.last s2)
-funcExit (While _ s) = funcExit (D.last s)
-funcExit (BeginEnd s) = funcExit (D.last s)
+funcExit (While _ s _) = funcExit (D.last s)
+funcExit (BeginEnd s _) = funcExit (D.last s)
 funcExit _ = False
 
 -- | > <param> ::= <type> <identifier>
@@ -168,14 +188,23 @@ lValue =
     [lValueOrIdent, mkLVPairElem pairElem]
 
 mkIdentOrArrayElem
-  :: Parsec String -> Parsec (Maybe [Expr String]) -> Parsec (LValue String)
-mkIdentOrArrayElem = liftA2 mkIdentOrArrayElem'
+  :: Parsec Pos
+  -> Parsec String
+  -> Parsec Pos
+  -> Parsec (Maybe [Expr String])
+  -> Parsec (LValue String)
+mkIdentOrArrayElem = liftA4 mkIdentOrArrayElem'
   where
-    mkIdentOrArrayElem' str (Just e) = LVArrayElem (ArrayIndex str e)
-    mkIdentOrArrayElem' str Nothing = LVIdent str
+    mkIdentOrArrayElem' p str p' (Just e) = LVArrayElem (ArrayIndex str e p') p
+    mkIdentOrArrayElem' p str p' Nothing = LVIdent str p
 
 lValueOrIdent :: Parsec (LValue String)
-lValueOrIdent = mkIdentOrArrayElem identifier (option (many (arrayIndex "[" *> expr <* "]")))
+lValueOrIdent =
+  mkIdentOrArrayElem
+    pos
+    identifier
+    pos
+    (option (many (arrayIndex "[" *> expr <* "]")))
 
 arrayIndex :: Parsec a -> Parsec a
 arrayIndex = label (Set.singleton "array index")

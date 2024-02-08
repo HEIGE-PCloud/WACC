@@ -22,7 +22,7 @@ import Prelude hiding (GT, LT)
 Type check a WACC array indexing subexpression.
 -}
 checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
-checkArrayIndex (ArrayIndex v xs) = typeOf v >>= flip (foldM go) xs
+checkArrayIndex (ArrayIndex v xs _) = typeOf v >>= flip (foldM go) xs
   where
     go (BArray t) x = t <$ unifyExprs BInt [x]
     go _ _ = empty
@@ -33,11 +33,11 @@ Type check an atomic WACC expression.
 checkAtom :: WAtom ident -> TypingM fnident ident BType
 checkAtom (IntLit _ _) = pure BInt
 checkAtom (BoolLit _ _) = pure BBool
-checkAtom (CharLit _) = pure BChar
-checkAtom (StringLit _) = pure BString
-checkAtom Null = pure (BKnownPair BAny BAny)
-checkAtom (Ident v) = typeOf v
-checkAtom (ArrayElem ai) = checkArrayIndex ai
+checkAtom (CharLit _ _) = pure BChar
+checkAtom (StringLit _ _) = pure BString
+checkAtom (Null _) = pure (BKnownPair BAny BAny)
+checkAtom (Ident v _) = typeOf v
+checkAtom (ArrayElem ai _) = checkArrayIndex ai
 
 {- |
 @unifyExprs t0 [x1, x2, ..., xn]@ attempts to unify @x1@ with @t0@ to obtain
@@ -52,26 +52,26 @@ unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t
 Type check a composite WACC expression.
 -}
 checkExpr :: Expr ident -> TypingM fnident ident BType
-checkExpr (WAtom atom) = checkAtom atom
-checkExpr (Not x) = unifyExprs BBool [x]
-checkExpr (Negate x) = unifyExprs BInt [x]
-checkExpr (Len x) = BInt <$ unifyExprs (BArray BAny) [x]
-checkExpr (Ord x) = BInt <$ unifyExprs BChar [x]
-checkExpr (Chr x) = BChar <$ unifyExprs BInt [x]
-checkExpr (Mul x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Div x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Mod x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Add x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (Sub x y) = unifyExprs BInt [x] *> unifyExprs BInt [y]
-checkExpr (GT x y) =
+checkExpr (WAtom atom _) = checkAtom atom
+checkExpr (Not x _) = unifyExprs BBool [x]
+checkExpr (Negate x _) = unifyExprs BInt [x]
+checkExpr (Len x _) = BInt <$ unifyExprs (BArray BAny) [x]
+checkExpr (Ord x _) = BInt <$ unifyExprs BChar [x]
+checkExpr (Chr x _) = BChar <$ unifyExprs BInt [x]
+checkExpr (Mul x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
+checkExpr (Div x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
+checkExpr (Mod x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
+checkExpr (Add x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
+checkExpr (Sub x y _) = unifyExprs BInt [x] *> unifyExprs BInt [y]
+checkExpr (GT x y _) =
   [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (GTE x y) =
+checkExpr (GTE x y _) =
   [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (LT x y) =
+checkExpr (LT x y _) =
   [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (LTE x y) =
+checkExpr (LTE x y _) =
   [BBool | t <- unifyExprs BAny [x, y], t `elem` orderedTypes]
-checkExpr (Eq x y) = BBool <$ unifyExprs BAny [x, y]
-checkExpr (Ineq x y) = BBool <$ unifyExprs BAny [x, y]
-checkExpr (And x y) = unifyExprs BBool [x] *> unifyExprs BBool [y]
-checkExpr (Or x y) = unifyExprs BBool [x] *> unifyExprs BBool [y]
+checkExpr (Eq x y _) = BBool <$ unifyExprs BAny [x, y]
+checkExpr (Ineq x y _) = BBool <$ unifyExprs BAny [x, y]
+checkExpr (And x y _) = unifyExprs BBool [x] *> unifyExprs BBool [y]
+checkExpr (Or x y _) = unifyExprs BBool [x] *> unifyExprs BBool [y]
