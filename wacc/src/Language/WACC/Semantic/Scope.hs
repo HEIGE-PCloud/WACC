@@ -7,11 +7,24 @@ analyse the @Stmt@ of each function and the main @Stmt@
 module Language.WACC.Semantic.Scope () where
 
 import Control.Monad (foldM, liftM)
-import Control.Monad.RWS (runRWS, evalRWS, RWS, RWST, ask, asks, get, gets, local, modify, put, tell)
+import Control.Monad.RWS
+  ( RWS
+  , RWST
+  , ask
+  , asks
+  , evalRWS
+  , get
+  , gets
+  , local
+  , modify
+  , put
+  , runRWS
+  , tell
+  )
 import Data.DList (DList (..), singleton)
 import qualified Data.DList as DList
 import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
-import Data.Map hiding (singleton, null, toList)
+import Data.Map hiding (null, singleton, toList)
 import qualified Data.Map as Map
 import Language.WACC.AST
   ( ArrayIndex (..)
@@ -148,7 +161,7 @@ mapPair f g (x, y) = (f x, g y)
 ctr = snd
 
 freshN :: Analysis (Ctr)
-freshN = do 
+freshN = do
   modify $ mapPair id (+ 1)
   gets ctr
 
@@ -225,7 +238,8 @@ renameFunc (Func t str params ls pos) = do
   let
     params' = (((mapPair id) . Vident) <$> ns) <*> params
   funcST <- asks snd
-  let (n, _) = funcST ! str
+  let
+    (n, _) = funcST ! str
   --  Just (n, pos) -> report pos (str ++ " already declared in line " ++ show pos)
   ls' <- renameStmts ls
   return (Func t (Fnident n str) params' ls' pos)
@@ -235,19 +249,20 @@ renameProg (Main fs ls) = do
   fs' <- mapM renameFunc fs
   ls' <- renameStmts ls
   return (Main fs' ls')
-  
-scopeAnalysis :: Prog String String -> Either [Error] (Prog Fnident Vident, VarST)
+
+scopeAnalysis
+  :: Prog String String -> Either [Error] (Prog Fnident Vident, VarST)
 scopeAnalysis p@(Main fs ls) = pass2 maybeFuncST
-  where 
+  where
     (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
     pass2 :: Maybe FuncST -> Either [Error] (Prog Fnident Vident, VarST)
-    pass2 Nothing       = Left (DList.toList errs1)
+    pass2 Nothing = Left (DList.toList errs1)
     pass2 (Just funcST)
       | null errs2 = Right (p', varST)
       | otherwise = Left (DList.toList errs2)
       where
-        errs2:: DList Error
-        (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n) 
+        errs2 :: DList Error
+        (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)
 
 type Pass1 = RWS () (DList Error) Ctr (Maybe FuncST)
 
@@ -257,14 +272,13 @@ foo = foldM bar (Just Map.empty)
     bar :: Maybe FuncST -> Func String String -> Pass1
     bar (Just funcST) (Func _ str _ _ pos) = case (funcST !? str) of
       Just (_, origPos) -> do
-        tell . DList.singleton $ ((show pos) ++ ": " ++ str ++ " already defined in " ++ (show origPos))
+        tell . DList.singleton $
+          ((show pos) ++ ": " ++ str ++ " already defined in " ++ (show origPos))
         return Nothing
       Nothing -> do
         n <- freshN
         return (Just (insert str (n, pos) funcST))
     bar Nothing _ = return Nothing
-    freshN = do 
+    freshN = do
       modify $ (+ 1)
       get
-
-
