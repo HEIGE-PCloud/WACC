@@ -6,12 +6,12 @@ Bounded WACC types with unification.
 -}
 module Language.WACC.TypeChecking.BType
   ( BType (.., BBool, BChar, BInt, BString, BErasedPair, BKnownPair, BArray)
-  , unify
   , FixedType
   , fix
   , orderedTypes
   , heapAllocatedTypes
   , FnType (..)
+  , unify
   )
 where
 
@@ -31,6 +31,9 @@ data BType
     BFixed FixedType
   deriving (Eq, Generic, Ord, Show)
 
+{- |
+A fixed WACC type.
+-}
 type FixedType = WTypeF BType
 
 {- |

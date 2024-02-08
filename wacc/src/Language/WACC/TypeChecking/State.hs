@@ -7,9 +7,9 @@ module Language.WACC.TypeChecking.State
   , typeOf
   , typeOfFn
   , setFnType
+  , abort
   , tryUnify
   , TypeError (..)
-  , abort
   )
 where
 
@@ -21,7 +21,17 @@ import Data.Map (Map, insert, unionWith, (!))
 import Language.WACC.TypeChecking.BType (BType, FnType, unify)
 import Text.Gigaparsec.Position (Pos)
 
-data TypeError = TypeError {actualType :: BType, pos :: Pos}
+{- |
+A type error found during type checking.
+-}
+data TypeError = TypeError
+  { actual :: BType
+  -- ^ The type of the provided value.
+  , expected :: BType
+  -- ^ The expected type.
+  , pos :: Pos
+  -- ^ The position of the ill-typed expression or statement.
+  }
 
 newtype TypeErrors = TypeErrors (Map Integer (DList TypeError))
 
