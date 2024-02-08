@@ -142,3 +142,4 @@ unify bt1 bt2 = unifyParam bt1 bt2
 A WACC function type.
 -}
 data FnType = FnType {paramTypes :: [BType], retType :: BType}
+  deriving (Eq, Show)
