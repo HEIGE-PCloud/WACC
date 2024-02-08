@@ -63,7 +63,7 @@ data RValue fnident ident
     -- > snd <rvalue>
     RVPairElem (PairElem ident)
   | -- | > call <ident>(<expr>, ...)
-    RVCall fnident [Expr ident]
+    RVCall fnident [Expr ident] Pos
   deriving (Eq, Show, Functor)
 
 instance Bifunctor RValue where
@@ -72,14 +72,14 @@ instance Bifunctor RValue where
   first f (RVArrayLit es) = RVArrayLit es
   first f (RVNewPair e1 e2) = RVNewPair e1 e2
   first f (RVPairElem pe) = RVPairElem pe
-  first f (RVCall fnident es) = RVCall (f fnident) es
+  first f (RVCall fnident es pos) = RVCall (f fnident) es pos
 
   -- second :: (a -> b) -> RValue a c -> RValue b c
   second f (RVExpr e) = RVExpr (f <$> e)
   second f (RVArrayLit es) = RVArrayLit ((f <$>) <$> es)
   second f (RVNewPair e1 e2) = RVNewPair (f <$> e1) (f <$> e2)
   second f (RVPairElem pe) = RVPairElem (f <$> pe)
-  second f (RVCall fnident es) = RVCall fnident ((f <$>) <$> es)
+  second f (RVCall fnident es pos) = RVCall fnident ((f <$>) <$> es) pos
 
 {- |
 Individual WACC statements.
