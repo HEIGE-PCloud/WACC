@@ -7,6 +7,7 @@ Type checking actions for WACC statements.
 module Language.WACC.TypeChecking.Stmt
   ( checkStmt
   , unifyStmts
+  , unifyStmtsAt
   , checkLValue
   , checkRValue
   , checkPairElem
@@ -75,6 +76,9 @@ unifyStmts
   -> TypingM fnident ident BType
 unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
 
+{- |
+Associate a 'Pos' with a @unifyStmts@ action.
+-}
 unifyStmtsAt
   :: (Ord fnident)
   => Pos
@@ -122,12 +126,13 @@ checkStmt (Free x _) =
   , t' `elem` heapAllocatedTypes
   ]
 checkStmt (Return x _) = checkExpr x
-checkStmt (Exit x _) = BAny <$ unifyExprs BInt [x]
+checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x
 checkStmt (PrintLn x _) = BAny <$ checkExpr x
 checkStmt (IfElse x ifBody elseBody p) = do
-  _ <- unifyExprs BBool [x]
+  _ <- unifyExprsAt p BBool [x]
   t <- unifyStmtsAt p BAny ifBody
   unifyStmtsAt p t elseBody
-checkStmt (While x body p) = unifyExprs BBool [x] *> unifyStmtsAt p BAny body
+checkStmt (While x body p) =
+  unifyExprsAt p BBool [x] *> unifyStmtsAt p BAny body
 checkStmt (BeginEnd body p) = unifyStmtsAt p BAny body

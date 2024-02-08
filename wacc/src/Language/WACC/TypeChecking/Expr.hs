@@ -7,6 +7,7 @@ module Language.WACC.TypeChecking.Expr
   ( checkAtom
   , checkExpr
   , unifyExprs
+  , unifyExprsAt
   , checkArrayIndex
   )
 where
@@ -49,6 +50,9 @@ If a unification fails, the traversal is aborted.
 unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
 unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t
 
+{- |
+Associate a 'Pos' with a @unifyExprs@ action.
+-}
 unifyExprsAt :: Pos -> BType -> [Expr ident] -> TypingM fnident ident BType
 unifyExprsAt p t xs = reportAt p t $ unifyExprs t xs
 
