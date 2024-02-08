@@ -51,10 +51,10 @@ data Fnident = Fnident Integer String
   deriving (Show)
 
 instance Eq Fnident where
-  (Fnident n1 _) == (Fnident n2 _) = n1 == n1
+  (Fnident n1 _) == (Fnident n2 _) = n1 == n2
 
 instance Ord Fnident where
-  (Fnident n1 _) <= (Fnident n2 _) = n1 <= n1
+  (Fnident n1 _) <= (Fnident n2 _) = n1 <= n2
 
 {- |
 The @Integer  acts as a UID (which will not clash with @Fnident@s either)
@@ -64,10 +64,10 @@ data Vident = Vident Integer String
   deriving (Show)
 
 instance Eq Vident where
-  (Vident n1 _) == (Vident n2 _) = n1 == n1
+  (Vident n1 _) == (Vident n2 _) = n1 == n2
 
 instance Ord Vident where
-  (Vident n1 _) <= (Vident n2 _) = n1 <= n1
+  (Vident n1 _) <= (Vident n2 _) = n1 <= n2
 
 type SuperST = Map String (Integer, Pos)
 
