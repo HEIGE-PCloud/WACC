@@ -6,8 +6,8 @@
 
 module Language.WACC.Error where
 
-import Data.List.NonEmpty (NonEmpty)
 import Data.List.Extra ((!?))
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes)
 import Data.Set (Set, toList)
 import Data.String (IsString (fromString))
