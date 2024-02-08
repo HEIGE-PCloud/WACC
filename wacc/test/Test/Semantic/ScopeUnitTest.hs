@@ -13,7 +13,7 @@ import Control.Monad.Trans.Except
 import qualified Data.DList as DL
 import Data.Either
 import qualified Data.Map as Map
-import Language.WACC.Parser.Prog
+import Language.WACC.Parser.Stmt
 import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
 import Test.Tasty
@@ -24,7 +24,7 @@ test = testGroup "Scope Analysis Tests" [parent_tests, naming_fail_tests]
 hasErrored :: String -> Bool
 hasErrored code = isLeft (scopeAnalysis t)
   where
-    (Success t) = parse @String prog code
+    (Success t) = parse @String (fully program) code
 
 badParentScope = "begin\nint x = 5 ;\nbegin\nbegin\nfree x\nend ;\nint[] x = [1]\nend\nend\n"
 
