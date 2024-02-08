@@ -17,7 +17,7 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS)
 import Data.DList (DList)
-import Data.Map (Map, insert, unionWith, (!))
+import Data.Map (Map, insert, unionWith, (!?))
 import Language.WACC.TypeChecking.BType (BType, FnType, unify)
 import Text.Gigaparsec.Position (Pos)
 
@@ -74,7 +74,7 @@ typeOf v = lift $ asks ($ v)
 Look up the type of a function.
 -}
 typeOfFn :: (Ord fnident) => fnident -> TypingM fnident ident FnType
-typeOfFn f = lift $ gets (! f)
+typeOfFn f = lift (gets (!? f)) >>= maybe abort pure
 
 {- |
 Set the type of a function.
