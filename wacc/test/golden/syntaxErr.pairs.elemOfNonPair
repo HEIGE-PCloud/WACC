@@ -1,0 +1,25 @@
+# Trying to get the fst or snd of a non-pair.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int a = 5;
+  int b = fst a;
+  int c = snd (5 + 'a')
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/pairs/elemOfNonPair.wacc (line 15, column 15):
+  unexpected "("
+  expected fst, identifier, or snd
+  >  int b = fst a;
+  >  int c = snd (5 + 'a')
+                 ^
+  >end

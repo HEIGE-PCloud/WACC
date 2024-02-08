@@ -1,0 +1,23 @@
+# program has unacceptable escape character
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  char a = '\H'
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/basic/badEscape.wacc (line 12, column 14):
+  unexpected "H'"
+  expected escape sequence
+  valid escape sequences are \0, \n, \t, \b, \f, \r, \", \' or \\
+  >begin
+  >  char a = '\H'
+                ^^
+  >end

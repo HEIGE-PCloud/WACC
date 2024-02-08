@@ -1,0 +1,26 @@
+# if missing else clause
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  if true 
+  then
+    skip
+  fi
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/if/ifNoelse.wacc (line 15, column 3):
+  unexpected keyword fi
+  expected ";" or else
+  all if statements must have an else clause
+  >    skip
+  >  fi
+     ^^
+  >end

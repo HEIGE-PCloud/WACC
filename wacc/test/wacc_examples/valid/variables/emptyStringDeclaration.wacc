@@ -1,9 +1,0 @@
-# simple empty string variable declaration
-
-# Output:
-
-# Program:
-
-begin
-  string s = ""
-end

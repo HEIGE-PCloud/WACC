@@ -1,0 +1,21 @@
+# begin token typo
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+bgn skip end
+
+
+In test/wacc_examples/invalid/syntaxErr/basic/bgnErr.wacc (line 11, column 1):
+  unexpected "bgn"
+  expected begin
+  all program body and function declarations must be within `begin` and `end`
+  >
+  >bgn skip end
+   ^^^
+  >

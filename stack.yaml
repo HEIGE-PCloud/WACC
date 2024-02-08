@@ -5,6 +5,8 @@ packages:
   - wacc/
 
 extra-deps:
-  - gigaparsec-0.2.3.0
+  - gigaparsec-0.2.5.1
 
 compiler: ghc-9.6.3
+# Use system ghc to speed up CI
+system-ghc: true

@@ -1,0 +1,23 @@
+# call fst on a null pair literal
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int i = fst null;
+  println i
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/pairs/fstNull.wacc (line 12, column 15):
+  unexpected keyword null
+  expected fst, identifier, or snd
+  >begin
+  >  int i = fst null;
+                 ^^^^
+  >  println i

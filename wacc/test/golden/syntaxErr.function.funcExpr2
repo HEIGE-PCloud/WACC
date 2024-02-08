@@ -1,0 +1,33 @@
+# trying to call a function in a general expression
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin 
+  int f (int x) is
+    return 0
+  end
+  println "init x" ;
+  int x = 2 ;
+  while x > f(x) do
+    println x ;
+    x = x - 1
+  done;
+  println "finshed I guess"
+end
+	
+
+
+In test/wacc_examples/invalid/syntaxErr/function/funcExpr2.wacc (line 17, column 13):
+  unexpected "f(x)"
+  expected chr, len, negation, not, or ord
+  function calls may not appear in expressions and must use `call`
+  >  int x = 2 ;
+  >  while x > f(x) do
+               ^^^^
+  >    println x ;

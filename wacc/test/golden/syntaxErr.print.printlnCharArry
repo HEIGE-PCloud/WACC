@@ -1,0 +1,24 @@
+# You cannot directly print a char[] in WACC
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  println ['H','e','l','l','o',' ','W','o','r','l','d','!']
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/print/printlnCharArry.wacc (line 12, column 11):
+  unexpected "["
+  expected expression
+  array literals can only appear in assignments
+  expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
+  >begin
+  >  println ['H','e','l','l','o',' ','W','o','r','l','d','!']
+             ^
+  >end

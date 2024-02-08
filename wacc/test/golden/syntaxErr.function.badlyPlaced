@@ -1,0 +1,27 @@
+# program has function before begin
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+int foo() is
+  return 42
+end
+
+begin
+  int x = call foo()
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/function/badlyPlaced.wacc (line 11, column 1):
+  unexpected keyword int
+  expected begin
+  all program body and function declarations must be within `begin` and `end`
+  >
+  >int foo() is
+   ^^^
+  >  return 42

@@ -1,0 +1,31 @@
+# attempted function definition in new scope
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  begin
+    int f() is
+      return 0 
+    end
+
+    int x = call f();
+    println x
+  end
+end
+
+
+
+In test/wacc_examples/invalid/syntaxErr/function/functionScopeDef.wacc (line 13, column 5):
+  unexpected keyword int
+  expected statement
+  function declaration must be at the beginning of the program
+  >  begin
+  >    int f() is
+       ^^^
+  >      return 0 

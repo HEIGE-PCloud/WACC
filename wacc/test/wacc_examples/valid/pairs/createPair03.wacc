@@ -1,9 +1,0 @@
-# create a pair (int, char)
-
-# Output:
-
-# Program:
-
-begin
-  pair(int, char) p = newpair(10, 'a')
-end

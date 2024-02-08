@@ -1,0 +1,22 @@
+# Characters can have at most one character in them!
+# Thanks to Panayiotis Gavriil
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+    char c = 'Hello Jamie'
+end
+
+In test/wacc_examples/invalid/syntaxErr/literals/charLiteralSingle.wacc (line 13, column 16):
+  unexpected "ello"
+  expected end of character literal
+  >begin
+  >    char c = 'Hello Jamie'
+                  ^^^^
+  >end

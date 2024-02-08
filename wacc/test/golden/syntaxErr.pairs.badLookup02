@@ -1,0 +1,25 @@
+# try to directly print pair's second element
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+	pair(int, char) p = newpair(10, 'a') ;
+  println snd p
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/pairs/badLookup02.wacc (line 13, column 11):
+  unexpected keyword snd
+  expected expression
+  expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
+  tuple extraction is only allowed in assignments
+  >	pair(int, char) p = newpair(10, 'a') ;
+  >  println snd p
+             ^^^
+  >end

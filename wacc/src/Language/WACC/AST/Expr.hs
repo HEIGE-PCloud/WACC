@@ -20,9 +20,9 @@ Atomic WACC expressions.
 -}
 data WAtom ident
   = -- | @int@ literals.
-    IntLit Integer
+    IntLit Integer Pos
   | -- | @bool@ literals.
-    BoolLit Bool
+    BoolLit Bool Pos
   | -- | @char@ literals.
     CharLit Char
   | -- | @string@ literals.

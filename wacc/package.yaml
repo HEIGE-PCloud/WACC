@@ -12,6 +12,7 @@ dependencies:
   - mtl
   - dlist
   - gigaparsec
+  - recursion-schemes
   - transformers
 
 ghc-options:
@@ -24,6 +25,10 @@ ghc-options:
   - -Wmissing-home-modules
   - -Wpartial-fields
   - -Wredundant-constraints
+  - -Wno-missing-export-lists
+  - -Wno-type-equality-requires-operators
+  - -Wno-orphans
+  - -j
 
 library:
   source-dirs: src
@@ -51,14 +56,19 @@ tests:
     build-tools:
       - tasty-autocollect:tasty-autocollect
     dependencies:
+      - generic-arbitrary
       - tasty
       - tasty-autocollect
       - tasty-hspec
+      - tasty-hunit
       - tasty-quickcheck
       - tasty-hunit
       - tasty-ant-xml
+      - tasty-golden
       - wacc
       - deepseq
       - directory
       - process
       - QuickCheck
+      - bytestring
+      - utf8-string

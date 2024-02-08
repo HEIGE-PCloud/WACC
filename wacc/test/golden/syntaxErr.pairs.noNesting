@@ -1,0 +1,22 @@
+# pair types cannot be nested
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+    pair(pair(int, string), char) p = null
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/pairs/noNesting.wacc (line 12, column 10):
+  unexpected keyword pair
+  pair types may not be nested
+  >begin
+  >    pair(pair(int, string), char) p = null
+            ^^^^
+  >end

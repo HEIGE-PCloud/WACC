@@ -1,9 +1,12 @@
 module Language.WACC.Parser.Token where
 
-import Data.Char (isAlpha, isAlphaNum, isAscii, isPrint, isSpace)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Text.Gigaparsec (Parsec, ($>))
+import Data.Char (isAlpha, isAlphaNum, isSpace)
+import Data.List ((\\))
+import qualified Data.Map as M
+import qualified Data.Set as S
+import Text.Gigaparsec (Parsec, atomic, notFollowedBy, void)
+import Text.Gigaparsec.Char (char, digit)
+import qualified Text.Gigaparsec.Errors.Combinator as E (label)
 import Text.Gigaparsec.Token.Descriptions
   ( BreakCharDesc (NoBreakChar)
   , EscapeDesc
@@ -77,6 +80,16 @@ import Text.Gigaparsec.Token.Descriptions
     , stringEnds
     )
   )
+import Text.Gigaparsec.Token.Errors
+  ( ErrorConfig
+      ( labelCharAsciiEnd
+      , labelEscapeEnd
+      , labelSymbol
+      )
+  , LabelConfigurable (label)
+  , LabelWithExplainConfigurable (labelAndReason)
+  , defaultErrorConfig
+  )
 import Text.Gigaparsec.Token.Lexer
   ( CanHoldSigned
   , IntegerParsers
@@ -84,7 +97,7 @@ import Text.Gigaparsec.Token.Lexer
   , Lexer
   , Names
   , TextParsers (ascii)
-  , mkLexer
+  , mkLexerWithErrorConfig
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
 
@@ -97,6 +110,7 @@ waccNameDesc =
     , operatorLetter = Nothing
     }
 
+keywords :: [String]
 keywords =
   [ "begin"
   , "end"
@@ -121,8 +135,17 @@ keywords =
   , "len"
   , "ord"
   , "chr"
+  , "int"
+  , "bool"
+  , "char"
+  , "string"
+  , "pair"
+  , "null"
+  , "true"
+  , "false"
   ]
 
+operators :: [String]
 operators =
   [ "!"
   , "-"
@@ -140,13 +163,16 @@ operators =
   , "||"
   ]
 
+escapeChars :: [Char]
+escapeChars = ['0', 'b', 't', 'n', 'f', 'r', '"', '\'', '\\']
+
 waccSymbolDesc :: SymbolDesc
 waccSymbolDesc =
   SymbolDesc
     { hardKeywords =
-        Set.fromList keywords
+        S.fromList keywords
     , hardOperators =
-        Set.fromList operators
+        S.fromList operators
     , caseSensitive = True
     }
 
@@ -164,9 +190,9 @@ waccNumericDesc =
     , realNumbersCanBeBinary = False
     , realNumbersCanBeHexadecimal = False
     , realNumbersCanBeOctal = False
-    , hexadecimalLeads = Set.empty
-    , octalLeads = Set.empty
-    , binaryLeads = Set.empty
+    , hexadecimalLeads = S.empty
+    , octalLeads = S.empty
+    , binaryLeads = S.empty
     , decimalExponentDesc = NoExponents
     , hexadecimalExponentDesc = NoExponents
     , octalExponentDesc = NoExponents
@@ -179,8 +205,8 @@ waccTextDesc =
     { escapeSequences =
         EscapeDesc
           { escBegin = '\\'
-          , literals = Set.fromList ['0', 'b', 't', 'n', 'f', 'r', '"', '\'', '\\']
-          , mapping = Map.empty
+          , literals = S.fromList escapeChars
+          , mapping = M.empty
           , decimalEscape = NumericIllegal
           , octalEscape = NumericIllegal
           , hexadecimalEscape = NumericIllegal
@@ -189,9 +215,9 @@ waccTextDesc =
           , gapsSupported = False
           }
     , characterLiteralEnd = '\''
-    , stringEnds = Set.fromList [("\"", "\"")]
-    , multiStringEnds = Set.empty
-    , graphicCharacter = Just (\x -> isAscii x && isPrint x)
+    , stringEnds = S.fromList [("\"", "\"")]
+    , multiStringEnds = S.empty
+    , graphicCharacter = Just (`elem` graphicChars)
     }
 
 waccSpaceDesc :: SpaceDesc
@@ -206,9 +232,55 @@ waccSpaceDesc =
     , whitespaceIsContextDependent = False
     }
 
+errorConfig :: ErrorConfig
+errorConfig =
+  defaultErrorConfig
+    { labelSymbol =
+        M.fromList
+          [
+            ( "}"
+            , labelAndReason
+                (S.singleton "closing brace")
+                "unclosed brace"
+            )
+          , ("(", label (S.singleton "opening parenthesis"))
+          ,
+            ( ")"
+            , label
+                (S.singleton "closing bracket")
+            )
+          , ("[", label (S.singleton "array index"))
+          , ("!", label (S.singleton "not"))
+          , ("=", label (S.singleton "assignment"))
+          , ("+", label (S.singleton "binary operator"))
+          , ("-", label (S.singleton "binary operator"))
+          , ("*", label (S.singleton "binary operator"))
+          , ("/", label (S.singleton "binary operator"))
+          , ("%", label (S.singleton "binary operator"))
+          , (">", label (S.singleton "binary operator"))
+          , ("<", label (S.singleton "binary operator"))
+          , (">=", label (S.singleton "binary operator"))
+          , ("<=", label (S.singleton "binary operator"))
+          , ("==", label (S.singleton "binary operator"))
+          , ("!=", label (S.singleton "binary operator"))
+          , ("&&", label (S.singleton "binary operator"))
+          , ("||", label (S.singleton "binary operator"))
+          , ("bool", label (S.singleton "type"))
+          , ("char", label (S.singleton "type"))
+          , ("int", label (S.singleton "type"))
+          , ("pair", label (S.singleton "type"))
+          , ("string", label (S.singleton "type"))
+          ]
+    , labelEscapeEnd =
+        labelAndReason
+          (S.singleton "escape sequence")
+          "valid escape sequences are \\0, \\n, \\t, \\b, \\f, \\r, \\\", \\\' or \\\\"
+    , labelCharAsciiEnd = label (S.singleton "end of character literal")
+    }
+
 lexer :: Lexer
 lexer =
-  mkLexer $
+  mkLexerWithErrorConfig
     LexicalDesc
       { nameDesc = waccNameDesc
       , symbolDesc = waccSymbolDesc
@@ -216,9 +288,13 @@ lexer =
       , textDesc = waccTextDesc
       , spaceDesc = waccSpaceDesc
       }
+    errorConfig
 
 lexeme :: Lexeme
 lexeme = T.lexeme lexer
+
+nonlexeme :: Lexeme
+nonlexeme = T.nonlexeme lexer
 
 names :: Names
 names = T.names lexeme
@@ -230,7 +306,7 @@ integer :: IntegerParsers CanHoldSigned
 integer = T.integer lexeme
 
 decimal :: Parsec Integer
-decimal = T.decimal integer
+decimal = T.decimal32 integer
 
 stringLiteral :: Parsec String
 stringLiteral = ascii $ T.stringLiteral lexeme
@@ -241,5 +317,14 @@ charLiteral = ascii $ T.charLiteral lexeme
 fully :: Parsec a -> Parsec a
 fully = T.fully lexer
 
-sym :: String -> Parsec String
-sym s = T.sym lexeme s $> s
+sym :: String -> Parsec ()
+sym = T.sym lexeme
+
+negateOp :: Parsec ()
+negateOp =
+  E.label
+    (S.singleton "negation")
+    (T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit))))
+
+graphicChars :: [Char]
+graphicChars = ['\32' ..] \\ ['\\', '\"', '\'']

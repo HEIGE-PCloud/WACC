@@ -1,0 +1,22 @@
+# operator missing second operand
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int b = 2 - 
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/expressions/missingOperand2.wacc (line 13, column 1):
+  unexpected keyword end
+  expected boolean, character literal, chr, identifier, integer, len, negation, not, null, opening parenthesis, ord, or strings
+  >  int b = 2 - 
+  >end
+   ^^^
+  >

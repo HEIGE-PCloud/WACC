@@ -1,0 +1,23 @@
+# operator missing first operand
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int b = * 6
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/expressions/missingOperand1.wacc (line 12, column 11):
+  unexpected operator *
+  expected array literal, expression, fst, function call, newpair, or snd
+  expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
+  >begin
+  >  int b = * 6
+             ^
+  >end

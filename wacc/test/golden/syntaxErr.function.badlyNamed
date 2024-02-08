@@ -1,0 +1,25 @@
+# function return type and name are conflated
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  intf() is
+    return 42
+  end
+
+  int x = call f()
+end
+
+
+In test/wacc_examples/invalid/syntaxErr/function/badlyNamed.wacc (line 12, column 3):
+  function declaration for `intf` missing type
+  >begin
+  >  intf() is
+     ^^^^^^^
+  >    return 42
