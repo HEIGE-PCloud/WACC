@@ -2,6 +2,7 @@ module Main (main) where
 
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
+import Language.WACC.Error (parseFromFileWithError)
 import Language.WACC.Parser.Stmt (program)
 import Language.WACC.Parser.Token (fully)
 import System.Environment (getArgs)
@@ -29,9 +30,9 @@ main = do
 
 compile :: String -> IO ()
 compile filename = do
-  res <- parseFromFile (fully program) filename
+  res <- parseFromFileWithError (fully program) filename
   case res of
-    Failure err -> putStrLn err >> exitWithSyntaxError
+    Failure err -> print err >> exitWithSyntaxError
     Success _ -> exitSuccess
 
 usageAndExit :: IO ()

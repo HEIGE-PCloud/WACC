@@ -293,6 +293,9 @@ lexer =
 lexeme :: Lexeme
 lexeme = T.lexeme lexer
 
+nonlexeme :: Lexeme
+nonlexeme = T.nonlexeme lexer
+
 names :: Names
 names = T.names lexeme
 
