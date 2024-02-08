@@ -7,63 +7,63 @@
 module Language.WACC.Error where
 
 import Data.List.NonEmpty (NonEmpty)
+import Data.Maybe (catMaybes)
 import Data.Set (Set, toList)
 import Data.String (IsString (fromString))
 import Language.WACC.Parser.Token (keywords, nonlexeme, operators)
-import Text.Gigaparsec (Parsec, Result, parseFromFile, ($>), parse)
+import Text.Gigaparsec (Parsec, Result, parse, parseFromFile, ($>))
 import Text.Gigaparsec.Char (whitespace)
 import Text.Gigaparsec.Errors.DefaultErrorBuilder
-  ( StringBuilder (..),
-    combineMessagesDefault,
-    disjunct,
-    endOfInputDefault,
-    expectedDefault,
-    formatDefault,
-    formatPosDefault,
-    intercalate,
-    lineInfoDefault,
-    namedDefault,
-    rawDefault,
-    specialisedErrorDefault,
-    unexpectedDefault,
-    vanillaErrorDefault,
+  ( StringBuilder (..)
+  , combineMessagesDefault
+  , disjunct
+  , endOfInputDefault
+  , expectedDefault
+  , formatDefault
+  , formatPosDefault
+  , intercalate
+  , lineInfoDefault
+  , namedDefault
+  , rawDefault
+  , specialisedErrorDefault
+  , unexpectedDefault
+  , vanillaErrorDefault
   )
 import Text.Gigaparsec.Errors.ErrorBuilder
   ( ErrorBuilder
-      ( ErrorInfoLines,
-        ExpectedItems,
-        ExpectedLine,
-        Item,
-        LineInfo,
-        Message,
-        Messages,
-        Position,
-        Source,
-        UnexpectedLine
-      ),
-    combineExpectedItems,
-    combineMessages,
-    endOfInput,
-    expected,
-    format,
-    lineInfo,
-    message,
-    named,
-    numLinesAfter,
-    numLinesBefore,
-    pos,
-    raw,
-    reason,
-    source,
-    specialisedError,
-    unexpected,
-    unexpectedToken,
-    vanillaError,
+      ( ErrorInfoLines
+      , ExpectedItems
+      , ExpectedLine
+      , Item
+      , LineInfo
+      , Message
+      , Messages
+      , Position
+      , Source
+      , UnexpectedLine
+      )
+  , combineExpectedItems
+  , combineMessages
+  , endOfInput
+  , expected
+  , format
+  , lineInfo
+  , message
+  , named
+  , numLinesAfter
+  , numLinesBefore
+  , pos
+  , raw
+  , reason
+  , source
+  , specialisedError
+  , unexpected
+  , unexpectedToken
+  , vanillaError
   )
 import Text.Gigaparsec.Errors.TokenExtractors
 import Text.Gigaparsec.Position (Pos)
 import qualified Text.Gigaparsec.Token.Lexer as T
-import Data.Maybe (catMaybes)
 
 parseWithError :: Parsec a -> String -> Result Error a
 parseWithError = parse
@@ -74,20 +74,18 @@ printError :: FilePath -> [String] -> Error -> String
 printError filePath sourceCodeLines (Error errorMessage position width) = printHeader filePath position
 
 printPos :: Pos -> String
-printPos (x, y) = "(line " ++ show x ++", column " ++ show y ++ ")"
+printPos (x, y) = "(line " ++ show x ++ ", column " ++ show y ++ ")"
 
 printHeader :: FilePath -> Pos -> String
 printHeader filePath pos = "In " ++ filePath ++ " " ++ printPos pos ++ ":"
-
-
 
 instance ErrorBuilder Error where
   format :: Position Error -> Source Error -> ErrorInfoLines Error -> Error
   format pos src (lines, width') =
     Error
-      { errorMessage = intercalate "\n" lines,
-        position = pos,
-        width = width'
+      { errorMessage = intercalate "\n" lines
+      , position = pos
+      , width = width'
       }
 
   type Position Error = Pos
@@ -99,12 +97,12 @@ instance ErrorBuilder Error where
   source = fmap fromString
 
   type ErrorInfoLines Error = ([String], Word)
-  vanillaError ::
-    UnexpectedLine Error ->
-    ExpectedLine Error ->
-    Messages Error ->
-    LineInfo Error ->
-    ErrorInfoLines Error
+  vanillaError
+    :: UnexpectedLine Error
+    -> ExpectedLine Error
+    -> Messages Error
+    -> LineInfo Error
+    -> ErrorInfoLines Error
   vanillaError unexpectedLine expectedLine msgs width = (catMaybes [unexpectedLine, expectedLine] ++ msgs, width)
 
   specialisedError :: Messages Error -> LineInfo Error -> ErrorInfoLines Error
@@ -154,10 +152,10 @@ instance ErrorBuilder Error where
       ps =
         map (\x -> T.sym nonlexeme x $> ("keyword " ++ x)) keywords
           ++ map (\x -> T.sym nonlexeme x $> ("operator " ++ x)) operators
-          ++ [ ("integer " ++) . show <$> T.decimal (T.integer nonlexeme),
-               ("character " ++) . show <$> T.ascii (T.charLiteral nonlexeme),
-               ("string " ++) . show <$> T.ascii (T.stringLiteral nonlexeme),
-               showWhitespace <$> whitespace
+          ++ [ ("integer " ++) . show <$> T.decimal (T.integer nonlexeme)
+             , ("character " ++) . show <$> T.ascii (T.charLiteral nonlexeme)
+             , ("string " ++) . show <$> T.ascii (T.stringLiteral nonlexeme)
+             , showWhitespace <$> whitespace
              ]
 
 showWhitespace :: Char -> String

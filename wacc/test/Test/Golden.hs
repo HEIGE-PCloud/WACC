@@ -31,7 +31,8 @@ runSyntaxCheck path = goldenVsStringDiff testname diff goldenPath testAction
     goldenPath = goldenBasePath ++ "/" ++ testname
     testAction = do
       input <- readFile path
-      let res = parseWithError (fully program) input
+      let
+        res = parseWithError (fully program) input
       return (fromString (input ++ "\n\n" ++ syntaxCheck res path (lines input)))
 
 syntaxCheck :: Result Error b -> FilePath -> [String] -> String

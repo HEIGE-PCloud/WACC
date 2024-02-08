@@ -31,12 +31,11 @@ main = do
 compile :: String -> IO ()
 compile filename = do
   sourceCode <- readFile filename
-  let res = parseWithError (fully program) sourceCode
+  let
+    res = parseWithError (fully program) sourceCode
   case res of
     Failure err -> putStrLn (printError filename (lines sourceCode) err) >> exitWithSyntaxError
     Success _ -> exitSuccess
-
-
 
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
