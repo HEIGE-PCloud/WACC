@@ -49,7 +49,7 @@ runParse filename = do
 runScopeAnalysis :: String -> String -> Prog String String -> IO ()
 runScopeAnalysis filename sourceCode ast = do
   case scopeAnalysis ast of
-    Left errs -> do 
+    Left errs -> do
       mapM (\err -> putStrLn (printError filename (lines sourceCode) err)) errs
       exitWithSemanticError
     Right res -> runTypeCheck res
