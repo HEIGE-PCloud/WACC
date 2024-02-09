@@ -22,3 +22,10 @@ type error: expected an int but found a string
 >               ^
 >   int c = a[!false]
 
+Semantic error in test/wacc_examples/invalid/semanticErr/array/arrayIndexComplexNotInt.wacc (line 15, column 13):
+type error: expected an int but found a bool
+>   int b = a[1 - "horse"];
+>   int c = a[!false]
+>             ^
+> end
+
