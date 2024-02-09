@@ -9,6 +9,7 @@ module Language.WACC.TypeChecking.BType
   , FixedType
   , fix
   , orderedTypes
+  , readableTypes
   , isHeapAllocated
   , FnType (..)
   , unify
@@ -96,6 +97,12 @@ Valid parameter types for @>@, @>=@, @<@ and @<=@.
 -}
 orderedTypes :: [BType]
 orderedTypes = [BInt, BChar]
+
+{- |
+Valid @lvalue@ types for @read@.
+-}
+readableTypes :: [BType]
+readableTypes = [BInt, BChar]
 
 {- |
 Predicate for valid parameter types for @free@.

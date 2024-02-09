@@ -119,7 +119,11 @@ checkStmt (Asgn lv rv p) = reportAt p BAny $ do
   t <- reportAt p lvt $ tryUnify rvt lvt
   when (t == BAny) (abortActual t)
   pure BAny
-checkStmt (Read lv _) = BAny <$ checkLValue lv
+-- FIXME: add specialised error message for expected readable type
+checkStmt (Read lv p) = reportAt p BAny $ do
+  t <- checkLValue lv
+  unless (t `elem` readableTypes) (abortActual t)
+  pure BAny
 -- FIXME: add specialised error message for expected heap-allocated type
 checkStmt (Free x p) = reportAt p BAny $ do
   t <- checkExpr x
