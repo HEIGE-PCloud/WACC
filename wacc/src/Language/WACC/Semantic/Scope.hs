@@ -289,6 +289,6 @@ pass1 fns = map mkErr dups
     dups = nub $ deleteFirstsBy eqFsts fns (nubBy eqFsts fns)
     mkErr (str, pos) =
       Error
-        ("in pos" ++ (show pos) ++ str ++ " is redefined")
+        ("function " ++ str ++ " is already defined")
         pos
         (toEnum (length str))
