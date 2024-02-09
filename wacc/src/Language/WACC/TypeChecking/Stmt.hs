@@ -53,7 +53,7 @@ checkRValue
 checkRValue (RVExpr x _) = checkExpr x
 checkRValue (RVArrayLit xs p) = do
   t <- unifyExprsAt p BAny xs
-  when (t == BAny) (abortWith $ HeterogeneousArrayError p)
+  unless (null xs || t /= BAny) (abortWith $ HeterogeneousArrayError p)
   pure $ BArray t
 checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe _) = checkPairElem pe
