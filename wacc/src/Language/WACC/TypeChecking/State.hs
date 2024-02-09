@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE TupleSections #-}
 
 {- |
 Type checking monad and actions.
@@ -11,6 +12,8 @@ module Language.WACC.TypeChecking.State
   , setFnType
   , abort
   , abortActual
+  , abortOverridePos
+  , abortActualOverridePos
   , tryUnify
   , TypeError (..)
   , TypeErrors
@@ -24,6 +27,7 @@ import Control.Monad.Trans.Except (ExceptT, catchE, runExceptT, throwE)
 import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS, tell)
 import Data.DList (DList)
 import Data.Map (Map, insert, (!?))
+import Data.Maybe (fromMaybe)
 import Language.WACC.TypeChecking.BType (BType, FnType, unify)
 import Language.WACC.TypeChecking.Error
 import Text.Gigaparsec.Position (Pos)
@@ -39,7 +43,9 @@ type FnTypes fnident = Map fnident FnType
 Type checking monad.
 -}
 type TypingM fnident ident =
-  ExceptT (Maybe BType) (RWS (ident -> BType) TypeErrors (FnTypes fnident))
+  ExceptT
+    (Maybe BType, Maybe Pos)
+    (RWS (ident -> BType) TypeErrors (FnTypes fnident))
 
 {- |
 Run a type checking action.
@@ -78,13 +84,26 @@ setFnType f t = lift $ modify (insert f t)
 Abort a type check.
 -}
 abort :: TypingM fnident ident a
-abort = throwE Nothing
+abort = throwE (Nothing, Nothing)
+
+{- |
+Abort a type check, overriding the position of the type error.
+-}
+abortOverridePos :: Pos -> TypingM fnident ident a
+abortOverridePos = throwE . (Nothing,) . pure
 
 {- |
 Abort a type check, saving an invalid actual type.
 -}
 abortActual :: BType -> TypingM fnident ident a
-abortActual = throwE . pure
+abortActual = throwE . (,Nothing) . pure
+
+{- |
+Abort a type check, saving an invalid actual type and overriding the position of
+the type error.
+-}
+abortActualOverridePos :: BType -> Pos -> TypingM fnident ident a
+abortActualOverridePos t p = throwE (pure t, pure p)
 
 {- |
 @tryUnify actT expT@ attempts to unify an actual type @actT@ with an expected
@@ -101,8 +120,8 @@ reportAt
   :: Pos -> BType -> TypingM fnident ident a -> TypingM fnident ident a
 reportAt p expT action = catchE action report
   where
-    report (Just actT) =
-      lift (tell [IncompatibleTypesError actT expT p]) *> abort
+    report (Just actT, mp) =
+      lift (tell [IncompatibleTypesError actT expT $ fromMaybe p mp]) *> abort
     report _ = abort
 
 {- |
