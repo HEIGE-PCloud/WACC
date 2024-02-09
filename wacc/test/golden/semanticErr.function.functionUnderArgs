@@ -19,7 +19,7 @@ end
 	
 
 
-In test/wacc_examples/invalid/semanticErr/function/functionUnderArgs.wacc (line 15, column 13):
+Semantic error in test/wacc_examples/invalid/semanticErr/function/functionUnderArgs.wacc (line 15, column 13):
 type error: expected 2 arguments but found 1 argument
 > 	end
 > 	int x = call f(1);

@@ -14,7 +14,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/variables/undeclaredVarAccess.wacc (line 13, column 11):
+Semantic error in test/wacc_examples/invalid/semanticErr/variables/undeclaredVarAccess.wacc (line 13, column 11):
 y was not declared.
 >   int x = 10 ;
 >   x = x + y

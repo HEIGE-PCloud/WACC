@@ -13,7 +13,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/expressions/boolOpTypeErr.wacc (line 12, column 14):
+Semantic error in test/wacc_examples/invalid/semanticErr/expressions/boolOpTypeErr.wacc (line 12, column 14):
 type error: expected a bool but found an int
 > begin
 >   bool b = 1 || 1

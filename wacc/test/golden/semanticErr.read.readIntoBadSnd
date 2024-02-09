@@ -13,7 +13,7 @@ begin
   read snd p
 end
 
-In test/wacc_examples/invalid/semanticErr/read/readIntoBadSnd.wacc (line 13, column 8):
+Semantic error in test/wacc_examples/invalid/semanticErr/read/readIntoBadSnd.wacc (line 13, column 8):
 type error: only ints and chars may be read, but a bool was found
 >   pair(bool, bool) p = null;
 >   read snd p

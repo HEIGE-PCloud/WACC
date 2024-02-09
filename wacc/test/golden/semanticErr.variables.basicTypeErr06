@@ -13,7 +13,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/variables/basicTypeErr06.wacc (line 12, column 12):
+Semantic error in test/wacc_examples/invalid/semanticErr/variables/basicTypeErr06.wacc (line 12, column 12):
 type error: expected a bool but found a string
 > begin
 >   bool b = "true"

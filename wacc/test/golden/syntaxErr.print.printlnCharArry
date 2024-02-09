@@ -13,7 +13,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/print/printlnCharArry.wacc (line 12, column 11):
+Syntax error in test/wacc_examples/invalid/syntaxErr/print/printlnCharArry.wacc (line 12, column 11):
 unexpected "["
 expected expression
 array literals can only appear in assignments

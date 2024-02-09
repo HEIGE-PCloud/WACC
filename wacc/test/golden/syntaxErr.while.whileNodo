@@ -15,8 +15,8 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/while/whileNodo.wacc (line 13, column 5):
-unexpected keyword skip
+Syntax error in test/wacc_examples/invalid/syntaxErr/while/whileNodo.wacc (line 13, column 5):
+unexpected keyword "skip"
 expected binary operator or do
 the condition of a while loop must be closed with `do`
 

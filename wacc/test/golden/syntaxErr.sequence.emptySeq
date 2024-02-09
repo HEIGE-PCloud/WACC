@@ -11,7 +11,7 @@
 begin ; end
 
 
-In test/wacc_examples/invalid/syntaxErr/sequence/emptySeq.wacc (line 11, column 7):
+Syntax error in test/wacc_examples/invalid/syntaxErr/sequence/emptySeq.wacc (line 11, column 7):
 unexpected ";"
 expected function declaration or statement
 extra semi-colons are not valid, there must be exactly one between each statement

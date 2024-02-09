@@ -23,7 +23,7 @@ end
 	
 
 
-In test/wacc_examples/invalid/semanticErr/multiple/funcMess.wacc (line 13, column 5):
+Semantic error in test/wacc_examples/invalid/semanticErr/multiple/funcMess.wacc (line 13, column 5):
 x was not declared.
 >   int f(bool b) is
 >     x = -1 ;

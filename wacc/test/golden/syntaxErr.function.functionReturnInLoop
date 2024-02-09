@@ -26,7 +26,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/function/functionReturnInLoop.wacc (line 20, column 9):
+Syntax error in test/wacc_examples/invalid/syntaxErr/function/functionReturnInLoop.wacc (line 20, column 9):
 Function can only be exited via a 'return' or 'exit' statement. There must not be any code following the last 'return' or 'exit' of any execution path.
 >       else
 >         skip
