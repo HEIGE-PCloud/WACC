@@ -13,7 +13,7 @@ where
 
 import Control.Monad (foldM, unless)
 import Data.List (sort)
-import Language.WACC.AST.Expr
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
 import Text.Gigaparsec.Position (Pos)
@@ -27,7 +27,11 @@ checkArrayIndex (ArrayIndex v xs p) =
   reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
   where
     go (BArray t) x = t <$ reportAt x BInt (unifyExprs BInt [x])
-    go t _ = abortActual t
+    -- Move the caret one character to the left to align it with the opening
+    -- bracket.
+    go t x = abortActualOverridePos t (tryPred <$> getPos x)
+    tryPred 0 = 0
+    tryPred n = pred n
 
 {- |
 Type check an atomic WACC expression.

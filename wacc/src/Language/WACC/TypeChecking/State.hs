@@ -90,7 +90,7 @@ abort = throwE (Nothing, Nothing)
 {- |
 Abort a type check, overriding the position of the type error.
 -}
-abortOverridePos :: (HasPos a) => a -> TypingM fnident ident a
+abortOverridePos :: (HasPos a) => a -> TypingM fnident ident b
 abortOverridePos = throwE . (Nothing,) . pure . getPos
 
 {- |
@@ -103,7 +103,7 @@ abortActual = throwE . (,Nothing) . pure
 Abort a type check, saving an invalid actual type and overriding the position of
 the type error.
 -}
-abortActualOverridePos :: (HasPos a) => BType -> a -> TypingM fnident ident a
+abortActualOverridePos :: (HasPos a) => BType -> a -> TypingM fnident ident b
 abortActualOverridePos t x = throwE (pure t, pure $ getPos x)
 
 {- |

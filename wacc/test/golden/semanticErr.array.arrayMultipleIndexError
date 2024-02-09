@@ -19,10 +19,10 @@ begin
   int oops = sameAsA[0][1]
 end
 
-In test/wacc_examples/invalid/semanticErr/array/arrayMultipleIndexError.wacc (line 19, column 14):
+In test/wacc_examples/invalid/semanticErr/array/arrayMultipleIndexError.wacc (line 19, column 24):
 type error: expected an array (T[] for some type T) but found an int
 >   int[] sameAsA = ab[0];
 >   int oops = sameAsA[0][1]
->              ^
+>                        ^
 > end
 
