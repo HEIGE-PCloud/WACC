@@ -13,3 +13,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/variables/basicTypeErr08.wacc (line 12, column 8):
+type error: expected a char but found a bool
+> begin
+>   char c = false
+>        ^
+> end
+

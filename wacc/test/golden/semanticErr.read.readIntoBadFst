@@ -13,3 +13,10 @@ begin
   read fst p
 end
 
+In test/wacc_examples/invalid/semanticErr/read/readIntoBadFst.wacc (line 13, column 8):
+type error: only ints and chars may be read, but a bool was found
+>   pair(bool, bool) p = null;
+>   read fst p
+>        ^
+> end
+

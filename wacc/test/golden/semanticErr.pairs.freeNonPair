@@ -16,3 +16,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/pairs/freeNonPair.wacc (line 14, column 8):
+type error: only arrays and pairs may be freed, but an int was found
+>   println x;
+>   free 9 ; 
+>        ^
+>   println x
+

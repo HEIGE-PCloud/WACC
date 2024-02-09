@@ -15,3 +15,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/array/noArrayCovariance.wacc (line 14, column 3):
+type error: expected a string[] but found a char[][]
+>   char[][] acs = [] ;
+>   string[] bad = acs
+>   ^
+> end
+

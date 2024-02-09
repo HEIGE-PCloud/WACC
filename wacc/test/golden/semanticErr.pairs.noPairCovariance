@@ -15,3 +15,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/pairs/noPairCovariance.wacc (line 14, column 3):
+type error: expected a pair of a string and a string (pair(string, string)) but found a pair of a char[] and a char[] (pair(char[], char[]))
+>   pair(char[], char[]) pcs = null ;
+>   pair(string, string) bad = pcs
+>   ^
+> end
+

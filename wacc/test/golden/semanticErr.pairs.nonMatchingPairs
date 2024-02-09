@@ -16,3 +16,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/pairs/nonMatchingPairs.wacc (line 15, column 3):
+type error: expected a pair of a char and a char (pair(char, char)) but found a pair of an int and an int (pair(int, int))
+>   pair(char, char) p2 = newpair('a', 'a');
+>   p2 = p1
+>   ^
+> end
+

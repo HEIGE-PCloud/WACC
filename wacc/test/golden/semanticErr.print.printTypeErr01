@@ -15,3 +15,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/print/printTypeErr01.wacc (line 14, column 13):
+type error: expected an int but found a char
+>   char y = 'a' ;
+>   println x + y
+>             ^
+> end
+

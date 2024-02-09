@@ -14,3 +14,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/array/wrongArrayType.wacc (line 13, column 9):
+type error: expected an int[] but found a char[]
+> begin
+>   int[] should_be_int_array = ['a', 'b', 'c']
+>         ^
+> end
+

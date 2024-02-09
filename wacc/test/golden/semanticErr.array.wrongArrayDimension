@@ -15,3 +15,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/array/wrongArrayDimension.wacc (line 14, column 14):
+type error: expected an array (T[] for some type T) but found an int
+>   int[] a = [1, 2];
+>   int oops = a[1][2][3]
+>              ^
+> end
+

@@ -13,3 +13,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/variables/basicTypeErr12.wacc (line 12, column 10):
+type error: expected a string but found a char
+> begin
+>   string s = 'h'
+>          ^
+> end
+

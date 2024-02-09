@@ -15,3 +15,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/array/arrayIndexNotInt.wacc (line 14, column 11):
+type error: expected an int but found a string
+>   int[] a = [1, 2];
+>   int b = a["horse"]
+>           ^
+> end
+

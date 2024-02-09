@@ -14,3 +14,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/array/noStringIndex.wacc (line 13, column 12):
+type error: expected an array (T[] for some type T) but found a string
+>   string str = "hello world";
+>   char x = str[0]
+>            ^
+> end
+

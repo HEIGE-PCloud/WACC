@@ -16,3 +16,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/expressions/stringElemErr.wacc (line 14, column 3):
+type error: expected an array (T[] for some type T) but found a string
+>   println str ;
+>   str[0] = 'H' ;
+>   ^
+>   println str
+
