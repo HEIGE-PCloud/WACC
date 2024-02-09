@@ -1,5 +1,6 @@
 module Main (main) where
 
+import Data.List.Extra (replace)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
 import Language.WACC.AST.Prog (Prog)
@@ -33,7 +34,7 @@ main = do
 
 runParse :: String -> IO ()
 runParse filename = do
-  sourceCode <- readFile filename
+  sourceCode <- replace "\t" "  " <$> readFile filename
   let
     res = parseWithError (fully program) sourceCode
   let

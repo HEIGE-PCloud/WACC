@@ -20,7 +20,7 @@ begin
   done;
   println "finshed I guess"
 end
-	
+  
 
 
 Syntax error in test/wacc_examples/invalid/syntaxErr/function/funcExpr2.wacc (line 17, column 13):

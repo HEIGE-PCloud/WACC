@@ -9,19 +9,19 @@
 # Program:
 
 begin
-	int f(int x) is
+  int f(int x) is
     bool b = x && true ;
-		return 0
-	end
+    return 0
+  end
   int x = call f(0) 
 end
-	
+  
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/functionBadArgUse.wacc (line 13, column 16):
 type error: expected a bool but found an int
-> 	int f(int x) is
+>   int f(int x) is
 >     bool b = x && true ;
 >                ^
-> 		return 0
+>     return 0
 

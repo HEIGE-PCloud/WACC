@@ -9,18 +9,18 @@
 # Program:
 
 begin
-	int f(int x) is
-		return x
-	end
-	bool b = true ; 
+  int f(int x) is
+    return x
+  end
+  bool b = true ; 
   int x = call f(b) 
 end
-	
+  
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/functionBadParam.wacc (line 16, column 11):
 type error: expected an int but found a bool
-> 	bool b = true ; 
+>   bool b = true ; 
 >   int x = call f(b) 
 >           ^
 > end

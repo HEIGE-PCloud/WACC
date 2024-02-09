@@ -9,7 +9,7 @@
 # Program:
 
 begin
-	pair(int, char) p = newpair(10, 'a') ;
+  pair(int, char) p = newpair(10, 'a') ;
   println snd p
 end
 
@@ -20,7 +20,7 @@ expected expression
 expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
 tuple extraction is only allowed in assignments
 
-> 	pair(int, char) p = newpair(10, 'a') ;
+>   pair(int, char) p = newpair(10, 'a') ;
 >   println snd p
 >           ^^^
 > end

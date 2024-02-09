@@ -20,7 +20,7 @@ begin
   int y = call g();
   println y
 end
-	
+  
 
 
 Syntax error in test/wacc_examples/invalid/syntaxErr/function/functionLateDefine.wacc (line 17, column 3):
