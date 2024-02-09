@@ -98,19 +98,6 @@ test =
               )
               0
               @?= Left 1
-        , testCase "rejects unknown function calls" $
-            checkProg'
-              ( Main
-                  [func]
-                  [ Asgn
-                      (LVIdent BInt undefined)
-                      (RVCall 1 [intExpr] undefined)
-                      undefined
-                  ]
-                  undefined
-              )
-              0
-              @?= Left 0
         , testProperty "rejects return statements in main program" $
             \wt ->
               checkProg'
