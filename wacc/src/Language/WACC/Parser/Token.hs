@@ -1,3 +1,6 @@
+{- |
+Defines the token types and the lexer for the WACC language.
+-}
 module Language.WACC.Parser.Token where
 
 import Data.Char (isAlpha, isAlphaNum, isSpace)
@@ -101,6 +104,9 @@ import Text.Gigaparsec.Token.Lexer
   )
 import qualified Text.Gigaparsec.Token.Lexer as T
 
+{- |
+Defines the lexer for the WACC language.
+-}
 waccNameDesc :: NameDesc
 waccNameDesc =
   NameDesc
@@ -110,6 +116,9 @@ waccNameDesc =
     , operatorLetter = Nothing
     }
 
+{- |
+Defines the keywords and operators for the WACC language.
+-}
 keywords :: [String]
 keywords =
   [ "begin"
@@ -145,6 +154,9 @@ keywords =
   , "false"
   ]
 
+{- |
+Defines the operators for the WACC language.
+-}
 operators :: [String]
 operators =
   [ "!"
@@ -163,9 +175,15 @@ operators =
   , "||"
   ]
 
+{- |
+Defines the escape characters for the WACC language.
+-}
 escapeChars :: [Char]
 escapeChars = ['0', 'b', 't', 'n', 'f', 'r', '"', '\'', '\\']
 
+{- |
+Defines the symbol description for the WACC language lexer.
+-}
 waccSymbolDesc :: SymbolDesc
 waccSymbolDesc =
   SymbolDesc
@@ -176,6 +194,9 @@ waccSymbolDesc =
     , caseSensitive = True
     }
 
+{- |
+Defines the numeric description for the WACC language lexer.
+-}
 waccNumericDesc :: NumericDesc
 waccNumericDesc =
   NumericDesc
@@ -199,6 +220,9 @@ waccNumericDesc =
     , binaryExponentDesc = NoExponents
     }
 
+{- |
+Defines the text description for the WACC language lexer.
+-}
 waccTextDesc :: TextDesc
 waccTextDesc =
   TextDesc
@@ -220,6 +244,9 @@ waccTextDesc =
     , graphicCharacter = Just (`elem` graphicChars)
     }
 
+{- |
+Defines the space description for the WACC language lexer.
+-}
 waccSpaceDesc :: SpaceDesc
 waccSpaceDesc =
   SpaceDesc
@@ -232,6 +259,9 @@ waccSpaceDesc =
     , whitespaceIsContextDependent = False
     }
 
+{- |
+Defines the error configuration for the WACC language lexer.
+-}
 errorConfig :: ErrorConfig
 errorConfig =
   defaultErrorConfig
@@ -278,6 +308,9 @@ errorConfig =
     , labelCharAsciiEnd = label (S.singleton "end of character literal")
     }
 
+{- |
+Defines the lexer for the WACC language.
+-}
 lexer :: Lexer
 lexer =
   mkLexerWithErrorConfig
@@ -290,41 +323,77 @@ lexer =
       }
     errorConfig
 
+{- |
+Extracts the lexeme from the lexer. This is used to extract the token with whitespace consumed.
+-}
 lexeme :: Lexeme
 lexeme = T.lexeme lexer
 
+{- |
+Extracts the non-lexeme from the lexer. This is used to extract the token without whitespace consumed.
+-}
 nonlexeme :: Lexeme
 nonlexeme = T.nonlexeme lexer
 
+{- |
+Gets name Parsers from the lexer.
+-}
 names :: Names
 names = T.names lexeme
 
+{- |
+Parser for an identifier.
+-}
 identifier :: Parsec String
 identifier = T.identifier names
 
+{- |
+Parser for an integer.
+-}
 integer :: IntegerParsers CanHoldSigned
 integer = T.integer lexeme
 
+{- |
+Parser for a 32-bit decimal.
+-}
 decimal :: Parsec Integer
 decimal = T.decimal32 integer
 
+{- |
+Parser for a string literal.
+-}
 stringLiteral :: Parsec String
 stringLiteral = ascii $ T.stringLiteral lexeme
 
+{- |
+Parser for a character literal.
+-}
 charLiteral :: Parsec Char
 charLiteral = ascii $ T.charLiteral lexeme
 
+{- |
+Parser that consumes leading whitespace expects end of file at the end.
+-}
 fully :: Parsec a -> Parsec a
 fully = T.fully lexer
 
+{- |
+Parser for a symbol in programs.
+-}
 sym :: String -> Parsec ()
 sym = T.sym lexeme
 
+{- |
+Parser for disambiguating between a negative integer literal and a negation operator.
+-}
 negateOp :: Parsec ()
 negateOp =
   E.label
     (S.singleton "negation")
     (T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit))))
 
+{- |
+Parser for a graphic character.
+-}
 graphicChars :: [Char]
 graphicChars = ['\32' ..] \\ ['\\', '\"', '\'']
