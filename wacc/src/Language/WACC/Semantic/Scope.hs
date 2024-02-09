@@ -92,6 +92,9 @@ ctr = snd
 errorId :: Integer
 errorId = 0
 
+defaultCaretLen :: Int
+defaultCaretLen = 1
+
 ---------------------
 -- Utility Functions--
 ---------------------
@@ -106,7 +109,7 @@ renameFuncOrErr str pos constr = do
   case funcST !? str of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report ("Function " ++ notDecl str) pos (length str)
+      report ("function " ++ notDecl str) pos defaultCaretLen
       return $ constr errorId
 
 {- |
@@ -119,18 +122,19 @@ renameOrErr str pos constr = do
   case getDecl str localST (Just superST) of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report ("Variable " ++ notDecl str) pos (length str)
+      report ("variable " ++ notDecl str) pos (length str)
       return $ constr errorId
 
-alreadyDecl :: (Show a) => [Char] -> a -> [Char]
-alreadyDecl str origPos = quote str ++ " was already defined in " ++ show origPos ++ "."
+alreadyDecl :: [Char] -> Pos -> [Char]
+alreadyDecl str origPos = quote str ++ " was already defined in line " ++ show (fst origPos)
 
 notDecl :: [Char] -> [Char]
-notDecl str = quote str ++ " was not declared."
+notDecl str = quote str ++ " was not declared"
 
 -- | write an error in a uniform format
 report :: String -> Pos -> Int -> Analysis ()
-report str pos len = tell (DList.singleton (Error str pos (toEnum len)), mempty)
+report str pos len =
+  tell (DList.singleton (Error ("scope error: " ++ str) pos (toEnum len)), mempty)
 
 -- | Apply functions to corresponding pair elems
 mapPair :: (a -> c) -> (b -> d) -> (a, b) -> (c, d)
@@ -164,7 +168,7 @@ insertDecl pos t str = do
       tell (mempty, Map.singleton (Vident n) (t, pos))
       return n
     (Just (_, posOrig)) -> do
-      report (alreadyDecl str posOrig) pos 1
+      report (alreadyDecl str posOrig) pos defaultCaretLen
       return errorId
 
 -- | Helper for getting full variable table

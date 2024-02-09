@@ -15,9 +15,9 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/callUndefFunction.wacc (line 13, column 16):
-Function "fib" was not declared.
+scope error: function "fib" was not declared
 > begin
 >   int result = call fib(5)
->                ^^^
+>                ^
 > end
 

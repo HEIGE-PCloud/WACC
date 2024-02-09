@@ -15,7 +15,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/array/indexUndefIdent.wacc (line 13, column 12):
-Variable "horse" was not declared.
+scope error: variable "horse" was not declared
 > begin
 >   char c = horse[2]
 >            ^^^^^
