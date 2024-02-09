@@ -16,7 +16,7 @@ where
 
 import Control.Monad (foldM, unless, when, zipWithM_)
 import Data.List.NonEmpty (sort)
-import Language.WACC.AST.Stmt
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
@@ -124,20 +124,24 @@ checkStmt (Asgn lv rv p) = reportAt p BAny $ do
   pure BAny
 checkStmt (Read lv p) = reportAt p BAny $ do
   t <- checkLValue lv
-  unless (t `elem` readableTypes) (abortWith $ ExpectedReadableTypeError t p)
+  unless
+    (t `elem` readableTypes)
+    (abortWith $ ExpectedReadableTypeError t (getPos lv))
   pure BAny
 checkStmt (Free x p) = reportAt p BAny $ do
   t <- checkExpr x
-  unless (isHeapAllocated t) (abortWith $ ExpectedHeapAllocatedTypeError t p)
+  unless
+    (isHeapAllocated t)
+    (abortWith $ ExpectedHeapAllocatedTypeError t (getPos x))
   pure BAny
 checkStmt (Return x _) = checkExpr x
-checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]
+checkStmt (Exit x _) = BAny <$ unifyExprsAt x BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x
 checkStmt (PrintLn x _) = BAny <$ checkExpr x
 checkStmt (IfElse x ifBody elseBody p) = do
-  _ <- unifyExprsAt p BBool [x]
+  _ <- unifyExprsAt x BBool [x]
   t <- unifyStmtsAt p BAny ifBody
   unifyStmtsAt p t elseBody
 checkStmt (While x body p) =
-  unifyExprsAt p BBool [x] *> unifyStmtsAt p BAny body
+  unifyExprsAt x BBool [x] *> unifyStmtsAt p BAny body
 checkStmt (BeginEnd body p) = unifyStmtsAt p BAny body

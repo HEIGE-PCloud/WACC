@@ -16,7 +16,6 @@ import Data.List (sort)
 import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
-import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
 {- |
@@ -55,10 +54,11 @@ unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
 unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t . sort
 
 {- |
-Associate a 'Pos' with a @unifyExprs@ action.
+Associate a 'Text.Gigaparsec.Position.Pos' with a @unifyExprs@ action.
 -}
-unifyExprsAt :: Pos -> BType -> [Expr ident] -> TypingM fnident ident BType
-unifyExprsAt p t xs = reportAt p t $ unifyExprs t xs
+unifyExprsAt
+  :: (HasPos a) => a -> BType -> [Expr ident] -> TypingM fnident ident BType
+unifyExprsAt x t xs = reportAt (getPos x) t $ unifyExprs t xs
 
 {- |
 @tryUnifyExprs@ unifies multiple expressions like @unifyExprsAt@ but does not

@@ -15,10 +15,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/while/whileIntCondition.wacc (line 12, column 3):
+In test/wacc_examples/invalid/semanticErr/while/whileIntCondition.wacc (line 12, column 12):
 type error: expected a bool but found an int
 > begin
 >   while 15 + 6 do
->   ^
+>            ^
 >     skip
 

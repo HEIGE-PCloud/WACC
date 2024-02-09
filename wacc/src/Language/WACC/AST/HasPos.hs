@@ -7,7 +7,7 @@ Type class for extracting positions from AST nodes.
 module Language.WACC.AST.HasPos (HasPos (..)) where
 
 import Language.WACC.AST.Expr (Expr (..))
-import Language.WACC.AST.Stmt (RValue (..))
+import Language.WACC.AST.Stmt (LValue (..), RValue (..))
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
@@ -40,6 +40,11 @@ instance HasPos (Expr ident) where
   getPos (Ineq _ _ p) = p
   getPos (And _ _ p) = p
   getPos (Or _ _ p) = p
+
+instance HasPos (LValue ident) where
+  getPos (LVIdent _ p) = p
+  getPos (LVArrayElem _ p) = p
+  getPos (LVPairElem _ p) = p
 
 instance HasPos (RValue fnident ident) where
   getPos (RVExpr _ p) = p
