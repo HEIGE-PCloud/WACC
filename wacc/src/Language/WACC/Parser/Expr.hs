@@ -143,7 +143,7 @@ mkIdentOrArrayElem = liftA4 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem'
       :: Pos -> String -> Pos -> Maybe [Expr String] -> WAtom String
-    mkIdentOrArrayElem' p str p' (Just e) = ArrayElem (ArrayIndex str e p') p
+    mkIdentOrArrayElem' p str p' (Just e) = ArrayElem (ArrayIndex str e p) p
     mkIdentOrArrayElem' p str _ Nothing = Ident str p
 
 {- | > <expr> ::= <unary-oper> <expr>
