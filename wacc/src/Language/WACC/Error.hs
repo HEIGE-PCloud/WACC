@@ -4,7 +4,16 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Language.WACC.Error (printError, Error (..), quote, isSuccess, isFailure, syntaxError, semanticError) where
+module Language.WACC.Error
+  ( printError
+  , Error (..)
+  , quote
+  , isSuccess
+  , isFailure
+  , syntaxError
+  , semanticError
+  )
+where
 
 import Data.List.Extra ((!?))
 import Data.List.NonEmpty (NonEmpty)
