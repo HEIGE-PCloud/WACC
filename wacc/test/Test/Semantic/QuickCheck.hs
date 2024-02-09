@@ -6,4 +6,3 @@ module Test.Semantic.QuickCheck
   )
 where
 
-import Control.Exception
