@@ -69,7 +69,7 @@ data TypeError
 Pretty-print a 'BType'.
 -}
 prettyType :: BType -> String
-prettyType BAny = "any value"
+prettyType BAny = "a value of unknown type"
 prettyType BInt = "an int"
 prettyType BBool = "a bool"
 prettyType BChar = "a char"
