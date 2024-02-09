@@ -15,7 +15,7 @@ module Language.WACC.TypeChecking.State
   , TypeError (..)
   , TypeErrors
   , reportAt
-  , abortWithArityError
+  , abortWith
   )
 where
 
@@ -103,8 +103,7 @@ reportAt p expT action = catchE action report
     report _ = abort
 
 {- |
-Report a 'FunctionCallArityError' and abort.
+Report a specialised 'TypeError' and abort.
 -}
-abortWithArityError :: Int -> Int -> Pos -> TypingM fnident ident a
-abortWithArityError actN expN p =
-  lift (tell [FunctionCallArityError actN expN p]) *> abort
+abortWith :: TypeError -> TypingM fnident ident a
+abortWith err = lift (tell [err]) *> abort

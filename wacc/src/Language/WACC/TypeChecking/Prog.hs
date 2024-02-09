@@ -9,9 +9,10 @@ import Language.WACC.AST.Prog (Func (..), Prog (..))
 import Language.WACC.Error (Error)
 import Language.WACC.Semantic.Scope (Fnident, VarST, Vident)
 import Language.WACC.TypeChecking.BType (BType (BAny), FnType (FnType), fix)
+import Language.WACC.TypeChecking.Error (TypeError (ReturnFromMainError))
 import Language.WACC.TypeChecking.State
   ( TypingM
-  , abortActual
+  , abortWith
   , reportAt
   , setFnType
   )
@@ -38,4 +39,4 @@ checkProg :: (Ord fnident) => Prog fnident ident -> TypingM fnident ident ()
 checkProg (Main fs ss p) = reportAt p BAny $ do
   mapM_ checkFunc fs
   t <- unifyStmts BAny ss
-  when (t /= BAny) $ abortActual t
+  when (t /= BAny) (abortWith $ ReturnFromMainError p)

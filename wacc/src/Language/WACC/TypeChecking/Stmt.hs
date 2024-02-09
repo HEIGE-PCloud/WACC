@@ -59,7 +59,7 @@ checkRValue (RVCall f xs p) = do
   let
     actN = length xs
     expN = length paramTypes
-  unless (actN == expN) $ abortWithArityError actN expN p
+  unless (actN == expN) $ abortWith (FunctionCallArityError actN expN p)
   ts <- mapM checkExpr xs
   zipWithM_ (\xt pt -> reportAt p pt $ tryUnify xt pt) ts paramTypes
   pure retType
@@ -112,22 +112,19 @@ checkStmt (Decl wt v rv p) =
   ]
   where
     t = fix wt
--- FIXME: add specialised error message for doubly-unknown assignments
 checkStmt (Asgn lv rv p) = reportAt p BAny $ do
   rvt <- checkRValue rv
   lvt <- checkLValue lv
   t <- reportAt p lvt $ tryUnify rvt lvt
-  when (t == BAny) (abortActual t)
+  when (t == BAny) (abortWith $ UnknownAssignmentError p)
   pure BAny
--- FIXME: add specialised error message for expected readable type
 checkStmt (Read lv p) = reportAt p BAny $ do
   t <- checkLValue lv
-  unless (t `elem` readableTypes) (abortActual t)
+  unless (t `elem` readableTypes) (abortWith $ ExpectedReadableTypeError t p)
   pure BAny
--- FIXME: add specialised error message for expected heap-allocated type
 checkStmt (Free x p) = reportAt p BAny $ do
   t <- checkExpr x
-  unless (isHeapAllocated t) (abortActual t)
+  unless (isHeapAllocated t) (abortWith $ ExpectedHeapAllocatedTypeError t p)
   pure BAny
 checkStmt (Return x _) = checkExpr x
 checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]

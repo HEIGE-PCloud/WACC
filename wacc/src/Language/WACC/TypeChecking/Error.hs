@@ -11,7 +11,7 @@ where
 
 import Data.List (isSuffixOf)
 import Language.WACC.Error (Error (Error))
-import Language.WACC.TypeChecking.BType (BType (..))
+import Language.WACC.TypeChecking.BType (BType (..), orderedTypes)
 import Text.Gigaparsec.Position (Pos)
 
 {- |
@@ -34,6 +34,36 @@ data TypeError
       -- ^ The declared arity of the function.
       Pos
       -- ^ The position of the ill-typed function call.
+  | -- | Heterogeneous array literal.
+    HeterogeneousArrayError
+      Pos
+      -- ^ The position of the ill-typed array literal.
+  | -- | Expected a heap-allocated type.
+    ExpectedHeapAllocatedTypeError
+      BType
+      -- ^ The type of the provided expression.
+      Pos
+      -- ^ The position of the ill-typed expression.
+  | -- | Expected a readable type.
+    ExpectedReadableTypeError
+      BType
+      -- ^ The type of the provided @lvalue@.
+      Pos
+      -- ^ The position of the ill-typed expression.
+  | -- | Expected an ordered type.
+    ExpectedOrderedTypeError
+      BType
+      -- ^ The type of the provided expression.
+      Pos
+      -- ^ The position of the ill-typed expression.
+  | -- | Both sides of an assignment have unknown types.
+    UnknownAssignmentError
+      Pos
+      -- ^ The position of the ill-typed assignment.
+  | -- | A @return@ statement was found in the main program.
+    ReturnFromMainError
+      Pos
+      -- ^ The position of the return statement.
 
 {- |
 Pretty-print a 'BType'.
@@ -105,6 +135,51 @@ convertTypeError (FunctionCallArityError actN expN p) =
         , show actN
         , " arguments"
         ]
+    )
+    p
+    1
+convertTypeError (HeterogeneousArrayError p) =
+  Error (mkTypeErrorMessage ["all array elements must have the same type"]) p 1
+convertTypeError (ExpectedHeapAllocatedTypeError actT p) =
+  Error
+    ( mkTypeErrorMessage
+        [ "only arrays and pairs may be freed, but "
+        , formatType actT
+        , " was found"
+        ]
+    )
+    p
+    1
+convertTypeError (ExpectedReadableTypeError actT p) =
+  Error
+    ( mkTypeErrorMessage
+        [ "only ints and chars may be read, but "
+        , formatType actT
+        , " was found"
+        ]
+    )
+    p
+    1
+convertTypeError (ExpectedOrderedTypeError actT p) =
+  Error (mkTypeErrorMessage fragments) p 1
+  where
+    fragments
+      | actT `elem` orderedTypes =
+          ["comparisons must be between values of the same type"]
+      | otherwise =
+          [ "comparisons are only valid between ints and chars, but "
+          , formatType actT
+          , " was found"
+          ]
+convertTypeError (UnknownAssignmentError p) =
+  Error
+    (mkTypeErrorMessage ["both sides of this assignment are of unknown types"])
+    p
+    1
+convertTypeError (ReturnFromMainError p) =
+  Error
+    ( mkTypeErrorMessage
+        ["return statements are not allowed in the main program"]
     )
     p
     1

@@ -70,10 +70,9 @@ checkExpr (Div x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Mod x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Add x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Sub x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
--- FIXME: add specialised error message for expected comparable type
 checkExpr (GT x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortActual t)
+  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
   pure BBool
 checkExpr (GTE x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
