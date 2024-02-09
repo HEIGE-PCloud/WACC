@@ -33,11 +33,7 @@ import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-<<<<<<< Updated upstream
-import Text.Gigaparsec (Parsec, eof, many, some, ($>), (<:>), (<|>), (<~>))
-=======
-import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
->>>>>>> Stashed changes
+import Text.Gigaparsec (Parsec, eof, many, some, ($>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
 import Text.Gigaparsec.Errors.ErrorGen
@@ -125,19 +121,18 @@ mkMain2
   -> ([(WType, ident)], Stmts fnident ident)
   -> Prog fnident ident
   -> Prog fnident ident
-mkMain2 p' wtype ident (params, ss) (Main fs sts p)
-  = Main (Func wtype ident params ss p' : fs) sts p
+mkMain2 p' wtype ident (params, ss) (Main fs sts p) =
+  Main (Func wtype ident params ss p' : fs) sts p
 
 mkMain3
-  :: Pos 
+  :: Pos
   -> WType
   -> ident
   -> RValue fnident ident
   -> [Stmt fnident ident]
   -> Prog fnident ident
-mkMain3 p wtype ident rvalue sts 
-  = Main [] (fromList (Decl wtype ident rvalue p : sts)) p
-
+mkMain3 p wtype ident rvalue sts =
+  Main [] (fromList (Decl wtype ident rvalue p : sts)) p
 
 -- | > func ::= <type> <identifier> '(' <paramList>? ')' 'is' <stmt> 'end'
 func :: Parsec (Func String String)
