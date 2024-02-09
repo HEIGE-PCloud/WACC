@@ -25,7 +25,7 @@ import Language.WACC.Parser.Token
   , negateOp
   , stringLiteral
   )
-import Text.Gigaparsec (Parsec, many, ($>), (<|>))
+import Text.Gigaparsec (Parsec, many, some, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy)
 import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Errors.Patterns (preventativeExplain)
@@ -106,7 +106,7 @@ ident = mkIdent' identifier
 
 -- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
 arrayElem :: Parsec (WAtom String)
-arrayElem = mkArrayElem' (mkArrayIndex identifier (many ("[" *> expr <* "]")))
+arrayElem = mkArrayElem' (mkArrayIndex identifier (some ("[" *> expr <* "]")))
 
 {- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
  >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
@@ -120,7 +120,7 @@ atom =
     , mkWAtom stringLiter
     , mkWAtom pairLiter
     , mkWAtom
-        (mkIdentOrArrayElem pos identifier (option (many ("[" *> expr <* "]"))))
+        (mkIdentOrArrayElem pos identifier (option (some ("[" *> expr <* "]"))))
     , "(" *> expr <* ")"
     ]
 
