@@ -21,7 +21,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/funcVarAccess.wacc (line 13, column 5):
-x was not declared.
+Variable "x" was not declared.
 > 	int f() is
 >     x = -1 ;
 >     ^

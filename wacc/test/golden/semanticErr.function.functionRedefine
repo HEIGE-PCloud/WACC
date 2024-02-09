@@ -21,7 +21,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/functionRedefine.wacc (line 15, column 7):
-function f is already defined
+function "f" is already defined
 > 	end
 >   int f() is
 >       ^
