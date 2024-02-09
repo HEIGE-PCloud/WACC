@@ -26,12 +26,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/function/functionReturnInLoop.wacc (line 23, column 3):
-Function can only be exited via a 'return' or 'exit' statement.
-  There must not be any code following the last 'return' or 'exit' of any execution path.
-
->     done
->   end
->   ^
->   int x = call f(10) ;
+In test/wacc_examples/invalid/syntaxErr/function/functionReturnInLoop.wacc (line 20, column 9):
+Function can only be exited via a 'return' or 'exit' statement. There must not be any code following the last 'return' or 'exit' of any execution path.
+>       else
+>         skip
+>         ^
+>       fi
 
