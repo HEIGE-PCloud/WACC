@@ -14,18 +14,20 @@ import Control.Monad.RWS
   , get
   , gets
   , local
-  , modify
+  , modify 
   , runRWS
   , tell
-  )
+  ) 
 import Data.DList (DList (..), singleton)
 import qualified Data.DList as DList
-import Data.List (nub)
 import Data.Map (Map, empty, insert, union, (!), (!?))
+import Data.List (nub, nubBy, deleteFirstsBy)
+import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
+import Data.Function (on) 
 import qualified Data.Map as Map
-import Language.WACC.AST.Expr
+import Language.WACC.AST.Expr 
   ( ArrayIndex (..)
-  , Expr (..)
+  , Expr (..) 
   , WAtom (..)
   )
 import Language.WACC.AST.Prog (Func (..), Prog (..))
@@ -33,14 +35,15 @@ import Language.WACC.AST.Stmt
   ( LValue (..)
   , PairElem (..)
   , RValue (..)
-  , Stmt (..)
+  , Stmt (..) 
   , Stmts
-  )
+  ) 
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error (Error))
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT, reverse, unzip)
+
 
 {- |
 The @Integer  acts as a UID (which will not clash with variable @Vident@s either)
@@ -80,6 +83,8 @@ type Ctr = Integer
 
 type Analysis = RWS (SuperST, FuncST) (DList Error, VarST) (LocalST, Ctr)
 
+errorId = 0
+
 renamePairElem :: PairElem String -> Analysis (PairElem Vident)
 renamePairElem (FstElem lv p) = (`FstElem` p) <$> renameLValue lv
 renamePairElem (SndElem lv p) = (`SndElem` p) <$> renameLValue lv
@@ -105,7 +110,7 @@ renameFuncOrErr str pos constr = do
     Just (n, _) -> return $ constr n
     Nothing -> do
       report (notDecl str) pos (length str)
-      return undefined
+      return $ constr errorId
 
 renameOrErr :: String -> Pos -> (Integer -> a) -> Analysis a
 renameOrErr str pos constr = do
@@ -114,7 +119,7 @@ renameOrErr str pos constr = do
     Just (n, _) -> return $ constr n
     Nothing -> do
       report (notDecl str) pos (length str)
-      return undefined
+      return $ constr errorId
 
 renameArrayIndex :: ArrayIndex String -> Analysis (ArrayIndex Vident)
 renameArrayIndex (ArrayIndex str es pos) = do
@@ -174,12 +179,19 @@ getDecl str localST maybeSuperST = case localVal of
       Nothing -> Nothing
       Just superST -> superST !? str
 
-insertDecl :: Pos -> WType -> String -> Analysis Ctr
+
+insertDecl :: Pos -> WType -> String -> Analysis Ctr 
 insertDecl pos t str = do
-  n <- freshN
-  modify $ mapPair (insert str (n, pos)) id
-  tell (mempty, Map.singleton (Vident n str) (t, pos))
-  return n
+  (localST, _) <- getST
+  case getDecl str localST Nothing of
+    Nothing -> do
+      n <- freshN
+      modify $ mapPair (insert str (n, pos)) id
+      tell (mempty, Map.singleton (Vident n str) (t, pos))
+      return n
+    (Just (_, posOrig)) -> do
+      report (alreadyDecl str posOrig) pos 1
+      return errorId
 
 getST :: Analysis (LocalST, SuperST)
 getST = (,) <$> gets fst <*> asks fst
@@ -197,12 +209,8 @@ renameStmt :: Stmt String String -> Analysis (Stmt Fnident Vident)
 renameStmt (Skip p) = pure (Skip p)
 renameStmt (Decl t str rv pos) = do
   rv' <- renameRValue rv
-  (localST, _) <- getST
-  case getDecl str localST Nothing of
-    Nothing -> Control.Monad.void (insertDecl pos t str)
-    (Just (_, posOrig)) -> report (alreadyDecl str posOrig) pos 1
-  n <- gets snd
-  return (Decl t (Vident n str) rv' pos) -- Should I return a bogus node?
+  n <- insertDecl pos t str
+  return (Decl t (Vident n str) rv' pos)
 renameStmt (Asgn lv rv p) = do
   lv' <- renameLValue lv
   rv' <- renameRValue rv
@@ -241,20 +249,17 @@ renameStmts ls = do
 
 renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
-  ( if params == nub params
-      then applyRename
-      else report "Duplicate parameters" pos 1 >> return undefined
-    )
+  params' <- mapM renameParam params
+  funcST <- asks snd
+  let
+    (n, _) = funcST ! str
+  ls' <- renameStmts ls
+  return (Func t (Fnident n str) params' ls' pos)
   where
-    applyRename = do
-      ns <- mapM (uncurry $ insertDecl pos) params
-      let
-        params' = zipWith ((mapPair id) . Vident) ns params
-      funcST <- asks snd
-      let
-        (n, _) = funcST ! str
-      ls' <- renameStmts ls
-      return (Func t (Fnident n str) params' ls' pos)
+    renameParam :: (WType, String) -> Analysis (WType, Vident)
+    renameParam (t, str) = do 
+      n <- insertDecl pos t str
+      return (t, Vident n str)
 
 renameProg :: Prog String String -> Analysis (Prog Fnident Vident)
 renameProg (Main fs ls p) = do
@@ -262,35 +267,60 @@ renameProg (Main fs ls p) = do
   ls' <- renameStmts ls
   return (Main fs' ls' p)
 
+--scopeAnalysis
+--  :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
+--scopeAnalysis p@(Main fs _ _) = pass2 maybeFuncST
+--  where
+--    (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
+--    pass2 :: Maybe FuncST -> Result [Error] (Prog Fnident Vident, VarST)
+--    pass2 Nothing = Failure (DList.toList errs1)
+--    pass2 (Just funcST)
+--      | null errs2 = Success (p', varST)
+--      | otherwise = Failure (DList.toList errs2)
+--      where
+--        errs2 :: DList Error
+--        (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)
+--
+--type Pass1 = RWS () (DList Error) Ctr (Maybe FuncST)
+--
+--foo :: [Func String String] -> Pass1
+--foo = foldM bar (Just Map.empty)
+--  where
+--    bar :: Maybe FuncST -> Func String String -> Pass1
+--    bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
+--      Just (_, origPos) -> do
+--        tell . DList.singleton $
+--          Error (alreadyDecl str origPos) pos (toEnum (length str))
+--        return Nothing
+--      Nothing -> do
+--        n <- freshN'
+--        return (Just (insert str (n, pos) funcST))
+--    bar Nothing _ = return Nothing
+--    freshN' = do
+--      modify (+ 1)
+--      get
+--
+
+
 scopeAnalysis
   :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
-scopeAnalysis p@(Main fs _ _) = pass2 maybeFuncST
+scopeAnalysis p@(Main fs ls pos)
+  | not (null errs1) = Failure errs1
+  | otherwise = case errs2 of
+      empty -> Success (p', varST)
+      _     -> Failure (DList.toList errs2)
   where
-    (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
-    pass2 :: Maybe FuncST -> Result [Error] (Prog Fnident Vident, VarST)
-    pass2 Nothing = Failure (DList.toList errs1)
-    pass2 (Just funcST)
-      | null errs2 = Success (p', varST)
-      | otherwise = Failure (DList.toList errs2)
-      where
-        errs2 :: DList Error
-        (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)
+    errs1 = pass1 (zip names poss)
+    names = map (\(Func _ str _ _ _) -> str) fs
+    poss = map (\(Func _ _ _ _ pos) -> pos) fs
+    n = toInteger $ length fs
+    funcST = Map.fromList $ zip names (zip [0..] poss)
+    (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)
 
-type Pass1 = RWS () (DList Error) Ctr (Maybe FuncST)
-
-foo :: [Func String String] -> Pass1
-foo = foldM bar (Just Map.empty)
+pass1 :: [(String, Pos)] -> [Error]
+pass1 fns = map mkErr dups
   where
-    bar :: Maybe FuncST -> Func String String -> Pass1
-    bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
-      Just (_, origPos) -> do
-        tell . DList.singleton $
-          Error (alreadyDecl str origPos) pos (toEnum (length str))
-        return Nothing
-      Nothing -> do
-        n <- freshN'
-        return (Just (insert str (n, pos) funcST))
-    bar Nothing _ = return Nothing
-    freshN' = do
-      modify (+ 1)
-      get
+    eqFsts = (==) `on` fst
+    dups = nub $ deleteFirstsBy eqFsts fns (nubBy eqFsts fns)
+    mkErr (str, pos) = Error ("in pos" ++ (show pos) ++ str ++ " is redefined") pos (toEnum (length str))
+
