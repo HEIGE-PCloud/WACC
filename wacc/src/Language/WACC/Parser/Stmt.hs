@@ -396,7 +396,7 @@ mkCall = label (Set.singleton "function call")
 Labels the function declaration in error messages.
 -}
 mkFunc' :: Parsec a -> Parsec a
-mkFunc' = label (Set.fromList ["function declaration"])
+mkFunc' = label (Set.singleton "function declaration")
 
 {- |
 Labels the array literal in error messages.
