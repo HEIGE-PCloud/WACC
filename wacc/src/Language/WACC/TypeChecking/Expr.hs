@@ -74,19 +74,19 @@ checkExpr (Sub x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (GT x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
   unless (t `elem` orderedTypes) (abortActual t)
-  pure BAny
+  pure BBool
 checkExpr (GTE x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
   unless (t `elem` orderedTypes) (abortActual t)
-  pure BAny
+  pure BBool
 checkExpr (LT x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
   unless (t `elem` orderedTypes) (abortActual t)
-  pure BAny
+  pure BBool
 checkExpr (LTE x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
   unless (t `elem` orderedTypes) (abortActual t)
-  pure BAny
+  pure BBool
 checkExpr (Eq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
 checkExpr (Ineq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
 checkExpr (And x y p) = unifyExprsAt p BBool [x] *> unifyExprsAt p BBool [y]
