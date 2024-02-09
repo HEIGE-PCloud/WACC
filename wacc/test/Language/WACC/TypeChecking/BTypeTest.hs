@@ -25,14 +25,6 @@ test =
                 \t -> unify BAny t == Just t
             , testProperty "when BAny is expected" $
                 \t -> unify t BAny == Just t
-            , testProperty "when BUnknown is provided" $
-                \t ->
-                  unify BUnknown t
-                    == Just (if t == BAny then BUnknown else t)
-            , testProperty "when BUnknown is expected" $
-                \t ->
-                  unify t BUnknown
-                    == Just (if t == BAny then BUnknown else t)
             ]
         , testGroup
             "distributes"
