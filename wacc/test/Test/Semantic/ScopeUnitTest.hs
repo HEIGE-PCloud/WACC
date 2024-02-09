@@ -1,8 +1,8 @@
 {- AUTOCOLLECT.TEST -}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Test.Semantic.ScopeUnitTest
   (
@@ -10,6 +10,7 @@ module Test.Semantic.ScopeUnitTest
   )
 where
 
+import Language.WACC.AST.Prog (Prog)
 import Language.WACC.Error
 import Language.WACC.Parser.Stmt
 import Language.WACC.Parser.Token
@@ -17,7 +18,6 @@ import Language.WACC.Semantic.Scope
 import Test.Tasty
 import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
-import Language.WACC.AST.Prog (Prog)
 
 test =
   testGroup "unitTests" [testGroup "scopeTests" [naming_fail_tests]]
@@ -174,8 +174,8 @@ badAddExpr = "begin\nint x = 2;\nbegin\nx = y + z\nend\nend\n"
 
 badSubExpr :: String
 badSubExpr = "begin\nint x = 2;\nbegin\nx = y - z\nend\nend\n"
-badGTExpr :: String
 
+badGTExpr :: String
 badGTExpr = "begin\nbool x = false;\nbegin\nx = y > z\nend\nend\n"
 
 badGTEExpr :: String
@@ -263,8 +263,8 @@ badIfElseStatementOneStatement = "begin\nint x = 5;\nbegin\nif true then y = 5 e
 
 badIfElseStatementTwoStatement :: String
 badIfElseStatementTwoStatement = "begin\nint x = 5;\nbegin\nif true then x = 5 else y = 6 fi\nend\nend\n"
-badWhileExprStatement :: String
 
+badWhileExprStatement :: String
 badWhileExprStatement = "begin\nint x = 5;\nbegin\nwhile y do x = 5 done\nend\nend\n"
 
 badWhileStatementOneStatement :: String
