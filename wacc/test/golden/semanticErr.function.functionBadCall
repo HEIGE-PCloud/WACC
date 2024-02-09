@@ -18,10 +18,10 @@ end
 	
 
 
-In test/wacc_examples/invalid/semanticErr/function/functionBadCall.wacc (line 15, column 10):
+In test/wacc_examples/invalid/semanticErr/function/functionBadCall.wacc (line 15, column 14):
 type error: expected a bool but found an int
 > 	end
 > 	bool b = call f() ;
->          ^
+>              ^
 > 	println b 
 

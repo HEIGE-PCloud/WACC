@@ -14,10 +14,10 @@ begin
   char c = 10
 end
 
-In test/wacc_examples/invalid/semanticErr/multiple/multiTypeErrs.wacc (line 12, column 7):
+In test/wacc_examples/invalid/semanticErr/multiple/multiTypeErrs.wacc (line 12, column 11):
 type error: expected an int but found a bool
 > begin
 >   int i = true ;
->       ^
+>           ^
 >   bool b = 'a' ;
 

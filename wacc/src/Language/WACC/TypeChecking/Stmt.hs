@@ -112,7 +112,7 @@ checkStmt (Decl wt v rv p) =
   | vt <- typeOf v
   , t' <- reportAt p t $ tryUnify vt t
   , rvt <- checkRValue rv
-  , _ <- reportAt p t $ tryUnify rvt t'
+  , _ <- reportAt rv t $ tryUnify rvt t'
   ]
   where
     t = fix wt

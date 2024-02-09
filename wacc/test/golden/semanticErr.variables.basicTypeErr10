@@ -13,10 +13,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/variables/basicTypeErr10.wacc (line 12, column 10):
+In test/wacc_examples/invalid/semanticErr/variables/basicTypeErr10.wacc (line 12, column 14):
 type error: expected a string but found an int
 > begin
 >   string s = 128
->          ^
+>              ^
 > end
 

@@ -13,10 +13,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/variables/basicTypeErr07.wacc (line 12, column 8):
+In test/wacc_examples/invalid/semanticErr/variables/basicTypeErr07.wacc (line 12, column 12):
 type error: expected a char but found an int
 > begin
 >   char c = 1
->        ^
+>            ^
 > end
 

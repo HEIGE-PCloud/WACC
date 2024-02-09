@@ -13,10 +13,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/pairs/badPairAssign.wacc (line 12, column 7):
+In test/wacc_examples/invalid/semanticErr/pairs/badPairAssign.wacc (line 12, column 11):
 type error: expected an int but found a pair of an int and an int (pair(int, int))
 > begin
 >   int x = newpair(10, 20)
->       ^
+>           ^
 > end
 
