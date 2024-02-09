@@ -25,7 +25,7 @@ end
 
 Syntax error in test/wacc_examples/invalid/syntaxErr/function/funcExpr2.wacc (line 17, column 13):
 unexpected "f(x)"
-expected chr, len, negation, not, or ord
+expected unary operator
 function calls may not appear in expressions and must use `call`
 
 >   int x = 2 ;
