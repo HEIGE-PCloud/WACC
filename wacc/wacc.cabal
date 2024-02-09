@@ -30,6 +30,7 @@ library
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
       Language.WACC.Semantic.Scope
+      Language.WACC.TypeChecking
       Language.WACC.TypeChecking.BType
       Language.WACC.TypeChecking.Error
       Language.WACC.TypeChecking.Expr
