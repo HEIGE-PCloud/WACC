@@ -18,12 +18,10 @@ end
 	
 
 
-In test/wacc_examples/invalid/syntaxErr/function/functionNoReturn.wacc (line 13, column 3):
-Function can only be exited via a 'return' or 'exit' statement.
-  There must not be any code following the last 'return' or 'exit' of any execution path.
-
+In test/wacc_examples/invalid/syntaxErr/function/functionNoReturn.wacc (line 12, column 5):
+Function can only be exited via a 'return' or 'exit' statement. There must not be any code following the last 'return' or 'exit' of any execution path.
+>   int f() is
 >     bool b = true 
+>     ^
 >   end
->   ^
-> 
 

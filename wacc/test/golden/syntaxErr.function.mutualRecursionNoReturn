@@ -31,12 +31,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/function/mutualRecursionNoReturn.wacc (line 27, column 3):
-Function can only be exited via a 'return' or 'exit' statement.
-  There must not be any code following the last 'return' or 'exit' of any execution path.
-
+In test/wacc_examples/invalid/syntaxErr/function/mutualRecursionNoReturn.wacc (line 26, column 5):
+Function can only be exited via a 'return' or 'exit' statement. There must not be any code following the last 'return' or 'exit' of any execution path.
+>     println y ;
 >     int z = call r1(y - 1)
+>     ^
 >   end
->   ^
-> 
 

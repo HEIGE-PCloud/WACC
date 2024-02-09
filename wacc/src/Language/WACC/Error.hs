@@ -4,7 +4,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Language.WACC.Error (printError, parseWithError, Error (..), isSuccess, isFailure) where
+module Language.WACC.Error (printError, Error (..), isSuccess, isFailure) where
 
 import Data.List.Extra ((!?))
 import Data.List.NonEmpty (NonEmpty)
@@ -58,9 +58,6 @@ import Text.Gigaparsec.Errors.ErrorBuilder
 import Text.Gigaparsec.Errors.TokenExtractors
 import Text.Gigaparsec.Position (Pos)
 import qualified Text.Gigaparsec.Token.Lexer as T
-
-parseWithError :: Parsec a -> String -> Result Error a
-parseWithError = parse
 
 isSuccess :: Result e a -> Bool
 isSuccess (Success _) = True

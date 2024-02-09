@@ -27,12 +27,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/function/functionConditionalNoReturn.wacc (line 17, column 3):
-Function can only be exited via a 'return' or 'exit' statement.
-  There must not be any code following the last 'return' or 'exit' of any execution path.
-
+In test/wacc_examples/invalid/syntaxErr/function/functionConditionalNoReturn.wacc (line 15, column 7):
+Function can only be exited via a 'return' or 'exit' statement. There must not be any code following the last 'return' or 'exit' of any execution path.
+>     else
+>       skip
+>       ^
 >     fi
->   end
->   ^
->   bool g ( bool b ) is
 

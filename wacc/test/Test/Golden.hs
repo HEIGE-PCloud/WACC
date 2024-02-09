@@ -6,8 +6,8 @@ module Test.Golden
 where
 
 import Data.ByteString.Lazy.UTF8 (fromString)
-import Language.WACC.Error (Error (..), parseWithError, printError)
-import Language.WACC.Parser.Stmt (program)
+import Language.WACC.Error (Error (..), printError)
+import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (scopeAnalysis)
 import Language.WACC.TypeChecking.Prog (typeCheck)
