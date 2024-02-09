@@ -49,7 +49,8 @@ runScopeAnalysis printError' ast = case scopeAnalysis ast of
     exitWithSemanticError
   Success res -> runTypeCheck printError' res
 
-runTypeCheck :: (String -> Error -> String) -> (Prog Fnident Vident, VarST) -> IO ()
+runTypeCheck
+  :: (String -> Error -> String) -> (Prog Fnident Vident, VarST) -> IO ()
 runTypeCheck printError' ast = case uncurry checkTypes ast of
   [] -> exitSuccess
   errs -> do
