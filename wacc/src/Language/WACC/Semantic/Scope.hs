@@ -249,6 +249,7 @@ renameStmts ls = do
 
 renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
+  modify $ mapPair (const Data.Map.empty) id
   params' <- mapM renameParam params
   funcST <- asks snd
   let
@@ -267,55 +268,23 @@ renameProg (Main fs ls p) = do
   ls' <- renameStmts ls
   return (Main fs' ls' p)
 
---scopeAnalysis
---  :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
---scopeAnalysis p@(Main fs _ _) = pass2 maybeFuncST
---  where
---    (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
---    pass2 :: Maybe FuncST -> Result [Error] (Prog Fnident Vident, VarST)
---    pass2 Nothing = Failure (DList.toList errs1)
---    pass2 (Just funcST)
---      | null errs2 = Success (p', varST)
---      | otherwise = Failure (DList.toList errs2)
---      where
---        errs2 :: DList Error
---        (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)
---
---type Pass1 = RWS () (DList Error) Ctr (Maybe FuncST)
---
---foo :: [Func String String] -> Pass1
---foo = foldM bar (Just Map.empty)
---  where
---    bar :: Maybe FuncST -> Func String String -> Pass1
---    bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
---      Just (_, origPos) -> do
---        tell . DList.singleton $
---          Error (alreadyDecl str origPos) pos (toEnum (length str))
---        return Nothing
---      Nothing -> do
---        n <- freshN'
---        return (Just (insert str (n, pos) funcST))
---    bar Nothing _ = return Nothing
---    freshN' = do
---      modify (+ 1)
---      get
---
-
-
 scopeAnalysis
   :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
 scopeAnalysis p@(Main fs ls pos)
   | not (null errs1) = Failure errs1
-  | otherwise = case errs2 of
-      empty -> Success (p', varST)
-      _     -> Failure (DList.toList errs2)
+  | otherwise = pass2 (DList.toList errs2)
   where
+    pass2 e2
+      | not (null e2) = Failure e2
+      | otherwise     = Success (p', varST)
     errs1 = pass1 (zip names poss)
     names = map (\(Func _ str _ _ _) -> str) fs
     poss = map (\(Func _ _ _ _ pos) -> pos) fs
     n = toInteger $ length fs
-    funcST = Map.fromList $ zip names (zip [0..] poss)
-    (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)
+    funcST = Map.fromList $ zip names (zip [1..] poss)
+    (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n + 1)
+
+
 
 pass1 :: [(String, Pos)] -> [Error]
 pass1 fns = map mkErr dups
