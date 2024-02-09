@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 
 {- |
 Defines the parser for WACC statements.
@@ -15,10 +16,12 @@ module Language.WACC.Parser.Stmt
   , argList
   , pairElem
   , arrayLiter
+  , checkFunc
+  , parseWithError
   )
 where
 
-import Control.Applicative (liftA3)
+import Control.Applicative (asum, liftA3)
 import Data.List.NonEmpty (fromList)
 import Data.List.NonEmpty as D (NonEmpty ((:|)), last)
 import qualified Data.Set as Set
@@ -32,11 +35,22 @@ import Language.WACC.AST.Stmt
   , Stmts
   )
 import Language.WACC.AST.WType (WType)
+import Language.WACC.Error (Error (Error, errorMessage, position, width))
 import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, eof, many, some, ($>), (<|>), (<~>))
+import Text.Gigaparsec
+  ( Parsec
+  , Result (Failure, Success)
+  , eof
+  , many
+  , parse
+  , some
+  , ($>)
+  , (<|>)
+  , (<~>)
+  )
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
 import Text.Gigaparsec.Errors.ErrorGen
@@ -97,7 +111,7 @@ Disambiguating statement declarations from function calls.
 func' :: Parsec ([(WType, String)], Stmts String String)
 func' =
   ((concat <$> option paramList) <* ")")
-    <~> ("is" *> (stmts >>= checkExit) <* ("end" <|> _unclosedEnd "function body"))
+    <~> ("is" *> stmts <* ("end" <|> _unclosedEnd "function body"))
 
 {- |
 Parser that handles sequential statements.
@@ -171,32 +185,51 @@ func =
     wType
     identifier
     ("(" *> (concat <$> option paramList) <* ")")
-    ("is" *> (stmts >>= checkExit) <* "end")
+    ("is" *> stmts <* "end")
 
-{- |
-Returns the input list if the last statement is a return or exit statement. Reports an error otherwise.
--}
-checkExit :: Stmts fnident ident -> Parsec (Stmts fnident ident)
-checkExit ss
-  | funcExit (D.last ss) = pure ss
-  | otherwise =
-      E.fail $
-        "Function can only be exited via a 'return' or 'exit' statement.\n \
-        \ There must not be any code following the last 'return' or 'exit' of any execution path."
-          :| []
+checkFunc :: Prog fnident ident -> Result Error (Prog fnident ident)
+checkFunc s@(Main [] _ _) = Success s
+checkFunc s@(Main fs _ _) = case res of
+  Just p ->
+    Failure
+      Error
+        { errorMessage =
+            "Function can only be exited via a 'return' or 'exit' statement. \
+            \There must not be any code following the last 'return' or 'exit' of any execution path."
+        , position = p
+        , width = 1
+        }
+  Nothing -> Success s
+  where
+    checkFunc' (Func _ _ _ ss _) = funcExit (D.last ss)
+    res = asum $ map checkFunc' fs
 
-{- |
-Reports whether the last statement is a return or exit statement.
--}
-funcExit :: Stmt fnident ident -> Bool
-funcExit (Return _ _) = True
-funcExit (Exit _ _) = True
+--   where
+--     [s | (Func _ _ _ sts) <- fs, s <- D.toList sts]
+
+funcExit :: Stmt fnident ident -> Maybe Pos
+funcExit (Return _ _) = Nothing
+funcExit (Exit _ _) = Nothing
 funcExit (IfElse _ s1 s2 _) =
   funcExit (D.last s1)
-    && funcExit (D.last s2)
+    <|> funcExit (D.last s2)
 funcExit (While _ s _) = funcExit (D.last s)
 funcExit (BeginEnd s _) = funcExit (D.last s)
-funcExit _ = False
+funcExit (Skip p) = Just p
+funcExit (Decl _ _ _ p) = Just p
+funcExit (Asgn _ _ p) = Just p
+funcExit (Read _ p) = Just p
+funcExit (Free _ p) = Just p
+funcExit (Print _ p) = Just p
+funcExit (PrintLn _ p) = Just p
+
+parseWithError
+  :: Parsec (Prog fnident ident) -> String -> Result Error (Prog fnident ident)
+parseWithError parser sourceCode = case res of
+  Success x -> checkFunc x
+  e -> e
+  where
+    res = parse @Error parser sourceCode
 
 -- | > <param> ::= <type> <identifier>
 param :: Parsec (WType, String)
@@ -264,7 +297,7 @@ newPair = mkRVNewPair ("newpair" *> "(" *> expr) ("," *> expr <* ")")
 
 -- | > <pair-elem> ::= "fst" <lvalue> | "snd" <lvalue>
 pairElem :: Parsec (PairElem String)
-pairElem = ("fst" *> mkFstElem lValue) <|> ("snd" *> mkSndElem lValue)
+pairElem = mkFstElem ("fst" *> lValue) <|> mkSndElem ("snd" *> lValue)
 
 -- | > <fn-call> ::= <identifier> '(' <argList>? ')'
 fnCall :: Parsec (RValue String String)
@@ -305,15 +338,15 @@ stmt :: Parsec (Stmt String String)
 stmt =
   _funcLateDefine
     *> choice
-      [ "skip" *> mkSkip
+      [ mkSkip <* "skip"
       , decl
       , asgn
-      , "read" *> mkRead lValue
-      , "free" *> mkFree expr
-      , "return" *> mkReturn expr
-      , "exit" *> mkExit expr
-      , "print" *> mkPrint expr
-      , "println" *> mkPrintLn (expr <|> _arrayLiteral <|> _pairLookup)
+      , mkRead $ "read" *> lValue
+      , mkFree $ "free" *> expr
+      , mkReturn $ "return" *> expr
+      , mkExit $ "exit" *> expr
+      , mkPrint $ "print" *> expr
+      , mkPrintLn ("println" *> (expr <|> _arrayLiteral <|> _pairLookup))
       , ifElse
       , while
       , beginEnd
