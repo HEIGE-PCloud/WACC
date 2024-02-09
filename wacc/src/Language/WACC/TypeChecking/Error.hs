@@ -111,6 +111,10 @@ formatType t
 mkTypeErrorMessage :: [String] -> String
 mkTypeErrorMessage = concat . ("type error: " :)
 
+pluralS :: Int -> String
+pluralS 1 = ""
+pluralS _ = "s"
+
 {- |
 Convert a 'TypeError' into an 'Error' for printing.
 -}
@@ -131,9 +135,12 @@ convertTypeError (FunctionCallArityError actN expN p) =
     ( mkTypeErrorMessage
         [ "expected "
         , show expN
-        , " arguments but found "
+        , " argument"
+        , pluralS expN
+        , " but found "
         , show actN
-        , " arguments"
+        , " argument"
+        , pluralS actN
         ]
     )
     p
