@@ -119,7 +119,7 @@ checkStmt (Decl wt v rv p) =
 checkStmt (Asgn lv rv p) = reportAt p BAny $ do
   rvt <- checkRValue rv
   lvt <- checkLValue lv
-  t <- reportAt p lvt $ tryUnify rvt lvt
+  t <- reportAt rv lvt $ tryUnify rvt lvt
   when (t == BAny) (abortWith $ UnknownAssignmentError p)
   pure BAny
 checkStmt (Read lv p) = reportAt p BAny $ do
