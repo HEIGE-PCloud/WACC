@@ -4,7 +4,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Language.WACC.Error (printError, parseWithError, Error (..)) where
+module Language.WACC.Error (printError, parseWithError, Error (..), isSuccess, isFailure) where
 
 import Data.List.Extra ((!?))
 import Data.List.NonEmpty (NonEmpty)
@@ -12,7 +12,7 @@ import Data.Maybe (catMaybes)
 import Data.Set (Set, toList)
 import Data.String (IsString (fromString))
 import Language.WACC.Parser.Token (keywords, nonlexeme, operators)
-import Text.Gigaparsec (Parsec, Result, parse, ($>))
+import Text.Gigaparsec (Parsec, Result (..), parse, ($>))
 import Text.Gigaparsec.Char (whitespace)
 import Text.Gigaparsec.Errors.DefaultErrorBuilder
   ( StringBuilder (..)
@@ -61,6 +61,13 @@ import qualified Text.Gigaparsec.Token.Lexer as T
 
 parseWithError :: Parsec a -> String -> Result Error a
 parseWithError = parse
+
+isSuccess :: Result e a -> Bool
+isSuccess (Success _) = True
+isSuccess (Failure _) = False
+
+isFailure :: Result e a -> Bool
+isFailure = not . isSuccess
 
 data Error = Error {errorMessage :: String, position :: Pos, width :: Word}
 

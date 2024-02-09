@@ -44,10 +44,10 @@ runParse filename = do
 
 runScopeAnalysis :: (Error -> String) -> Prog String String -> IO ()
 runScopeAnalysis printError' ast = case scopeAnalysis ast of
-  Left errs -> do
+  Failure errs -> do
     mapM_ (putStrLn . printError') errs
     exitWithSemanticError
-  Right res -> runTypeCheck printError' res
+  Success res -> runTypeCheck printError' res
 
 runTypeCheck :: (Error -> String) -> (Prog Fnident Vident, VarST) -> IO ()
 runTypeCheck printError' ast = case typeCheck ast of

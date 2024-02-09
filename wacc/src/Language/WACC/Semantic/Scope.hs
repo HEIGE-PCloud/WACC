@@ -41,6 +41,7 @@ import Language.WACC.AST
   )
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error
+import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT, reverse, unzip)
 
@@ -262,15 +263,15 @@ renameProg (Main fs ls p) = do
   return (Main fs' ls' p)
 
 scopeAnalysis
-  :: Prog String String -> Either [Error] (Prog Fnident Vident, VarST)
+  :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
 scopeAnalysis p@(Main fs ls _) = pass2 maybeFuncST
   where
     (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
-    pass2 :: Maybe FuncST -> Either [Error] (Prog Fnident Vident, VarST)
-    pass2 Nothing = Left (DList.toList errs1)
+    pass2 :: Maybe FuncST -> Result [Error] (Prog Fnident Vident, VarST)
+    pass2 Nothing = Failure (DList.toList errs1)
     pass2 (Just funcST)
-      | null errs2 = Right (p', varST)
-      | otherwise = Left (DList.toList errs2)
+      | null errs2 = Success (p', varST)
+      | otherwise = Failure (DList.toList errs2)
       where
         errs2 :: DList Error
         (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)

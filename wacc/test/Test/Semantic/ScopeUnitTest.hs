@@ -13,6 +13,7 @@ import Control.Monad.Trans.Except
 import qualified Data.DList as DL
 import Data.Either
 import qualified Data.Map as Map
+import Language.WACC.Error
 import Language.WACC.Parser.Stmt
 import Language.WACC.Parser.Token
 import Language.WACC.Semantic.Scope
@@ -24,7 +25,7 @@ test =
   testGroup "unitTests" [testGroup "scopeTests" [naming_fail_tests]]
 
 hasErrored :: String -> Bool
-hasErrored code = isLeft (scopeAnalysis t)
+hasErrored code = isFailure (scopeAnalysis t)
   where
     (Success t) = parse @String (fully program) code
 
