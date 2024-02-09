@@ -16,6 +16,7 @@ end
 In test/wacc_examples/invalid/syntaxErr/expressions/printlnConcat.wacc (line 12, column 22):
 unexpected space
 expected digit
+
 > begin
 >   println "Hello " ++ "World!"
 >                      ^

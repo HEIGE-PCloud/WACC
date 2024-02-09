@@ -17,6 +17,7 @@ end
 In test/wacc_examples/invalid/syntaxErr/array/arrayExpr.wacc (line 12, column 23):
 unexpected operator +
 expected ";" or end
+
 > begin
 >   int[] b = [1, 2, 3] ++ [4] ;
 >                       ^

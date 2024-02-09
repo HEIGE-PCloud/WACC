@@ -19,7 +19,6 @@ import Text.Gigaparsec.Errors.DefaultErrorBuilder
   , disjunct
   , endOfInputDefault
   , expectedDefault
-  , intercalate
   , namedDefault
   , rawDefault
   , unexpectedDefault
@@ -91,7 +90,7 @@ instance ErrorBuilder Error where
   format :: Position Error -> Source Error -> ErrorInfoLines Error -> Error
   format p _ (ls, w) =
     Error
-      { errorMessage = intercalate "\n" ls
+      { errorMessage = unlines ls
       , position = p
       , width = w
       }

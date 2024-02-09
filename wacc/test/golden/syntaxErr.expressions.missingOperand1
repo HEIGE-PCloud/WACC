@@ -17,6 +17,7 @@ In test/wacc_examples/invalid/syntaxErr/expressions/missingOperand1.wacc (line 1
 unexpected operator *
 expected array literal, expression, fst, function call, newpair, or snd
 expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
+
 > begin
 >   int b = * 6
 >           ^

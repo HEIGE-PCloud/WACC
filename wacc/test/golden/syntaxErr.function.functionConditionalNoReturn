@@ -30,6 +30,7 @@ end
 In test/wacc_examples/invalid/syntaxErr/function/functionConditionalNoReturn.wacc (line 17, column 3):
 Function can only be exited via a 'return' or 'exit' statement.
   There must not be any code following the last 'return' or 'exit' of any execution path.
+
 >     fi
 >   end
 >   ^

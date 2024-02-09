@@ -18,6 +18,7 @@ end
 In test/wacc_examples/invalid/syntaxErr/while/dooErr.wacc (line 12, column 17):
 unexpected "o"
 expected end of do
+
 > begin
 >   while false doo
 >                 ^

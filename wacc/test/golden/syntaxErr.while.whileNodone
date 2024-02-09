@@ -18,6 +18,7 @@ In test/wacc_examples/invalid/syntaxErr/while/whileNodone.wacc (line 14, column 
 unexpected keyword end
 expected ";" or done
 unclosed while loop
+
 >     skip
 > end
 > ^^^
