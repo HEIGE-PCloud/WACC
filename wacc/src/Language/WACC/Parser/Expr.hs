@@ -18,7 +18,7 @@ module Language.WACC.Parser.Expr
 where
 
 import Control.Applicative (liftA3)
-import Data.Set (fromList)
+import Data.Set (singleton)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Token
@@ -28,7 +28,7 @@ import Language.WACC.Parser.Token
   , negateOp
   , stringLiteral
   )
-import Text.Gigaparsec (Parsec, many, some, ($>), (<|>))
+import Text.Gigaparsec (Parsec, some, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy)
 import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Errors.Patterns (preventativeExplain)
@@ -174,37 +174,37 @@ expr =
 Lifted Constructor for the 'WAtom' 'int' literal.
 -}
 mkIntLit' :: Parsec Integer -> Parsec (WAtom ident)
-mkIntLit' = label (fromList ["integer"]) . mkIntLit
+mkIntLit' = label (singleton "integer") . mkIntLit
 
 {- |
 Lifted Constructor for the 'WAtom' 'bool' literal.
 -}
 mkBoolLit' :: Parsec Bool -> Parsec (WAtom ident)
-mkBoolLit' = label (fromList ["boolean"]) . mkBoolLit
+mkBoolLit' = label (singleton "boolean") . mkBoolLit
 
 {- |
 Lifted constructor for the 'WAtom' 'char' literal.
 -}
 mkCharLit' :: Parsec Char -> Parsec (WAtom ident)
-mkCharLit' = label (fromList ["character literal"]) . mkCharLit
+mkCharLit' = label (singleton "character literal") . mkCharLit
 
 {- |
 Lifted constructor for the 'WAtom' 'string' literal.
 -}
 mkStringLit' :: Parsec String -> Parsec (WAtom ident)
-mkStringLit' = label (fromList ["strings"]) . mkStringLit
+mkStringLit' = label (singleton "strings") . mkStringLit
 
 {- |
 Lifted constructor for the 'WAtom' 'null' literal.
 -}
 mkNull' :: Parsec (WAtom ident)
-mkNull' = label (fromList ["null"]) mkNull
+mkNull' = label (singleton "null") mkNull
 
 {- |
 Lifted constructor for the 'WAtom' identifier literal.
 -}
 mkIdent' :: Parsec String -> Parsec (WAtom String)
-mkIdent' = label (fromList ["identifier"]) . mkIdent
+mkIdent' = label (singleton "identifier") . mkIdent
 
 {- |
 Constructs a parser for the 'Expr' with error messages for expected values.
@@ -213,13 +213,13 @@ mkExpr' :: Parsec a -> Parsec a
 mkExpr' =
   explain
     "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses"
-    . label (fromList ["expression"])
+    . label (singleton "expression")
 
 {- |
 Lifted constructor for the 'WAtom' 'array' element.
 -}
 mkArrayElem' :: Parsec (ArrayIndex String) -> Parsec (WAtom String)
-mkArrayElem' = label (fromList ["array element"]) . mkArrayElem
+mkArrayElem' = label (singleton "array element") . mkArrayElem
 
 {- |
 Unit Parser to annnotate error messages for function calls in expressions.
