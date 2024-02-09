@@ -79,7 +79,8 @@ unifyStmts
   => BType
   -> Stmts fnident ident
   -> TypingM fnident ident BType
-unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t . sort
+unifyStmts t ss =
+  traverse (resumeAfter . checkStmt) ss >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Pos' with a @unifyStmts@ action.

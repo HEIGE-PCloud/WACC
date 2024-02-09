@@ -21,3 +21,17 @@ type error: expected an int but found a bool
 >           ^
 >   bool b = 'a' ;
 
+Semantic error in test/wacc_examples/invalid/semanticErr/multiple/multiTypeErrs.wacc (line 13, column 12):
+type error: expected a bool but found a char
+>   int i = true ;
+>   bool b = 'a' ;
+>            ^
+>   char c = 10
+
+Semantic error in test/wacc_examples/invalid/semanticErr/multiple/multiTypeErrs.wacc (line 14, column 12):
+type error: expected a char but found an int
+>   bool b = 'a' ;
+>   char c = 10
+>            ^
+> end
+

@@ -19,6 +19,7 @@ module Language.WACC.TypeChecking.State
   , TypeErrors
   , reportAt
   , abortWith
+  , resumeAfter
   )
 where
 
@@ -29,7 +30,7 @@ import Data.DList (DList)
 import Data.Map (Map, insert, (!?))
 import Data.Maybe (fromMaybe)
 import Language.WACC.AST (HasPos (getPos))
-import Language.WACC.TypeChecking.BType (BType, FnType, unify)
+import Language.WACC.TypeChecking.BType (BType (BAny), FnType, unify)
 import Language.WACC.TypeChecking.Error
 import Text.Gigaparsec.Position (Pos)
 
@@ -135,3 +136,11 @@ Report a specialised 'TypeError' and abort.
 -}
 abortWith :: TypeError -> TypingM fnident ident a
 abortWith err = lift (tell [err]) *> abort
+
+{- |
+Allow type checking to continue after an error was reported.
+
+Returns 'BAny' if an exception was caught.
+-}
+resumeAfter :: TypingM fnident ident BType -> TypingM fnident ident BType
+resumeAfter action = catchE action (const $ pure BAny)
