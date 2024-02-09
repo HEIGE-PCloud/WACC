@@ -28,6 +28,7 @@ import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS, tell)
 import Data.DList (DList)
 import Data.Map (Map, insert, (!?))
 import Data.Maybe (fromMaybe)
+import Language.WACC.AST (HasPos (getPos))
 import Language.WACC.TypeChecking.BType (BType, FnType, unify)
 import Language.WACC.TypeChecking.Error
 import Text.Gigaparsec.Position (Pos)
@@ -89,8 +90,8 @@ abort = throwE (Nothing, Nothing)
 {- |
 Abort a type check, overriding the position of the type error.
 -}
-abortOverridePos :: Pos -> TypingM fnident ident a
-abortOverridePos = throwE . (Nothing,) . pure
+abortOverridePos :: (HasPos a) => a -> TypingM fnident ident a
+abortOverridePos = throwE . (Nothing,) . pure . getPos
 
 {- |
 Abort a type check, saving an invalid actual type.
@@ -102,8 +103,8 @@ abortActual = throwE . (,Nothing) . pure
 Abort a type check, saving an invalid actual type and overriding the position of
 the type error.
 -}
-abortActualOverridePos :: BType -> Pos -> TypingM fnident ident a
-abortActualOverridePos t p = throwE (pure t, pure p)
+abortActualOverridePos :: (HasPos a) => BType -> a -> TypingM fnident ident a
+abortActualOverridePos t x = throwE (pure t, pure $ getPos x)
 
 {- |
 @tryUnify actT expT@ attempts to unify an actual type @actT@ with an expected
