@@ -300,6 +300,10 @@ errorConfig =
           , ("int", label (S.singleton "type"))
           , ("pair", label (S.singleton "type"))
           , ("string", label (S.singleton "type"))
+          , ("!", label (S.singleton "unary operator"))
+          , ("len", label (S.singleton "unary operator"))
+          , ("ord", label (S.singleton "unary operator"))
+          , ("chr", label (S.singleton "unary operator"))
           ]
     , labelEscapeEnd =
         labelAndReason
@@ -389,7 +393,7 @@ Parser for disambiguating between a negative integer literal and a negation oper
 negateOp :: Parsec ()
 negateOp =
   E.label
-    (S.singleton "negation")
+    (S.singleton "unary operator")
     (T.apply lexeme (atomic (void (char '-' <* notFollowedBy digit))))
 
 {- |
