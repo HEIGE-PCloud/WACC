@@ -119,15 +119,11 @@ checkStmt (Asgn lv rv p) =
   , _ <- reportAt p lvt $ tryUnify rvt lvt
   ]
 checkStmt (Read lv _) = BAny <$ checkLValue lv
-checkStmt (Free x _) =
-  [ BAny
-  | t <- checkExpr x
-  , let
-      t' = case t of
-        BFixed ft -> BFixed $ BAny <$ ft
-        _ -> t
-  , t' `elem` heapAllocatedTypes
-  ]
+-- FIXME: add specialised error message for expected heap-allocated type
+checkStmt (Free x p) = reportAt p BAny $ do
+  t <- checkExpr x
+  unless (isHeapAllocated t) (abortActual t)
+  pure BAny
 checkStmt (Return x _) = checkExpr x
 checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x

@@ -9,7 +9,7 @@ module Language.WACC.TypeChecking.BType
   , FixedType
   , fix
   , orderedTypes
-  , heapAllocatedTypes
+  , isHeapAllocated
   , FnType (..)
   , unify
   )
@@ -98,10 +98,13 @@ orderedTypes :: [BType]
 orderedTypes = [BInt, BChar]
 
 {- |
-Valid parameter types for @free@.
+Predicate for valid parameter types for @free@.
 -}
-heapAllocatedTypes :: [BType]
-heapAllocatedTypes = [BArray BAny, BErasedPair, BKnownPair BAny BAny]
+isHeapAllocated :: BType -> Bool
+isHeapAllocated (BArray _) = True
+isHeapAllocated BErasedPair = True
+isHeapAllocated (BKnownPair _ _) = True
+isHeapAllocated _ = False
 
 {- |
 Convert a 'WType' into a fixed 'BType'.
