@@ -15,7 +15,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/variables/undeclaredVarAccess.wacc (line 13, column 11):
-Variable "y" was not declared.
+scope error: variable "y" was not declared
 >   int x = 10 ;
 >   x = x + y
 >           ^

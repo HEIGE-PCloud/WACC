@@ -18,7 +18,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/functionAssign.wacc (line 16, column 3):
-Variable "f" was not declared.
+scope error: variable "f" was not declared
 >   
 >   f = 2
 >   ^

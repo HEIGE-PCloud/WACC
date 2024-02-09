@@ -19,7 +19,7 @@ begin
 end
 
 Semantic error in test/wacc_examples/invalid/semanticErr/multiple/ifAndWhileErrs.wacc (line 12, column 9):
-Variable "tru" was not declared.
+scope error: variable "tru" was not declared
 > begin
 >   while tru do
 >         ^^^

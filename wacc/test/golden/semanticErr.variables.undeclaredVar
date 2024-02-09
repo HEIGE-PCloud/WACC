@@ -14,7 +14,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/variables/undeclaredVar.wacc (line 12, column 3):
-Variable "x" was not declared.
+scope error: variable "x" was not declared
 > begin
 >   x = 10
 >   ^

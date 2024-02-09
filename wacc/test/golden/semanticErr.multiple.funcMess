@@ -24,7 +24,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/multiple/funcMess.wacc (line 13, column 5):
-Variable "x" was not declared.
+scope error: variable "x" was not declared
 >   int f(bool b) is
 >     x = -1 ;
 >     ^
