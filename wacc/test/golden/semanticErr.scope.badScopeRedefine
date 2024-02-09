@@ -19,3 +19,10 @@ end
 
 
 
+In test/wacc_examples/invalid/semanticErr/scope/badScopeRedefine.wacc (line 15, column 9):
+type error: expected a bool but found an int
+>     bool x = true ;
+>     x = 5
+>         ^
+>   end ;
+

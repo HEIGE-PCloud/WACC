@@ -18,3 +18,10 @@ end
 	
 
 
+In test/wacc_examples/invalid/semanticErr/function/functionOverArgs.wacc (line 15, column 13):
+type error: expected 2 arguments but found 3 arguments
+> 	end
+> 	int x = call f(1,2,3);
+>             ^
+> 	println x
+

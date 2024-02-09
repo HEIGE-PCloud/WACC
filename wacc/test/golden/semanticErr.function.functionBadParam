@@ -18,3 +18,10 @@ end
 	
 
 
+In test/wacc_examples/invalid/semanticErr/function/functionBadParam.wacc (line 16, column 11):
+type error: expected an int but found a bool
+> 	bool b = true ; 
+>   int x = call f(b) 
+>           ^
+> end
+

@@ -7,7 +7,7 @@ import Language.WACC.Error (Error, printError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (Fnident, VarST, Vident, scopeAnalysis)
-import Language.WACC.TypeChecking.Prog (typeCheck)
+import Language.WACC.TypeChecking (checkTypes)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
 import Text.Gigaparsec (Result (..))
@@ -50,11 +50,11 @@ runScopeAnalysis printError' ast = case scopeAnalysis ast of
   Success res -> runTypeCheck printError' res
 
 runTypeCheck :: (Error -> String) -> (Prog Fnident Vident, VarST) -> IO ()
-runTypeCheck printError' ast = case typeCheck ast of
-  Failure errs -> do
+runTypeCheck printError' ast = case uncurry checkTypes ast of
+  [] -> exitSuccess
+  errs -> do
     mapM_ (putStrLn . printError') errs
     exitWithSemanticError
-  Success _ -> exitSuccess
 
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure

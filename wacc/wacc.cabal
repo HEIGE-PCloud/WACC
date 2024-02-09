@@ -20,6 +20,7 @@ library
   exposed-modules:
       Language.WACC.AST
       Language.WACC.AST.Expr
+      Language.WACC.AST.HasPos
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
@@ -30,7 +31,9 @@ library
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
       Language.WACC.Semantic.Scope
+      Language.WACC.TypeChecking
       Language.WACC.TypeChecking.BType
+      Language.WACC.TypeChecking.Error
       Language.WACC.TypeChecking.Expr
       Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State

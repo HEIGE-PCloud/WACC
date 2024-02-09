@@ -27,8 +27,6 @@ A bounded WACC type.
 data BType
   = -- | Any type. Unifies with all types.
     BAny
-  | -- | Unknown type. Unifies with all types.
-    BUnknown
   | -- | Fixed type.
     BFixed FixedType
   deriving (Eq, Generic, Ord, Show)
@@ -82,7 +80,6 @@ pattern BArray t = BFixed (WArrayF t)
 
 {-# COMPLETE
   BAny
-  , BUnknown
   , BInt
   , BBool
   , BChar
@@ -123,8 +120,6 @@ unifyParam :: BType -> BType -> Maybe BType
 -- BAny and BUnknown always unify.
 unifyParam BAny t = Just t
 unifyParam t BAny = Just t
-unifyParam BUnknown t = Just t
-unifyParam t BUnknown = Just t
 -- Identical types always unify.
 unifyParam bt1 bt2
   | bt1 == bt2 = Just bt1

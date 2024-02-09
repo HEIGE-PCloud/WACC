@@ -6,16 +6,16 @@ module Language.WACC.TypeChecking.Expr
   , checkExpr
   , unifyExprs
   , unifyExprsAt
+  , tryUnifyExprs
   , checkArrayIndex
   )
 where
 
 import Control.Monad (foldM, unless)
 import Data.List (sort)
-import Language.WACC.AST.Expr
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
-import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
 {- |
@@ -25,8 +25,12 @@ checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
 checkArrayIndex (ArrayIndex v xs p) =
   reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
   where
-    go (BArray t) x = t <$ unifyExprs BInt [x]
-    go t _ = abortActual t
+    go (BArray t) x = t <$ reportAt x BInt (unifyExprs BInt [x])
+    -- Move the caret one character to the left to align it with the opening
+    -- bracket.
+    go t x = abortActualOverridePos t (tryPred <$> getPos x)
+    tryPred 0 = 0
+    tryPred n = pred n
 
 {- |
 Type check an atomic WACC expression.
@@ -50,10 +54,18 @@ unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
 unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t . sort
 
 {- |
-Associate a 'Pos' with a @unifyExprs@ action.
+Associate a 'Text.Gigaparsec.Position.Pos' with a @unifyExprs@ action.
 -}
-unifyExprsAt :: Pos -> BType -> [Expr ident] -> TypingM fnident ident BType
-unifyExprsAt p t xs = reportAt p t $ unifyExprs t xs
+unifyExprsAt
+  :: (HasPos a) => a -> BType -> [Expr ident] -> TypingM fnident ident BType
+unifyExprsAt x t xs = reportAt (getPos x) t $ unifyExprs t xs
+
+{- |
+@tryUnifyExprs@ unifies multiple expressions like @unifyExprsAt@ but does not
+report a type error on failure.
+-}
+tryUnifyExprs :: BType -> [Expr ident] -> TypingM fnident ident (Maybe BType)
+tryUnifyExprs t xs = foldM unify t <$> traverse checkExpr xs
 
 {- |
 Type check a composite WACC expression.
@@ -70,10 +82,9 @@ checkExpr (Div x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Mod x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Add x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Sub x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
--- FIXME: add specialised error message for expected comparable type
 checkExpr (GT x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortActual t)
+  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
   pure BBool
 checkExpr (GTE x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]

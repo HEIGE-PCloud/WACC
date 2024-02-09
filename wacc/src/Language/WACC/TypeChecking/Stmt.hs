@@ -16,7 +16,7 @@ where
 
 import Control.Monad (foldM, unless, when, zipWithM_)
 import Data.List.NonEmpty (sort)
-import Language.WACC.AST.Stmt
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
@@ -51,7 +51,11 @@ Type check a WACC @rvalue@.
 checkRValue
   :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
 checkRValue (RVExpr x _) = checkExpr x
-checkRValue (RVArrayLit xs p) = BArray <$> unifyExprsAt p BAny xs
+checkRValue (RVArrayLit xs p) = do
+  mt <- tryUnifyExprs BAny xs
+  case mt of
+    Just t -> pure (BArray t)
+    Nothing -> abortWith $ HeterogeneousArrayError p
 checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe _) = checkPairElem pe
 checkRValue (RVCall f xs p) = do
@@ -59,7 +63,7 @@ checkRValue (RVCall f xs p) = do
   let
     actN = length xs
     expN = length paramTypes
-  unless (actN == expN) $ abortWithArityError actN expN p
+  unless (actN == expN) (abortWith $ FunctionCallArityError actN expN p)
   ts <- mapM checkExpr xs
   zipWithM_ (\xt pt -> reportAt p pt $ tryUnify xt pt) ts paramTypes
   pure retType
@@ -108,35 +112,36 @@ checkStmt (Decl wt v rv p) =
   | vt <- typeOf v
   , t' <- reportAt p t $ tryUnify vt t
   , rvt <- checkRValue rv
-  , _ <- reportAt p t $ tryUnify rvt t'
+  , _ <- reportAt rv t $ tryUnify rvt t'
   ]
   where
     t = fix wt
--- FIXME: add specialised error message for doubly-unknown assignments
 checkStmt (Asgn lv rv p) = reportAt p BAny $ do
   rvt <- checkRValue rv
   lvt <- checkLValue lv
-  t <- reportAt p lvt $ tryUnify rvt lvt
-  when (t == BAny) (abortActual t)
+  t <- reportAt rv lvt $ tryUnify rvt lvt
+  when (t == BAny) (abortWith $ UnknownAssignmentError p)
   pure BAny
--- FIXME: add specialised error message for expected readable type
 checkStmt (Read lv p) = reportAt p BAny $ do
   t <- checkLValue lv
-  unless (t `elem` readableTypes) (abortActual t)
+  unless
+    (t `elem` readableTypes)
+    (abortWith $ ExpectedReadableTypeError t (getPos lv))
   pure BAny
--- FIXME: add specialised error message for expected heap-allocated type
 checkStmt (Free x p) = reportAt p BAny $ do
   t <- checkExpr x
-  unless (isHeapAllocated t) (abortActual t)
+  unless
+    (isHeapAllocated t)
+    (abortWith $ ExpectedHeapAllocatedTypeError t (getPos x))
   pure BAny
 checkStmt (Return x _) = checkExpr x
-checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]
+checkStmt (Exit x _) = BAny <$ unifyExprsAt x BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x
 checkStmt (PrintLn x _) = BAny <$ checkExpr x
 checkStmt (IfElse x ifBody elseBody p) = do
-  _ <- unifyExprsAt p BBool [x]
+  _ <- unifyExprsAt x BBool [x]
   t <- unifyStmtsAt p BAny ifBody
   unifyStmtsAt p t elseBody
 checkStmt (While x body p) =
-  unifyExprsAt p BBool [x] *> unifyStmtsAt p BAny body
+  unifyExprsAt x BBool [x] *> unifyStmtsAt p BAny body
 checkStmt (BeginEnd body p) = unifyStmtsAt p BAny body

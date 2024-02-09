@@ -19,3 +19,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/array/mixingTypesInArrays.wacc (line 18, column 13):
+type error: all array elements must have the same type
+>   char f = call five();
+>   int[] a = [1, f]
+>             ^
+> end
+

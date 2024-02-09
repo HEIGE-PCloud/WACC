@@ -17,3 +17,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/expressions/lessPairExpr.wacc (line 16, column 13):
+type error: expected a value of unknown type but found a pair of an int and an int (pair(int, int))
+>   println y;
+>   println x < y
+>             ^
+> end
+

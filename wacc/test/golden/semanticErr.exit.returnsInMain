@@ -26,3 +26,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/exit/returnsInMain.wacc (line 13, column 3):
+type error: return statements are not allowed in the main program
+> begin
+>   while true do
+>   ^
+>     return 3
+

@@ -1,23 +1,19 @@
 {- |
 Type checking actions for WACC programs.
 -}
-module Language.WACC.TypeChecking.Prog where
+module Language.WACC.TypeChecking.Prog (checkFunc, checkProg) where
 
 import Control.Monad (when)
-import Data.Map ((!))
 import Language.WACC.AST.Prog (Func (..), Prog (..))
-import Language.WACC.Error (Error)
-import Language.WACC.Semantic.Scope (Fnident, VarST, Vident)
 import Language.WACC.TypeChecking.BType (BType (BAny), FnType (FnType), fix)
+import Language.WACC.TypeChecking.Error (TypeError (ReturnFromMainError))
 import Language.WACC.TypeChecking.State
   ( TypingM
-  , abortActual
+  , abortWith
   , reportAt
-  , runTypingM
   , setFnType
   )
 import Language.WACC.TypeChecking.Stmt (unifyStmts, unifyStmtsAt)
-import Text.Gigaparsec (Result (Failure, Success))
 
 {- |
 Type check a WACC function.
@@ -39,15 +35,4 @@ checkProg :: (Ord fnident) => Prog fnident ident -> TypingM fnident ident ()
 checkProg (Main fs ss p) = reportAt p BAny $ do
   mapM_ checkFunc fs
   t <- unifyStmts BAny ss
-  when (t /= BAny) $ abortActual t
-
-typeCheck :: (Prog Fnident Vident, VarST) -> Result [Error] ()
-typeCheck (ast, sb)
-  | null err = Success ()
-  | otherwise = Failure []
-  where
-    action ident = fix (fst (sb ! ident))
-    (_, _, err) = runTypingM (checkProg ast) action mempty
-
--- TODO: actually return an WACC.Language.Error
--- err' = toList err
+  when (t /= BAny) (abortWith $ ReturnFromMainError p)

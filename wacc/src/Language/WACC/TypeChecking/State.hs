@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE TupleSections #-}
 
 {- |
 Type checking monad and actions.
@@ -11,11 +12,13 @@ module Language.WACC.TypeChecking.State
   , setFnType
   , abort
   , abortActual
+  , abortOverridePos
+  , abortActualOverridePos
   , tryUnify
   , TypeError (..)
   , TypeErrors
   , reportAt
-  , abortWithArityError
+  , abortWith
   )
 where
 
@@ -24,30 +27,15 @@ import Control.Monad.Trans.Except (ExceptT, catchE, runExceptT, throwE)
 import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS, tell)
 import Data.DList (DList)
 import Data.Map (Map, insert, (!?))
+import Data.Maybe (fromMaybe)
+import Language.WACC.AST (HasPos (getPos))
 import Language.WACC.TypeChecking.BType (BType, FnType, unify)
+import Language.WACC.TypeChecking.Error
 import Text.Gigaparsec.Position (Pos)
 
 {- |
-A type error found during type checking.
+Difference list used to collect multiple type errors.
 -}
-data TypeError
-  = -- | Incompatible types.
-    IncompatibleTypesError
-      BType
-      -- ^ The type of the provided value.
-      BType
-      -- ^ The expected type.
-      Pos
-      -- ^ The position of the ill-typed expression or statement.
-  | -- | Invalid number of parameters in function call.
-    FunctionCallArityError
-      Int
-      -- ^ The arity of the ill-typed function call.
-      Int
-      -- ^ The declared arity of the function.
-      Pos
-      -- ^ The position of the ill-typed function call.
-
 type TypeErrors = DList TypeError
 
 type FnTypes fnident = Map fnident FnType
@@ -56,7 +44,9 @@ type FnTypes fnident = Map fnident FnType
 Type checking monad.
 -}
 type TypingM fnident ident =
-  ExceptT (Maybe BType) (RWS (ident -> BType) TypeErrors (FnTypes fnident))
+  ExceptT
+    (Maybe BType, Maybe Pos)
+    (RWS (ident -> BType) TypeErrors (FnTypes fnident))
 
 {- |
 Run a type checking action.
@@ -95,13 +85,26 @@ setFnType f t = lift $ modify (insert f t)
 Abort a type check.
 -}
 abort :: TypingM fnident ident a
-abort = throwE Nothing
+abort = throwE (Nothing, Nothing)
+
+{- |
+Abort a type check, overriding the position of the type error.
+-}
+abortOverridePos :: (HasPos a) => a -> TypingM fnident ident b
+abortOverridePos = throwE . (Nothing,) . pure . getPos
 
 {- |
 Abort a type check, saving an invalid actual type.
 -}
 abortActual :: BType -> TypingM fnident ident a
-abortActual = throwE . pure
+abortActual = throwE . (,Nothing) . pure
+
+{- |
+Abort a type check, saving an invalid actual type and overriding the position of
+the type error.
+-}
+abortActualOverridePos :: (HasPos a) => BType -> a -> TypingM fnident ident b
+abortActualOverridePos t x = throwE (pure t, pure $ getPos x)
 
 {- |
 @tryUnify actT expT@ attempts to unify an actual type @actT@ with an expected
@@ -115,16 +118,20 @@ tryUnify actT expT = maybe (abortActual actT) pure $ unify actT expT
 action is aborted with a saved invalid actual type (see 'abortActual').
 -}
 reportAt
-  :: Pos -> BType -> TypingM fnident ident a -> TypingM fnident ident a
-reportAt p expT action = catchE action report
+  :: (HasPos a)
+  => a
+  -> BType
+  -> TypingM fnident ident b
+  -> TypingM fnident ident b
+reportAt x expT action = catchE action report
   where
-    report (Just actT) =
-      lift (tell [IncompatibleTypesError actT expT p]) *> abort
+    report (Just actT, mp) =
+      lift (tell [IncompatibleTypesError actT expT $ fromMaybe p mp]) *> abort
     report _ = abort
+    p = getPos x
 
 {- |
-Report a 'FunctionCallArityError' and abort.
+Report a specialised 'TypeError' and abort.
 -}
-abortWithArityError :: Int -> Int -> Pos -> TypingM fnident ident a
-abortWithArityError actN expN p =
-  lift (tell [FunctionCallArityError actN expN p]) *> abort
+abortWith :: TypeError -> TypingM fnident ident a
+abortWith err = lift (tell [err]) *> abort

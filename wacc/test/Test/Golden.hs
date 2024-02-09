@@ -10,7 +10,7 @@ import Language.WACC.Error (Error (..), printError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (scopeAnalysis)
-import Language.WACC.TypeChecking.Prog (typeCheck)
+import Language.WACC.TypeChecking (checkTypes)
 import Test.Common (semanticErrTests, syntaxErrTests, takeBaseName)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
@@ -51,12 +51,12 @@ runSemanticCheck path = goldenVsStringDiff testname diff goldenPath testAction
         Failure _ -> error "syntax check should succeed but failed"
         Success ast ->
           case scopeAnalysis ast of
-            Failure err ->
-              return (fromString (input ++ "\n\n" ++ semanticCheck err path (lines input)))
-            Success res2 -> case typeCheck res2 of
-              Success _ -> error "semantic check should fail but succeed"
-              Failure err ->
-                return (fromString (input ++ "\n\n" ++ semanticCheck err path (lines input)))
+            Failure errs ->
+              return (fromString (input ++ "\n\n" ++ semanticCheck errs path (lines input)))
+            Success res2 -> case uncurry checkTypes res2 of
+              [] -> error "semantic check should fail but succeeded"
+              errs ->
+                return (fromString (input ++ "\n\n" ++ semanticCheck errs path (lines input)))
 
 syntaxCheck :: Result Error b -> FilePath -> [String] -> String
 syntaxCheck res path ls = case res of

@@ -26,3 +26,10 @@ begin
   int a = call f(false)
 end
 
+In test/wacc_examples/invalid/semanticErr/function/mismatchingReturns.wacc (line 13, column 7):
+type error: expected an int but found a char
+> begin
+>   int f(bool b) is
+>       ^
+>     if b then
+

@@ -19,3 +19,10 @@ end
 	
 
 
+In test/wacc_examples/invalid/semanticErr/function/functionSwapArgs.wacc (line 15, column 13):
+type error: expected an int but found a bool
+> 	end
+> 	int x = call f(true,1);
+>             ^
+> 	println x
+

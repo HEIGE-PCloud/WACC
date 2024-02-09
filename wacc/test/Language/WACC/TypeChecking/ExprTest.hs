@@ -65,7 +65,6 @@ varExpr = flip WAtom undefined . (`Ident` undefined)
 
 showType :: BType -> String
 showType BAny = "T"
-showType BUnknown = "unk"
 showType BInt = "int"
 showType BBool = "bool"
 showType BChar = "char"

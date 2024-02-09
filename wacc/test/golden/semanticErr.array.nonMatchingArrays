@@ -16,3 +16,10 @@ begin
 end
 
 
+In test/wacc_examples/invalid/semanticErr/array/nonMatchingArrays.wacc (line 15, column 13):
+type error: expected an int[] but found an int[][]
+>   int[][] aa = [a, a];
+>   int[] b = aa
+>             ^
+> end
+
