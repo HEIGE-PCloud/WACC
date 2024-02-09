@@ -20,7 +20,7 @@ begin
   println x
   
 end
-	
+  
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/multiple/funcMess.wacc (line 13, column 5):

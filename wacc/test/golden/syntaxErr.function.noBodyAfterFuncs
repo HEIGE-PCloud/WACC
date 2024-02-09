@@ -13,7 +13,7 @@ begin
   return 0 
   end
 end
-	
+  
 
 
 Syntax error in test/wacc_examples/invalid/syntaxErr/function/noBodyAfterFuncs.wacc (line 15, column 1):
@@ -23,5 +23,5 @@ expected function declaration or statement
 >   end
 > end
 > ^^^
-> 	
+>   
 

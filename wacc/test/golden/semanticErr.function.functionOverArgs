@@ -9,19 +9,19 @@
 # Program:
 
 begin
-	int f(int a, int b) is
-		return 0 
-	end
-	int x = call f(1,2,3);
-	println x
+  int f(int a, int b) is
+    return 0 
+  end
+  int x = call f(1,2,3);
+  println x
 end
-	
+  
 
 
-Semantic error in test/wacc_examples/invalid/semanticErr/function/functionOverArgs.wacc (line 15, column 13):
+Semantic error in test/wacc_examples/invalid/semanticErr/function/functionOverArgs.wacc (line 15, column 11):
 type error: expected 2 arguments but found 3 arguments
-> 	end
-> 	int x = call f(1,2,3);
->             ^
-> 	println x
+>   end
+>   int x = call f(1,2,3);
+>           ^
+>   println x
 

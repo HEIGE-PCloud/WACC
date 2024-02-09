@@ -9,19 +9,19 @@
 # Program:
 
 begin
-	int f() is
-		return 'c'
-	end
-	int x = call f() ;
-	println x 
+  int f() is
+    return 'c'
+  end
+  int x = call f() ;
+  println x 
 end
-	
+  
 
 
-Semantic error in test/wacc_examples/invalid/semanticErr/function/functionBadReturn.wacc (line 12, column 9):
+Semantic error in test/wacc_examples/invalid/semanticErr/function/functionBadReturn.wacc (line 12, column 7):
 type error: expected an int but found a char
 > begin
-> 	int f() is
->         ^
-> 		return 'c'
+>   int f() is
+>       ^
+>     return 'c'
 

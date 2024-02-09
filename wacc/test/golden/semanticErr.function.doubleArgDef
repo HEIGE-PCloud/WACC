@@ -10,7 +10,7 @@
 
 begin
   int foo(int x, int x) is
-	return x
+  return x
   end
 
   skip
@@ -21,5 +21,5 @@ Semantic error in test/wacc_examples/invalid/semanticErr/function/doubleArgDef.w
 > begin
 >   int foo(int x, int x) is
 >       ^
-> 	return x
+>   return x
 

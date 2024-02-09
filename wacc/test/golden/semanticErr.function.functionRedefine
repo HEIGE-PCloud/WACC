@@ -9,9 +9,9 @@
 # Program:
 
 begin
-	int f() is
-		return 0
-	end
+  int f() is
+    return 0
+  end
   int f() is
     return 1
   end
@@ -22,7 +22,7 @@ end
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/functionRedefine.wacc (line 15, column 7):
 function "f" is already defined
-> 	end
+>   end
 >   int f() is
 >       ^
 >     return 1

@@ -14,7 +14,7 @@ begin
   end
   int x = f() + f()
 end
-	
+  
 
 
 Syntax error in test/wacc_examples/invalid/syntaxErr/function/funcExpr.wacc (line 15, column 11):

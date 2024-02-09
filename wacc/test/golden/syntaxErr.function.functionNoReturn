@@ -15,7 +15,7 @@ begin
   int x = call f();
   println x
 end
-	
+  
 
 
 Syntax error in test/wacc_examples/invalid/syntaxErr/function/functionNoReturn.wacc (line 12, column 5):
