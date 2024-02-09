@@ -52,9 +52,10 @@ checkRValue
   :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
 checkRValue (RVExpr x _) = checkExpr x
 checkRValue (RVArrayLit xs p) = do
-  t <- unifyExprsAt p BAny xs
-  unless (null xs || t /= BAny) (abortWith $ HeterogeneousArrayError p)
-  pure $ BArray t
+  mt <- tryUnifyExprs BAny xs
+  case mt of
+    Just t -> pure (BArray t)
+    Nothing -> abortWith $ HeterogeneousArrayError p
 checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe _) = checkPairElem pe
 checkRValue (RVCall f xs p) = do

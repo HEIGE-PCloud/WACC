@@ -6,6 +6,7 @@ module Language.WACC.TypeChecking.Expr
   , checkExpr
   , unifyExprs
   , unifyExprsAt
+  , tryUnifyExprs
   , checkArrayIndex
   )
 where
@@ -54,6 +55,13 @@ Associate a 'Pos' with a @unifyExprs@ action.
 -}
 unifyExprsAt :: Pos -> BType -> [Expr ident] -> TypingM fnident ident BType
 unifyExprsAt p t xs = reportAt p t $ unifyExprs t xs
+
+{- |
+@tryUnifyExprs@ unifies multiple expressions like @unifyExprsAt@ but does not
+report a type error on failure.
+-}
+tryUnifyExprs :: BType -> [Expr ident] -> TypingM fnident ident (Maybe BType)
+tryUnifyExprs t xs = foldM unify t <$> traverse checkExpr xs
 
 {- |
 Type check a composite WACC expression.
