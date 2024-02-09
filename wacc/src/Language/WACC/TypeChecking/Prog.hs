@@ -4,10 +4,7 @@ Type checking actions for WACC programs.
 module Language.WACC.TypeChecking.Prog (checkFunc, checkProg) where
 
 import Control.Monad (when)
-import Data.Map ((!))
 import Language.WACC.AST.Prog (Func (..), Prog (..))
-import Language.WACC.Error (Error)
-import Language.WACC.Semantic.Scope (Fnident, VarST, Vident)
 import Language.WACC.TypeChecking.BType (BType (BAny), FnType (FnType), fix)
 import Language.WACC.TypeChecking.Error (TypeError (ReturnFromMainError))
 import Language.WACC.TypeChecking.State
@@ -17,7 +14,6 @@ import Language.WACC.TypeChecking.State
   , setFnType
   )
 import Language.WACC.TypeChecking.Stmt (unifyStmts, unifyStmtsAt)
-import Text.Gigaparsec (Result (Failure, Success))
 
 {- |
 Type check a WACC function.
