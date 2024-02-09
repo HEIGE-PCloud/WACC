@@ -1,0 +1,24 @@
+# variable names are case sensitive
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+
+  int number = 42 ;
+  println NUMBER
+  
+end
+
+
+In test/wacc_examples/invalid/semanticErr/variables/caseMatters.wacc (line 16, column 1):
+NUMBER was not declared.
+>   
+> end
+> ^^^^^^
+

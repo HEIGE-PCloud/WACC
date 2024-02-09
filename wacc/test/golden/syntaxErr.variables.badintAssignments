@@ -17,7 +17,9 @@ end
 In test/wacc_examples/invalid/syntaxErr/variables/badintAssignments.wacc (line 12, column 14):
 unexpected integer 0
 expected ";", binary operator, or end
+
 > begin
 >   int x = 22 0 ;
 >              ^
 >   int y = 1A4
+

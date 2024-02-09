@@ -1,0 +1,42 @@
+# variable names are case sensitive in all possible ways
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int number = 42 ;
+  println NUMBER ;
+
+  int INDEX = 0 ;
+  println index ;
+
+  int miXed = 3 ;
+  println MIxED
+end
+
+
+In test/wacc_examples/invalid/semanticErr/multiple/multiCaseSensitivity.wacc (line 13, column 18):
+NUMBER was not declared.
+>   int number = 42 ;
+>   println NUMBER ;
+>                  ^^^^^^
+> 
+
+In test/wacc_examples/invalid/semanticErr/multiple/multiCaseSensitivity.wacc (line 16, column 17):
+index was not declared.
+>   int INDEX = 0 ;
+>   println index ;
+>                 ^^^^^
+> 
+
+In test/wacc_examples/invalid/semanticErr/multiple/multiCaseSensitivity.wacc (line 20, column 1):
+MIxED was not declared.
+>   println MIxED
+> end
+> ^^^^^
+

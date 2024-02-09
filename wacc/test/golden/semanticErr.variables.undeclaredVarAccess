@@ -1,0 +1,22 @@
+# access attempt on undeclared variable
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int x = 10 ;
+  x = x + y
+end
+
+
+In test/wacc_examples/invalid/semanticErr/variables/undeclaredVarAccess.wacc (line 14, column 1):
+y was not declared.
+>   x = x + y
+> end
+> ^
+

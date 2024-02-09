@@ -20,7 +20,9 @@ end
 In test/wacc_examples/invalid/syntaxErr/function/functionMissingParam.wacc (line 12, column 22):
 unexpected ")"
 expected type
+
 > begin
 >   int f(int x, int y,) is
 >                      ^
 >     return 0 
+

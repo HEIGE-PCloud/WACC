@@ -27,7 +27,9 @@ In test/wacc_examples/invalid/syntaxErr/function/funcExpr2.wacc (line 17, column
 unexpected "f(x)"
 expected chr, len, negation, not, or ord
 function calls may not appear in expressions and must use `call`
+
 >   int x = 2 ;
 >   while x > f(x) do
 >             ^^^^
 >     println x ;
+

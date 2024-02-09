@@ -1,0 +1,24 @@
+# false typo
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  while fals do
+    skip
+  done
+end
+
+
+In test/wacc_examples/invalid/semanticErr/while/falsErr.wacc (line 12, column 14):
+fals was not declared.
+> begin
+>   while fals do
+>              ^^^^
+>     skip
+

@@ -13,6 +13,7 @@ module Language.WACC.TypeChecking.State
   , abortActual
   , tryUnify
   , TypeError (..)
+  , TypeErrors
   , reportAt
   , abortWithArityError
   )

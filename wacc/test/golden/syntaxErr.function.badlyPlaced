@@ -21,7 +21,9 @@ In test/wacc_examples/invalid/syntaxErr/function/badlyPlaced.wacc (line 11, colu
 unexpected keyword int
 expected begin
 all program body and function declarations must be within `begin` and `end`
+
 > 
 > int foo() is
 > ^^^
 >   return 42
+

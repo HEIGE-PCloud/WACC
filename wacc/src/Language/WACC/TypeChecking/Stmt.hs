@@ -14,7 +14,8 @@ module Language.WACC.TypeChecking.Stmt
   )
 where
 
-import Control.Monad (foldM, unless, zipWithM_)
+import Control.Monad (foldM, unless, when, zipWithM_)
+import Data.List.NonEmpty (sort)
 import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Expr
@@ -56,8 +57,8 @@ checkRValue (RVPairElem pe _) = checkPairElem pe
 checkRValue (RVCall f xs p) = do
   FnType {..} <- typeOfFn f
   let
-    actN = length paramTypes
-    expN = length xs
+    actN = length xs
+    expN = length paramTypes
   unless (actN == expN) $ abortWithArityError actN expN p
   ts <- mapM checkExpr xs
   zipWithM_ (\xt pt -> reportAt p pt $ tryUnify xt pt) ts paramTypes
@@ -74,7 +75,7 @@ unifyStmts
   => BType
   -> Stmts fnident ident
   -> TypingM fnident ident BType
-unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t
+unifyStmts t ss = traverse checkStmt ss >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Pos' with a @unifyStmts@ action.
@@ -111,22 +112,23 @@ checkStmt (Decl wt v rv p) =
   ]
   where
     t = fix wt
-checkStmt (Asgn lv rv p) =
-  [ BAny
-  | rvt <- checkRValue rv
-  , lvt <- checkLValue lv
-  , _ <- reportAt p lvt $ tryUnify rvt lvt
-  ]
-checkStmt (Read lv _) = BAny <$ checkLValue lv
-checkStmt (Free x _) =
-  [ BAny
-  | t <- checkExpr x
-  , let
-      t' = case t of
-        BFixed ft -> BFixed $ BAny <$ ft
-        _ -> t
-  , t' `elem` heapAllocatedTypes
-  ]
+-- FIXME: add specialised error message for doubly-unknown assignments
+checkStmt (Asgn lv rv p) = reportAt p BAny $ do
+  rvt <- checkRValue rv
+  lvt <- checkLValue lv
+  t <- reportAt p lvt $ tryUnify rvt lvt
+  when (t == BAny) (abortActual t)
+  pure BAny
+-- FIXME: add specialised error message for expected readable type
+checkStmt (Read lv p) = reportAt p BAny $ do
+  t <- checkLValue lv
+  unless (t `elem` readableTypes) (abortActual t)
+  pure BAny
+-- FIXME: add specialised error message for expected heap-allocated type
+checkStmt (Free x p) = reportAt p BAny $ do
+  t <- checkExpr x
+  unless (isHeapAllocated t) (abortActual t)
+  pure BAny
 checkStmt (Return x _) = checkExpr x
 checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x

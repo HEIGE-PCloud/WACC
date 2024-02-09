@@ -17,7 +17,9 @@ end
 In test/wacc_examples/invalid/syntaxErr/sequence/missingSeq.wacc (line 13, column 3):
 unexpected keyword skip
 expected ";" or end
+
 >   skip
 >   skip 
 >   ^^^^
 > end
+

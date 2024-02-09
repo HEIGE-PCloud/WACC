@@ -22,7 +22,9 @@ end
 In test/wacc_examples/invalid/syntaxErr/function/functionEndingNotReturn.wacc (line 14, column 3):
 Function can only be exited via a 'return' or 'exit' statement.
   There must not be any code following the last 'return' or 'exit' of any execution path.
+
 >     println "How on Earth did we get here?" 
 >   end
 >   ^
 > 
+

@@ -1,0 +1,26 @@
+# tries to assign to a function
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f() is
+    return 3
+  end
+  
+  f = 2
+end
+
+
+In test/wacc_examples/invalid/semanticErr/function/functionAssign.wacc (line 16, column 5):
+f was not declared.
+>   
+>   f = 2
+>     ^
+> end
+

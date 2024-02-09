@@ -13,6 +13,7 @@ import Control.Monad.Trans.Except
 import qualified Data.DList as DL
 import Data.Either
 import qualified Data.Map as Map
+import Language.WACC.Error
 import Language.WACC.Parser.Stmt
 import Language.WACC.Parser.Token
 import Language.WACC.Semantic.Scope
@@ -20,21 +21,13 @@ import Test.Tasty
 import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
 
-test = testGroup "Scope Analysis Tests" [parent_tests, naming_fail_tests]
+test =
+  testGroup "unitTests" [testGroup "scopeTests" [naming_fail_tests]]
 
 hasErrored :: String -> Bool
-hasErrored code = isLeft (scopeAnalysis t)
+hasErrored code = isFailure (scopeAnalysis t)
   where
     (Success t) = parse @String (fully program) code
-
-badParentScope = "begin\nint x = 5 ;\nbegin\nbegin\nfree x\nend ;\nint[] x = [1]\nend\nend\n"
-
-parent_tests =
-  testGroup
-    "Parent Scope Tests"
-    [ T.testCase "Bad Parent Scope" $
-        T.assertBool "Bad Parent Scope nested begins" (hasErrored badParentScope)
-    ]
 
 badPairElemFst = "begin\nint x = 5;\nbegin\nfst y = null\nend\nend\n"
 

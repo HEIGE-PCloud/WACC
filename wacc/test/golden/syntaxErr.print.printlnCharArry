@@ -18,7 +18,9 @@ unexpected "["
 expected expression
 array literals can only appear in assignments
 expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
+
 > begin
 >   println ['H','e','l','l','o',' ','W','o','r','l','d','!']
 >           ^
 > end
+

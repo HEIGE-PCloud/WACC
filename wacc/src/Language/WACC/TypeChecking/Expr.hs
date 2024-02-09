@@ -1,5 +1,3 @@
-{-# LANGUAGE MonadComprehensions #-}
-
 {- |
 Type checking actions for WACC expressions.
 -}
@@ -12,7 +10,8 @@ module Language.WACC.TypeChecking.Expr
   )
 where
 
-import Control.Monad (foldM)
+import Control.Monad (foldM, unless)
+import Data.List (sort)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
@@ -48,7 +47,7 @@ checkAtom (ArrayElem ai _) = checkArrayIndex ai
 If a unification fails, the traversal is aborted.
 -}
 unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
-unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t
+unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Pos' with a @unifyExprs@ action.
@@ -71,14 +70,23 @@ checkExpr (Div x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Mod x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Add x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
 checkExpr (Sub x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
-checkExpr (GT x y p) =
-  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
-checkExpr (GTE x y p) =
-  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
-checkExpr (LT x y p) =
-  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
-checkExpr (LTE x y p) =
-  [BBool | t <- unifyExprsAt p BAny [x, y], t `elem` orderedTypes]
+-- FIXME: add specialised error message for expected comparable type
+checkExpr (GT x y p) = reportAt p BAny $ do
+  t <- unifyExprsAt p BAny [x, y]
+  unless (t `elem` orderedTypes) (abortActual t)
+  pure BBool
+checkExpr (GTE x y p) = reportAt p BAny $ do
+  t <- unifyExprsAt p BAny [x, y]
+  unless (t `elem` orderedTypes) (abortActual t)
+  pure BBool
+checkExpr (LT x y p) = reportAt p BAny $ do
+  t <- unifyExprsAt p BAny [x, y]
+  unless (t `elem` orderedTypes) (abortActual t)
+  pure BBool
+checkExpr (LTE x y p) = reportAt p BAny $ do
+  t <- unifyExprsAt p BAny [x, y]
+  unless (t `elem` orderedTypes) (abortActual t)
+  pure BBool
 checkExpr (Eq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
 checkExpr (Ineq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
 checkExpr (And x y p) = unifyExprsAt p BBool [x] *> unifyExprsAt p BBool [y]

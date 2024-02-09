@@ -25,7 +25,9 @@ In test/wacc_examples/invalid/syntaxErr/function/functionScopeDef.wacc (line 13,
 unexpected keyword int
 expected statement
 function declaration must be at the beginning of the program
+
 >   begin
 >     int f() is
 >     ^^^
 >       return 0 
+

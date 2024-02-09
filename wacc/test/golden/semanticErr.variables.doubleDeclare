@@ -1,0 +1,23 @@
+# redeclaration of variable
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int x = 10 ;
+  int x = 20
+end
+
+
+In test/wacc_examples/invalid/semanticErr/variables/doubleDeclare.wacc (line 13, column 3):
+x was already defined in (14,1).
+>   int x = 10 ;
+>   int x = 20
+>   ^
+> end
+

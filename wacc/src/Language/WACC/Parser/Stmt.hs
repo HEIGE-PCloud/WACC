@@ -196,7 +196,7 @@ mkIdentOrArrayElem
 mkIdentOrArrayElem = liftA4 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem' p str p' (Just e) = LVArrayElem (ArrayIndex str e p') p
-    mkIdentOrArrayElem' p str p' Nothing = LVIdent str p
+    mkIdentOrArrayElem' p str _ Nothing = LVIdent str p
 
 lValueOrIdent :: Parsec (LValue String)
 lValueOrIdent =

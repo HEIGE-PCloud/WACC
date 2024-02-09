@@ -107,8 +107,18 @@ test =
                   )
                   @?= Left 1
             ]
-        , testProperty "ignores read" $
-            \t -> checkStmt' (Read (LVIdent t undefined) undefined) == pure BAny
+        , testGroup
+            "read"
+            [ testCase "accepts ints" $
+                checkStmt' (Read (LVIdent BInt undefined) undefined)
+                  @?= pure BAny
+            , testCase "accepts chars" $
+                checkStmt' (Read (LVIdent BChar undefined) undefined)
+                  @?= pure BAny
+            , testCase "rejects bools" $
+                checkStmt' (Read (LVIdent BBool undefined) undefined)
+                  @?= Left 1
+            ]
         , testGroup
             "free"
             [ testProperty "accepts arrays" $

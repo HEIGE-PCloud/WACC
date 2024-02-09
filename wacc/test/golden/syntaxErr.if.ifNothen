@@ -21,7 +21,9 @@ In test/wacc_examples/invalid/syntaxErr/if/ifNothen.wacc (line 13, column 3):
 unexpected keyword else
 expected "then" or binary operator
 the condition of an if statement must be closed with `then`
+
 >   if true 
 >   else
 >   ^^^^
 >     skip
+

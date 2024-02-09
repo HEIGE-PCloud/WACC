@@ -4,7 +4,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Language.WACC.Error where
+module Language.WACC.Error (printError, parseWithError, Error (..), isSuccess, isFailure) where
 
 import Data.List.Extra ((!?))
 import Data.List.NonEmpty (NonEmpty)
@@ -12,23 +12,16 @@ import Data.Maybe (catMaybes)
 import Data.Set (Set, toList)
 import Data.String (IsString (fromString))
 import Language.WACC.Parser.Token (keywords, nonlexeme, operators)
-import Text.Gigaparsec (Parsec, Result, parse, parseFromFile, ($>))
+import Text.Gigaparsec (Parsec, Result (..), parse, ($>))
 import Text.Gigaparsec.Char (whitespace)
 import Text.Gigaparsec.Errors.DefaultErrorBuilder
   ( StringBuilder (..)
-  , combineMessagesDefault
   , disjunct
   , endOfInputDefault
   , expectedDefault
-  , formatDefault
-  , formatPosDefault
-  , intercalate
-  , lineInfoDefault
   , namedDefault
   , rawDefault
-  , specialisedErrorDefault
   , unexpectedDefault
-  , vanillaErrorDefault
   )
 import Text.Gigaparsec.Errors.ErrorBuilder
   ( ErrorBuilder
@@ -69,34 +62,44 @@ import qualified Text.Gigaparsec.Token.Lexer as T
 parseWithError :: Parsec a -> String -> Result Error a
 parseWithError = parse
 
+isSuccess :: Result e a -> Bool
+isSuccess (Success _) = True
+isSuccess (Failure _) = False
+
+isFailure :: Result e a -> Bool
+isFailure = not . isSuccess
+
 data Error = Error {errorMessage :: String, position :: Pos, width :: Word}
 
 printError :: FilePath -> [String] -> Error -> String
-printError filePath sourceCodeLines (Error errorMessage position@(row, col) width) = printHeader filePath position ++ "\n" ++ errorMessage ++ "\n" ++ lineStr
+printError filePath sourceCodeLines (Error errMsg p@(row, col) w) =
+  unlines [printHeader filePath p, errMsg, lineStr]
   where
     prevLine = printLine (row - 2, col) sourceCodeLines
     currline = printLine (row - 1, col) sourceCodeLines
-    caretLine = replicate (fromIntegral col - 1) ' ' ++ replicate (fromIntegral width) '^'
+    caretLine = replicate (fromIntegral col - 1) ' ' ++ replicate (fromIntegral w) '^'
     nextLine = printLine (row, col) sourceCodeLines
-    lines = map ("> " ++) $ catMaybes [prevLine, currline, Just caretLine, nextLine]
-    lineStr = unlines lines
+    lineStr =
+      unlines $
+        map ("> " ++) $
+          catMaybes [prevLine, currline, Just caretLine, nextLine]
 
 printPos :: Pos -> String
 printPos (x, y) = "(line " ++ show x ++ ", column " ++ show y ++ ")"
 
 printLine :: Pos -> [String] -> Maybe String
-printLine (row, _) lines = lines !? fromIntegral row
+printLine (row, _) ls = ls !? fromIntegral row
 
 printHeader :: FilePath -> Pos -> String
-printHeader filePath pos = "In " ++ filePath ++ " " ++ printPos pos ++ ":"
+printHeader filePath p = "In " ++ filePath ++ " " ++ printPos p ++ ":"
 
 instance ErrorBuilder Error where
   format :: Position Error -> Source Error -> ErrorInfoLines Error -> Error
-  format pos src (lines, width') =
+  format p _ (ls, w) =
     Error
-      { errorMessage = intercalate "\n" lines
-      , position = pos
-      , width = width'
+      { errorMessage = unlines ls
+      , position = p
+      , width = w
       }
 
   type Position Error = Pos
@@ -114,10 +117,10 @@ instance ErrorBuilder Error where
     -> Messages Error
     -> LineInfo Error
     -> ErrorInfoLines Error
-  vanillaError unexpectedLine expectedLine msgs width = (catMaybes [unexpectedLine, expectedLine] ++ msgs, width)
+  vanillaError unexpectedLine expectedLine msgs w = (catMaybes [unexpectedLine, expectedLine] ++ msgs, w)
 
   specialisedError :: Messages Error -> LineInfo Error -> ErrorInfoLines Error
-  specialisedError msgs width = (msgs, width)
+  specialisedError msgs w = (msgs, w)
 
   type ExpectedItems Error = Maybe StringBuilder
   type Messages Error = [String]
@@ -140,7 +143,7 @@ instance ErrorBuilder Error where
   message :: String -> Message Error
   reason = id
   lineInfo :: String -> [String] -> [String] -> Word -> Word -> LineInfo Error
-  lineInfo _ _ _ _ width = width
+  lineInfo _ _ _ _ w = w
   message = id
 
   numLinesBefore :: Int

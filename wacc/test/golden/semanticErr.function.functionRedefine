@@ -1,0 +1,28 @@
+# attempted redefinition of function
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+	int f() is
+		return 0
+	end
+  int f() is
+    return 1
+  end
+  int x = call f();
+  println x
+end
+
+
+In test/wacc_examples/invalid/semanticErr/function/functionRedefine.wacc (line 20, column 1):
+f was already defined in (20,1).
+>   println x
+> end
+> ^
+

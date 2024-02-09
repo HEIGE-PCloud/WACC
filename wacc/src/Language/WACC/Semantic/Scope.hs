@@ -4,41 +4,41 @@
 The strategy for scope analysis is add all function names into a symbol table,
 analyse the @Stmt@ of each function and the main @Stmt@
 -}
-module Language.WACC.Semantic.Scope (scopeAnalysis) where
+module Language.WACC.Semantic.Scope (scopeAnalysis, Fnident, Vident, VarST) where
 
-import Control.Monad (foldM, liftM, void)
+import Control.Monad (foldM, void)
 import Control.Monad.RWS
   ( RWS
-  , RWST
-  , ask
   , asks
   , evalRWS
   , get
   , gets
   , local
   , modify
-  , put
   , runRWS
   , tell
   )
 import Data.DList (DList (..), singleton)
 import qualified Data.DList as DList
-import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
-import Data.Map hiding (null, singleton, toList)
+import Data.List (nub)
+import Data.Map (Map, empty, insert, union, (!), (!?))
 import qualified Data.Map as Map
-import Language.WACC.AST
+import Language.WACC.AST.Expr
   ( ArrayIndex (..)
   , Expr (..)
-  , Func (..)
-  , LValue (..)
+  , WAtom (..)
+  )
+import Language.WACC.AST.Prog (Func (..), Prog (..))
+import Language.WACC.AST.Stmt
+  ( LValue (..)
   , PairElem (..)
-  , Prog (..)
   , RValue (..)
   , Stmt (..)
   , Stmts
-  , WAtom (..)
   )
 import Language.WACC.AST.WType (WType)
+import Language.WACC.Error (Error (Error))
+import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT, reverse, unzip)
 
@@ -50,10 +50,10 @@ data Fnident = Fnident Integer String
   deriving (Show)
 
 instance Eq Fnident where
-  (Fnident n1 _) == (Fnident n2 _) = n1 == n1
+  (Fnident n1 _) == (Fnident n2 _) = n1 == n2
 
 instance Ord Fnident where
-  (Fnident n1 _) <= (Fnident n2 _) = n1 <= n1
+  (Fnident n1 _) <= (Fnident n2 _) = n1 <= n2
 
 {- |
 The @Integer  acts as a UID (which will not clash with @Fnident@s either)
@@ -63,12 +63,10 @@ data Vident = Vident Integer String
   deriving (Show)
 
 instance Eq Vident where
-  (Vident n1 _) == (Vident n2 _) = n1 == n1
+  (Vident n1 _) == (Vident n2 _) = n1 == n2
 
 instance Ord Vident where
-  (Vident n1 _) <= (Vident n2 _) = n1 <= n1
-
-type Error = String
+  (Vident n1 _) <= (Vident n2 _) = n1 <= n2
 
 type SuperST = Map String (Integer, Pos)
 
@@ -106,16 +104,16 @@ renameFuncOrErr str pos constr = do
   case funcST !? str of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report pos (str ++ "was not previously declared")
+      report (notDecl str) pos (length str)
       return undefined
 
 renameOrErr :: String -> Pos -> (Integer -> a) -> Analysis a
 renameOrErr str pos constr = do
   (localST, superST) <- getST
-  case getDecl str localST superST of
+  case getDecl str localST (Just superST) of
     Just (n, _) -> return $ constr n
     Nothing -> do
-      report pos (str ++ " was not previously declared")
+      report (notDecl str) pos (length str)
       return undefined
 
 renameArrayIndex :: ArrayIndex String -> Analysis (ArrayIndex Vident)
@@ -158,6 +156,7 @@ renameExpr (Or e1 e2 p) = (\x y -> Or x y p) <$> renameExpr e1 <*> renameExpr e2
 mapPair :: (a -> c) -> (b -> d) -> (a, b) -> (c, d)
 mapPair f g (x, y) = (f x, g y)
 
+ctr :: (a, b) -> b
 ctr = snd
 
 freshN :: Analysis Ctr
@@ -165,13 +164,15 @@ freshN = do
   modify $ mapPair id (+ 1)
   gets ctr
 
-getDecl :: String -> LocalST -> SuperST -> Maybe (Integer, Pos)
-getDecl str localST superST = case localVal of
+getDecl :: String -> LocalST -> Maybe SuperST -> Maybe (Integer, Pos)
+getDecl str localST maybeSuperST = case localVal of
   Nothing -> superVal
   x -> x
   where
     localVal = localST !? str
-    superVal = superST !? str
+    superVal = case maybeSuperST of
+      Nothing -> Nothing
+      Just superST -> superST !? str
 
 insertDecl :: Pos -> WType -> String -> Analysis Ctr
 insertDecl pos t str = do
@@ -183,17 +184,23 @@ insertDecl pos t str = do
 getST :: Analysis (LocalST, SuperST)
 getST = (,) <$> gets fst <*> asks fst
 
-report :: Pos -> String -> Analysis ()
-report pos str = tell (Data.DList.singleton ("Line " ++ show pos ++ ": " ++ str), mempty)
+alreadyDecl :: (Show a) => [Char] -> a -> [Char]
+alreadyDecl str origPos = str ++ " was already defined in " ++ show origPos ++ "."
+
+notDecl :: [Char] -> [Char]
+notDecl str = str ++ " was not declared."
+
+report :: String -> Pos -> Int -> Analysis ()
+report str pos len = tell (Data.DList.singleton (Error str pos (toEnum len)), mempty)
 
 renameStmt :: Stmt String String -> Analysis (Stmt Fnident Vident)
 renameStmt (Skip p) = pure (Skip p)
 renameStmt (Decl t str rv pos) = do
   rv' <- renameRValue rv
-  (localST, superST) <- getST
-  case getDecl str localST superST of
+  (localST, _) <- getST
+  case getDecl str localST Nothing of
     Nothing -> Control.Monad.void (insertDecl pos t str)
-    (Just (_, posOrig)) -> report pos (str ++ "already defined in line " ++ show posOrig)
+    (Just (_, posOrig)) -> report (alreadyDecl str posOrig) pos 1
   n <- gets snd
   return (Decl t (Vident n str) rv' pos) -- Should I return a bogus node?
 renameStmt (Asgn lv rv p) = do
@@ -234,15 +241,20 @@ renameStmts ls = do
 
 renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
-  ns <- mapM (uncurry $ insertDecl pos) params
-  let
-    params' = (mapPair id) . Vident <$> ns <*> params
-  funcST <- asks snd
-  let
-    (n, _) = funcST ! str
-  --  Just (n, pos) -> report pos (str ++ " already declared in line " ++ show pos)
-  ls' <- renameStmts ls
-  return (Func t (Fnident n str) params' ls' pos)
+  ( if params == nub params
+      then applyRename
+      else report "Duplicate parameters" pos 1 >> return undefined
+    )
+  where
+    applyRename = do
+      ns <- mapM (uncurry $ insertDecl pos) params
+      let
+        params' = zipWith ((mapPair id) . Vident) ns params
+      funcST <- asks snd
+      let
+        (n, _) = funcST ! str
+      ls' <- renameStmts ls
+      return (Func t (Fnident n str) params' ls' pos)
 
 renameProg :: Prog String String -> Analysis (Prog Fnident Vident)
 renameProg (Main fs ls p) = do
@@ -251,15 +263,15 @@ renameProg (Main fs ls p) = do
   return (Main fs' ls' p)
 
 scopeAnalysis
-  :: Prog String String -> Either [Error] (Prog Fnident Vident, VarST)
-scopeAnalysis p@(Main fs ls _) = pass2 maybeFuncST
+  :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
+scopeAnalysis p@(Main fs _ _) = pass2 maybeFuncST
   where
     (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
-    pass2 :: Maybe FuncST -> Either [Error] (Prog Fnident Vident, VarST)
-    pass2 Nothing = Left (DList.toList errs1)
+    pass2 :: Maybe FuncST -> Result [Error] (Prog Fnident Vident, VarST)
+    pass2 Nothing = Failure (DList.toList errs1)
     pass2 (Just funcST)
-      | null errs2 = Right (p', varST)
-      | otherwise = Left (DList.toList errs2)
+      | null errs2 = Success (p', varST)
+      | otherwise = Failure (DList.toList errs2)
       where
         errs2 :: DList Error
         (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n)
@@ -273,12 +285,12 @@ foo = foldM bar (Just Map.empty)
     bar (Just funcST) (Func _ str _ _ pos) = case funcST !? str of
       Just (_, origPos) -> do
         tell . DList.singleton $
-          show pos ++ ": " ++ str ++ " already defined in " ++ show origPos
+          Error (alreadyDecl str origPos) pos (toEnum (length str))
         return Nothing
       Nothing -> do
-        n <- freshN
+        n <- freshN'
         return (Just (insert str (n, pos) funcST))
     bar Nothing _ = return Nothing
-    freshN = do
+    freshN' = do
       modify (+ 1)
       get
