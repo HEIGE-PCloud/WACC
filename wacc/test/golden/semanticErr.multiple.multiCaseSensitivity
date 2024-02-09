@@ -21,21 +21,21 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/multiple/multiCaseSensitivity.wacc (line 13, column 11):
-NUMBER was not declared.
+Variable "NUMBER" was not declared.
 >   int number = 42 ;
 >   println NUMBER ;
 >           ^^^^^^
 > 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/multiple/multiCaseSensitivity.wacc (line 16, column 11):
-index was not declared.
+Variable "index" was not declared.
 >   int INDEX = 0 ;
 >   println index ;
 >           ^^^^^
 > 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/multiple/multiCaseSensitivity.wacc (line 19, column 11):
-MIxED was not declared.
+Variable "MIxED" was not declared.
 >   int miXed = 3 ;
 >   println MIxED
 >           ^^^^^
