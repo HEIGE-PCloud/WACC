@@ -14,7 +14,7 @@ module Language.WACC.TypeChecking.Stmt
   )
 where
 
-import Control.Monad (foldM, unless, zipWithM_)
+import Control.Monad (foldM, unless, when, zipWithM_)
 import Data.List.NonEmpty (sort)
 import Language.WACC.AST.Stmt
 import Language.WACC.TypeChecking.BType
@@ -112,22 +112,23 @@ checkStmt (Decl wt v rv p) =
   ]
   where
     t = fix wt
-checkStmt (Asgn lv rv p) =
-  [ BAny
-  | rvt <- checkRValue rv
-  , lvt <- checkLValue lv
-  , _ <- reportAt p lvt $ tryUnify rvt lvt
-  ]
-checkStmt (Read lv _) = BAny <$ checkLValue lv
-checkStmt (Free x _) =
-  [ BAny
-  | t <- checkExpr x
-  , let
-      t' = case t of
-        BFixed ft -> BFixed $ BAny <$ ft
-        _ -> t
-  , t' `elem` heapAllocatedTypes
-  ]
+-- FIXME: add specialised error message for doubly-unknown assignments
+checkStmt (Asgn lv rv p) = reportAt p BAny $ do
+  rvt <- checkRValue rv
+  lvt <- checkLValue lv
+  t <- reportAt p lvt $ tryUnify rvt lvt
+  when (t == BAny) (abortActual t)
+  pure BAny
+-- FIXME: add specialised error message for expected readable type
+checkStmt (Read lv p) = reportAt p BAny $ do
+  t <- checkLValue lv
+  unless (t `elem` readableTypes) (abortActual t)
+  pure BAny
+-- FIXME: add specialised error message for expected heap-allocated type
+checkStmt (Free x p) = reportAt p BAny $ do
+  t <- checkExpr x
+  unless (isHeapAllocated t) (abortActual t)
+  pure BAny
 checkStmt (Return x _) = checkExpr x
 checkStmt (Exit x p) = BAny <$ unifyExprsAt p BInt [x]
 checkStmt (Print x _) = BAny <$ checkExpr x

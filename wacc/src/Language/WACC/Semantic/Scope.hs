@@ -23,6 +23,7 @@ import Control.Monad.RWS
   )
 import Data.DList (DList (..), singleton)
 import qualified Data.DList as DList
+import Data.List (nub)
 import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
 import Data.Map hiding (null, singleton, toList)
 import qualified Data.Map as Map
@@ -239,14 +240,20 @@ renameStmts ls = do
 
 renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
-  ns <- mapM (uncurry $ insertDecl pos) params
-  let
-    params' = zipWith ((mapPair id) . Vident) ns params
-  funcST <- asks snd
-  let
-    (n, _) = funcST ! str
-  ls' <- renameStmts ls
-  return (Func t (Fnident n str) params' ls' pos)
+  ( if params == nub params
+      then applyRename
+      else report "Duplicate parameters" pos 1 >> return undefined
+    )
+  where
+    applyRename = do
+      ns <- mapM (uncurry $ insertDecl pos) params
+      let
+        params' = zipWith ((mapPair id) . Vident) ns params
+      funcST <- asks snd
+      let
+        (n, _) = funcST ! str
+      ls' <- renameStmts ls
+      return (Func t (Fnident n str) params' ls' pos)
 
 renameProg :: Prog String String -> Analysis (Prog Fnident Vident)
 renameProg (Main fs ls p) = do
