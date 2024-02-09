@@ -33,7 +33,11 @@ import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
+<<<<<<< Updated upstream
 import Text.Gigaparsec (Parsec, eof, many, some, ($>), (<:>), (<|>), (<~>))
+=======
+import Text.Gigaparsec (Parsec, eof, many, ($>), (<|>), (<~>))
+>>>>>>> Stashed changes
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
 import Text.Gigaparsec.Errors.ErrorGen
@@ -93,49 +97,47 @@ func' =
 stmts' :: Parsec [Stmt String String]
 stmts' = many (";" *> (stmt <|> _extraSemiColon))
 
-parseFuncPreix :: Parsec ((WType, String), Bool)
+parseFuncPreix :: Parsec (((WType, Pos), String), Bool)
 parseFuncPreix =
   _checkFunc
-    *> mkFunc' (wType <~> identifier <~> (("(" $> True) <|> ("=" $> False)))
+    *> mkFunc' (wType <~> pos <~> identifier <~> (("(" $> True) <|> ("=" $> False)))
 
-parseProgPrefix :: Parsec (Maybe ((WType, String), Bool))
+parseProgPrefix :: Parsec (Maybe (((WType, Pos), String), Bool))
 parseProgPrefix = option parseFuncPreix
 
-parseProgRest :: Maybe ((WType, String), Bool) -> Parsec (Prog String String)
+parseProgRest
+  :: Maybe (((WType, Pos), String), Bool) -> Parsec (Prog String String)
 parseProgRest Nothing = mkMain1 stmts
-parseProgRest (Just ((wtype, ident), True)) = do
+parseProgRest (Just (((wtype, p), ident), True)) = do
   (params, ss) <- func'
-  p <- program'
-  mkMain2 wtype ident (params, ss) p
-parseProgRest (Just ((wtype, ident), False)) = do
+  mkMain2 p wtype ident (params, ss) <$> program'
+parseProgRest (Just (((wtype, p), ident), False)) = do
   rvalue <- rValue
-  s <- stmts'
-  mkMain3 wtype ident rvalue s
+  mkMain3 p wtype ident rvalue <$> stmts'
 
 mkMain1 :: Parsec (Stmts fnident ident) -> Parsec (Prog fnident ident)
 mkMain1 = mkMain (pure [])
 
 mkMain2
-  :: WType
+  :: Pos
+  -> WType
   -> fnident
   -> ([(WType, ident)], Stmts fnident ident)
   -> Prog fnident ident
-  -> Parsec (Prog fnident ident)
-mkMain2 wtype ident (params, ss) (Main fs sts _) =
-  mkMain
-    (mkFunc (pure wtype) (pure ident) (pure params) (pure ss) <:> pure fs)
-    (pure sts)
+  -> Prog fnident ident
+mkMain2 p' wtype ident (params, ss) (Main fs sts p)
+  = Main (Func wtype ident params ss p' : fs) sts p
 
 mkMain3
-  :: WType
+  :: Pos 
+  -> WType
   -> ident
   -> RValue fnident ident
   -> [Stmt fnident ident]
-  -> Parsec (Prog fnident ident)
-mkMain3 wtype ident rvalue sts =
-  mkMain
-    (pure [])
-    (fromList <$> (mkDecl (pure wtype) (pure ident) (pure rvalue) <:> pure sts))
+  -> Prog fnident ident
+mkMain3 p wtype ident rvalue sts 
+  = Main [] (fromList (Decl wtype ident rvalue p : sts)) p
+
 
 -- | > func ::= <type> <identifier> '(' <paramList>? ')' 'is' <stmt> 'end'
 func :: Parsec (Func String String)
