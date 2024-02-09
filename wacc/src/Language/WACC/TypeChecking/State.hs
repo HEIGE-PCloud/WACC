@@ -118,12 +118,17 @@ tryUnify actT expT = maybe (abortActual actT) pure $ unify actT expT
 action is aborted with a saved invalid actual type (see 'abortActual').
 -}
 reportAt
-  :: Pos -> BType -> TypingM fnident ident a -> TypingM fnident ident a
-reportAt p expT action = catchE action report
+  :: (HasPos a)
+  => a
+  -> BType
+  -> TypingM fnident ident b
+  -> TypingM fnident ident b
+reportAt x expT action = catchE action report
   where
     report (Just actT, mp) =
       lift (tell [IncompatibleTypesError actT expT $ fromMaybe p mp]) *> abort
     report _ = abort
+    p = getPos x
 
 {- |
 Report a specialised 'TypeError' and abort.

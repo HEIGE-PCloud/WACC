@@ -26,7 +26,7 @@ checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
 checkArrayIndex (ArrayIndex v xs p) =
   reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
   where
-    go (BArray t) x = t <$ reportAt p BInt (unifyExprs BInt [x])
+    go (BArray t) x = t <$ reportAt x BInt (unifyExprs BInt [x])
     go t _ = abortActual t
 
 {- |
