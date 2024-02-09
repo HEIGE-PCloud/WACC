@@ -28,6 +28,9 @@ import Language.WACC.TypeChecking.BType (BType, FnType, unify)
 import Language.WACC.TypeChecking.Error
 import Text.Gigaparsec.Position (Pos)
 
+{- |
+Difference list used to collect multiple type errors.
+-}
 type TypeErrors = DList TypeError
 
 type FnTypes fnident = Map fnident FnType
