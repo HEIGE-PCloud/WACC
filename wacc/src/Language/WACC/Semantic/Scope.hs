@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 {- |
 The strategy for scope analysis is first add all function names into a symbol table (pass1).
@@ -6,23 +7,19 @@ The AST renaming and scope analysis occurs simultaneously in the 2nd pass using 
 -}
 module Language.WACC.Semantic.Scope (scopeAnalysis, Fnident, Vident, VarST) where
 
-import Control.Monad (foldM, void)
 import Control.Monad.RWS
   ( RWS
   , asks
   , evalRWS
-  , get
   , gets
   , local
   , modify
-  , runRWS
   , tell
   )
-import Data.DList (DList (..), singleton)
+import Data.DList (DList (..))
 import qualified Data.DList as DList
 import Data.Function (on)
 import Data.List (deleteFirstsBy, nub, nubBy)
-import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
 import Data.Map (Map, empty, insert, union, (!), (!?))
 import qualified Data.Map as Map
 import Language.WACC.AST.Expr
@@ -42,7 +39,7 @@ import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error (Error), quote)
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
-import Prelude hiding (GT, LT, reverse, unzip)
+import Prelude hiding (GT, LT, reverse)
 
 {- |
 The @Integer@ acts as a UID (which will not clash with variables @Vident@s either).
@@ -77,12 +74,16 @@ The Write state and Output state stores elements of the result of scope analysis
 -}
 type Analysis = RWS (SuperST, FuncST) (DList Error, VarST) (LocalST, Ctr)
 
+superST :: (SuperST, FuncST) -> SuperST
 superST = fst
 
+funcST :: (SuperST, FuncST) -> FuncST
 funcST = snd
 
+localST :: (LocalST, Ctr) -> LocalST
 localST = fst
 
+ctr :: (LocalST, Ctr) -> Ctr
 ctr = snd
 
 {- |
@@ -129,7 +130,7 @@ notDecl str = quote str ++ " was not declared."
 
 -- | write an error in a uniform format
 report :: String -> Pos -> Int -> Analysis ()
-report str pos len = tell (Data.DList.singleton (Error str pos (toEnum len)), mempty)
+report str pos len = tell (DList.singleton (Error str pos (toEnum len)), mempty)
 
 -- | Apply functions to corresponding pair elems
 mapPair :: (a -> c) -> (b -> d) -> (a, b) -> (c, d)
@@ -304,7 +305,7 @@ Run both passes failing if errors are encountered at each stage.
 -}
 scopeAnalysis
   :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
-scopeAnalysis p@(Main fs ls pos)
+scopeAnalysis p@(Main fs _ _)
   | not (null errs1) = Failure errs1
   | otherwise = processPass2 (DList.toList errs2)
   where

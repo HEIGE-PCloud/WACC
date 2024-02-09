@@ -28,7 +28,7 @@ import Language.WACC.Parser.Token
   , negateOp
   , stringLiteral
   )
-import Text.Gigaparsec (Parsec, many, some, ($>), (<|>))
+import Text.Gigaparsec (Parsec, some, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy)
 import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Errors.Patterns (preventativeExplain)

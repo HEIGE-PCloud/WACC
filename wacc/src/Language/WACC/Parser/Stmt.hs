@@ -23,7 +23,7 @@ where
 
 import Control.Applicative (asum, liftA3)
 import Data.List.NonEmpty (fromList)
-import Data.List.NonEmpty as D (NonEmpty ((:|)), last)
+import Data.List.NonEmpty as D (last)
 import qualified Data.Set as Set
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr)
 import Language.WACC.AST.Prog (Func (..), Prog (Main))
@@ -52,7 +52,7 @@ import Text.Gigaparsec
   , (<~>)
   )
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
-import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
+import Text.Gigaparsec.Errors.Combinator as E (explain, label)
 import Text.Gigaparsec.Errors.ErrorGen
   ( ErrorGen (SpecializedGen, adjustWidth, messages)
   )
