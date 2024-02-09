@@ -14,7 +14,6 @@ test-all:
 		--test-arguments --timeout=1m \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 !~ /semanticErr/"' \
 		--test-arguments --quickcheck-max-size=10
 
 integration-test: compile
