@@ -17,7 +17,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/variables/caseMatters.wacc (line 14, column 11):
-Variable "NUMBER" was not declared.
+scope error: variable "NUMBER" was not declared
 >   int number = 42 ;
 >   println NUMBER
 >           ^^^^^^

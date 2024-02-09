@@ -15,7 +15,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/variables/doubleDeclare.wacc (line 13, column 3):
-"x" was already defined in (12,7).
+scope error: "x" was already defined in line 12
 >   int x = 10 ;
 >   int x = 20
 >   ^

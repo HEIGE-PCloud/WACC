@@ -23,7 +23,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/function/invalidReturnsBranched.wacc (line 15, column 14):
-Variable "horse" was not declared.
+scope error: variable "horse" was not declared
 >     if true then
 >       return horse
 >              ^^^^^
