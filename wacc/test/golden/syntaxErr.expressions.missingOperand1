@@ -21,3 +21,4 @@ expressions may start with integer, string, character or boolean literals; ident
 >   int b = * 6
 >           ^
 > end
+

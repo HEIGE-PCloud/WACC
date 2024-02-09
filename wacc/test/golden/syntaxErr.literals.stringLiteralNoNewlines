@@ -21,3 +21,4 @@ expected """ or string character
 >     string s = "hello
 >                      ^
 >  world"
+

@@ -19,3 +19,4 @@ non-ascii characters in string literal, this is not allowed
 >     string s = "héllo world"
 >                 ^^^^^^^^^^^^
 > end
+

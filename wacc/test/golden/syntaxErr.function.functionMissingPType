@@ -23,3 +23,4 @@ expected closing bracket or type
 >   int f(x) is
 >         ^^
 >     return 0 
+

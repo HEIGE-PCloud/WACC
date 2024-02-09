@@ -17,3 +17,4 @@ semi-colons cannot follow the `end` of the program
 > 
 > begin skip end;
 >               ^
+

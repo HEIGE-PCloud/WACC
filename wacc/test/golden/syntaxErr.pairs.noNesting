@@ -20,3 +20,4 @@ pair types may not be nested
 >     pair(pair(int, string), char) p = null
 >          ^^^^
 > end
+

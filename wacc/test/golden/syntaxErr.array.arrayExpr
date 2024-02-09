@@ -21,3 +21,4 @@ expected ";" or end
 >   int[] b = [1, 2, 3] ++ [4] ;
 >                       ^
 > 	println b[3]
+

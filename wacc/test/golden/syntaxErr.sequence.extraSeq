@@ -17,3 +17,4 @@ expected begin, exit, free, fst, identifier, if, print, println, read, return, s
 > 
 > begin skip; end
 >             ^^^
+

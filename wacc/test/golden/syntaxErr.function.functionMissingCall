@@ -26,3 +26,4 @@ function calls may not appear in expressions and must use `call`
 >   int x = f()
 >           ^^^
 > end
+

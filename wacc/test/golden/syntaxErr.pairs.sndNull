@@ -21,3 +21,4 @@ expected fst, identifier, or snd
 >   int i = snd null;
 >               ^^^^
 >   println i
+

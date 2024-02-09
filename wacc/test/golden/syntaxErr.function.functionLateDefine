@@ -30,3 +30,4 @@ function declaration must be at the beginning of the program
 >   int g() is
 >   ^^^
 >     return 1
+

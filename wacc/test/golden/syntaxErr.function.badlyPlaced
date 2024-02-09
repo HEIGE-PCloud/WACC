@@ -25,3 +25,4 @@ all program body and function declarations must be within `begin` and `end`
 > int foo() is
 > ^^^
 >   return 42
+

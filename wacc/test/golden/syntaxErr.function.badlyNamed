@@ -23,3 +23,4 @@ function declaration for `intf` missing type
 >   intf() is
 >   ^^^^^^^
 >     return 42
+

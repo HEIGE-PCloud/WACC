@@ -19,3 +19,4 @@ expected boolean, character literal, chr, identifier, integer, len, negation, no
 >   int b = 2 - 
 > end
 > ^^^
+
