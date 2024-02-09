@@ -51,7 +51,10 @@ Type check a WACC @rvalue@.
 checkRValue
   :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
 checkRValue (RVExpr x _) = checkExpr x
-checkRValue (RVArrayLit xs p) = BArray <$> unifyExprsAt p BAny xs
+checkRValue (RVArrayLit xs p) = do
+  t <- unifyExprsAt p BAny xs
+  when (t == BAny) (abortWith $ HeterogeneousArrayError p)
+  pure $ BArray t
 checkRValue (RVNewPair x1 x2 _) = BKnownPair <$> checkExpr x1 <*> checkExpr x2
 checkRValue (RVPairElem pe _) = checkPairElem pe
 checkRValue (RVCall f xs p) = do
@@ -59,7 +62,7 @@ checkRValue (RVCall f xs p) = do
   let
     actN = length xs
     expN = length paramTypes
-  unless (actN == expN) $ abortWith (FunctionCallArityError actN expN p)
+  unless (actN == expN) (abortWith $ FunctionCallArityError actN expN p)
   ts <- mapM checkExpr xs
   zipWithM_ (\xt pt -> reportAt p pt $ tryUnify xt pt) ts paramTypes
   pure retType
