@@ -32,7 +32,7 @@ import Language.WACC.Parser.Common ()
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
-import Text.Gigaparsec (Parsec, eof, many, ($>), (<:>), (<|>), (<~>))
+import Text.Gigaparsec (Parsec, eof, many, some, ($>), (<:>), (<|>), (<~>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy1)
 import Text.Gigaparsec.Errors.Combinator as E (explain, fail, label)
 import Text.Gigaparsec.Errors.ErrorGen
@@ -204,7 +204,7 @@ lValueOrIdent =
     pos
     identifier
     pos
-    (option (many (arrayIndex "[" *> expr <* "]")))
+    (option (some (arrayIndex "[" *> expr <* "]")))
 
 arrayIndex :: Parsec a -> Parsec a
 arrayIndex = label (Set.singleton "array index")
