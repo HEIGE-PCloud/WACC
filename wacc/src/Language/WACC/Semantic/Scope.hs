@@ -6,41 +6,38 @@ analyse the @Stmt@ of each function and the main @Stmt@
 -}
 module Language.WACC.Semantic.Scope (scopeAnalysis, Fnident, Vident, VarST) where
 
-import Control.Monad (foldM, liftM, void)
+import Control.Monad (foldM, void)
 import Control.Monad.RWS
   ( RWS
-  , RWST
-  , ask
   , asks
   , evalRWS
   , get
   , gets
   , local
   , modify
-  , put
   , runRWS
   , tell
   )
 import Data.DList (DList (..), singleton)
 import qualified Data.DList as DList
 import Data.List (nub)
-import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
-import Data.Map hiding (null, singleton, toList)
+import Data.Map (Map, empty, insert, union, (!), (!?))
 import qualified Data.Map as Map
-import Language.WACC.AST
+import Language.WACC.AST.Expr
   ( ArrayIndex (..)
   , Expr (..)
-  , Func (..)
-  , LValue (..)
+  , WAtom (..)
+  )
+import Language.WACC.AST.Prog (Func (..), Prog (..))
+import Language.WACC.AST.Stmt
+  ( LValue (..)
   , PairElem (..)
-  , Prog (..)
   , RValue (..)
   , Stmt (..)
   , Stmts
-  , WAtom (..)
   )
 import Language.WACC.AST.WType (WType)
-import Language.WACC.Error
+import Language.WACC.Error (Error (Error))
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT, reverse, unzip)
@@ -159,6 +156,7 @@ renameExpr (Or e1 e2 p) = (\x y -> Or x y p) <$> renameExpr e1 <*> renameExpr e2
 mapPair :: (a -> c) -> (b -> d) -> (a, b) -> (c, d)
 mapPair f g (x, y) = (f x, g y)
 
+ctr :: (a, b) -> b
 ctr = snd
 
 freshN :: Analysis Ctr
@@ -186,8 +184,10 @@ insertDecl pos t str = do
 getST :: Analysis (LocalST, SuperST)
 getST = (,) <$> gets fst <*> asks fst
 
+alreadyDecl :: (Show a) => [Char] -> a -> [Char]
 alreadyDecl str origPos = str ++ " was already defined in " ++ show origPos ++ "."
 
+notDecl :: [Char] -> [Char]
 notDecl str = str ++ " was not declared."
 
 report :: String -> Pos -> Int -> Analysis ()
@@ -197,7 +197,7 @@ renameStmt :: Stmt String String -> Analysis (Stmt Fnident Vident)
 renameStmt (Skip p) = pure (Skip p)
 renameStmt (Decl t str rv pos) = do
   rv' <- renameRValue rv
-  (localST, superST) <- getST
+  (localST, _) <- getST
   case getDecl str localST Nothing of
     Nothing -> Control.Monad.void (insertDecl pos t str)
     (Just (_, posOrig)) -> report (alreadyDecl str posOrig) pos 1
@@ -264,7 +264,7 @@ renameProg (Main fs ls p) = do
 
 scopeAnalysis
   :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
-scopeAnalysis p@(Main fs ls _) = pass2 maybeFuncST
+scopeAnalysis p@(Main fs _ _) = pass2 maybeFuncST
   where
     (maybeFuncST, n, errs1) = runRWS (foo fs) () 0
     pass2 :: Maybe FuncST -> Result [Error] (Prog Fnident Vident, VarST)
@@ -288,9 +288,9 @@ foo = foldM bar (Just Map.empty)
           Error (alreadyDecl str origPos) pos (toEnum (length str))
         return Nothing
       Nothing -> do
-        n <- freshN
+        n <- freshN'
         return (Just (insert str (n, pos) funcST))
     bar Nothing _ = return Nothing
-    freshN = do
+    freshN' = do
       modify (+ 1)
       get

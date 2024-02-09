@@ -12,7 +12,6 @@ module Language.WACC.AST.Stmt
   )
 where
 
-import Data.Bifunctor
 import Data.List.NonEmpty (NonEmpty)
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
 import Language.WACC.AST.WType (WType)
