@@ -17,8 +17,8 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/function/badlyPlaced.wacc (line 11, column 1):
-unexpected keyword int
+Syntax error in test/wacc_examples/invalid/syntaxErr/function/badlyPlaced.wacc (line 11, column 1):
+unexpected keyword "int"
 expected begin
 all program body and function declarations must be within `begin` and `end`
 

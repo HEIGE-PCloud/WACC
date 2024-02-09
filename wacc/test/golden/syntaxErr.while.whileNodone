@@ -14,8 +14,8 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/while/whileNodone.wacc (line 14, column 1):
-unexpected keyword end
+Syntax error in test/wacc_examples/invalid/syntaxErr/while/whileNodone.wacc (line 14, column 1):
+unexpected keyword "end"
 expected ";" or done
 unclosed while loop
 

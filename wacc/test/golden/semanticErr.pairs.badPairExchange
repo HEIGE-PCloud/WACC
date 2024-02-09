@@ -15,7 +15,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/pairs/badPairExchange.wacc (line 14, column 3):
+Semantic error in test/wacc_examples/invalid/semanticErr/pairs/badPairExchange.wacc (line 14, column 3):
 type error: both sides of this assignment are of unknown types
 >   pair(pair, int) q = newpair(p, 6);
 >   fst fst q = snd fst q

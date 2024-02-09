@@ -18,7 +18,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/pairs/wrongTypeInParameterlessPair.wacc (line 17, column 14):
+Semantic error in test/wacc_examples/invalid/semanticErr/pairs/wrongTypeInParameterlessPair.wacc (line 17, column 14):
 type error: expected a pair but found an int
 > 
 >   fst oops = c

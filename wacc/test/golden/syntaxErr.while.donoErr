@@ -15,7 +15,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/while/donoErr.wacc (line 14, column 3):
+Syntax error in test/wacc_examples/invalid/syntaxErr/while/donoErr.wacc (line 14, column 3):
 unexpected "dono"
 expected ";" or done
 unclosed while loop

@@ -13,7 +13,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/expressions/mixedOpTypeErr.wacc (line 12, column 17):
+Semantic error in test/wacc_examples/invalid/semanticErr/expressions/mixedOpTypeErr.wacc (line 12, column 17):
 type error: expected an int but found a bool
 > begin
 >   int b = 1 + 2 + true + 4 + 5

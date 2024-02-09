@@ -16,7 +16,7 @@ begin
   skip
 end
 
-In test/wacc_examples/invalid/semanticErr/function/doubleArgDef.wacc (line 12, column 7):
+Semantic error in test/wacc_examples/invalid/semanticErr/function/doubleArgDef.wacc (line 12, column 7):
 x was already defined in (12,7).
 > begin
 >   int foo(int x, int x) is

@@ -15,8 +15,8 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/while/whilErr.wacc (line 12, column 8):
-unexpected keyword false
+Syntax error in test/wacc_examples/invalid/syntaxErr/while/whilErr.wacc (line 12, column 8):
+unexpected keyword "false"
 expected array index or assignment
 
 > begin

@@ -18,7 +18,7 @@ begin
   done
 end
 
-In test/wacc_examples/invalid/semanticErr/multiple/ifAndWhileErrs.wacc (line 12, column 9):
+Semantic error in test/wacc_examples/invalid/semanticErr/multiple/ifAndWhileErrs.wacc (line 12, column 9):
 tru was not declared.
 > begin
 >   while tru do

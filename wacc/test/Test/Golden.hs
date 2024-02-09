@@ -6,7 +6,7 @@ module Test.Golden
 where
 
 import Data.ByteString.Lazy.UTF8 (fromString)
-import Language.WACC.Error (Error (..), printError)
+import Language.WACC.Error (Error (..), printError, semanticError, syntaxError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (scopeAnalysis)
@@ -61,10 +61,10 @@ runSemanticCheck path = goldenVsStringDiff testname diff goldenPath testAction
 syntaxCheck :: Result Error b -> FilePath -> [String] -> String
 syntaxCheck res path ls = case res of
   Success _ -> error "syntax check should fail but succeeded"
-  Failure err -> printError path ls err
+  Failure err -> printError path ls syntaxError err
 
 semanticCheck :: [Error] -> FilePath -> [String] -> String
-semanticCheck errs path ls = concat [printError path ls err | err <- errs]
+semanticCheck errs path ls = concat [printError path ls semanticError err | err <- errs]
 
 test =
   testGroup

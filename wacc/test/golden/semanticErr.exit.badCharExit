@@ -13,7 +13,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/exit/badCharExit.wacc (line 12, column 8):
+Semantic error in test/wacc_examples/invalid/semanticErr/exit/badCharExit.wacc (line 12, column 8):
 type error: expected an int but found a char
 > begin
 >   exit 'a'

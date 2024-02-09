@@ -13,7 +13,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/basic/unescapedChar.wacc (line 12, column 13):
+Syntax error in test/wacc_examples/invalid/syntaxErr/basic/unescapedChar.wacc (line 12, column 13):
 unexpected ""'"
 expected escape sequence or graphic character
 

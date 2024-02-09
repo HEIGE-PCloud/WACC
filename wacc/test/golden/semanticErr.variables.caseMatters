@@ -16,7 +16,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/variables/caseMatters.wacc (line 14, column 11):
+Semantic error in test/wacc_examples/invalid/semanticErr/variables/caseMatters.wacc (line 14, column 11):
 NUMBER was not declared.
 >   int number = 42 ;
 >   println NUMBER

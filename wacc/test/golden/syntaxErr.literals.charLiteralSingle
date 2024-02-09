@@ -13,7 +13,7 @@ begin
     char c = 'Hello Jamie'
 end
 
-In test/wacc_examples/invalid/syntaxErr/literals/charLiteralSingle.wacc (line 13, column 16):
+Syntax error in test/wacc_examples/invalid/syntaxErr/literals/charLiteralSingle.wacc (line 13, column 16):
 unexpected "ello"
 expected end of character literal
 

@@ -44,7 +44,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/multiple/obfuscatingReturnsWithWhile.wacc (line 14, column 5):
+Semantic error in test/wacc_examples/invalid/semanticErr/multiple/obfuscatingReturnsWithWhile.wacc (line 14, column 5):
 type error: expected a char but found an int
 >   int f() is
 >     if true then

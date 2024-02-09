@@ -14,7 +14,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/array/noStringIndex.wacc (line 13, column 15):
+Semantic error in test/wacc_examples/invalid/semanticErr/array/noStringIndex.wacc (line 13, column 15):
 type error: expected an array (T[] for some type T) but found a string
 >   string str = "hello world";
 >   char x = str[0]

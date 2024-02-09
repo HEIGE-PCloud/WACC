@@ -13,8 +13,8 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/expressions/missingOperand1.wacc (line 12, column 11):
-unexpected operator *
+Syntax error in test/wacc_examples/invalid/syntaxErr/expressions/missingOperand1.wacc (line 12, column 11):
+unexpected operator "*"
 expected array literal, expression, fst, function call, newpair, or snd
 expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses
 

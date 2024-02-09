@@ -14,7 +14,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/basic/badComment.wacc (line 12, column 7):
+Syntax error in test/wacc_examples/invalid/syntaxErr/basic/badComment.wacc (line 12, column 7):
 unexpected ","
 expected array index or assignment
 

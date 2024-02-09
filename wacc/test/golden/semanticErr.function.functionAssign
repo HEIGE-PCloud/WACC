@@ -17,7 +17,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/function/functionAssign.wacc (line 16, column 3):
+Semantic error in test/wacc_examples/invalid/semanticErr/function/functionAssign.wacc (line 16, column 3):
 f was not declared.
 >   
 >   f = 2

@@ -15,7 +15,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/IO/readTypeErr.wacc (line 13, column 8):
+Semantic error in test/wacc_examples/invalid/semanticErr/IO/readTypeErr.wacc (line 13, column 8):
 type error: only ints and chars may be read, but a bool was found
 >   bool b = true ;
 >   read b ; 

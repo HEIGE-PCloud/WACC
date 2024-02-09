@@ -14,7 +14,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/array/wrongArrayType.wacc (line 13, column 31):
+Semantic error in test/wacc_examples/invalid/semanticErr/array/wrongArrayType.wacc (line 13, column 31):
 type error: expected an int[] but found a char[]
 > begin
 >   int[] should_be_int_array = ['a', 'b', 'c']

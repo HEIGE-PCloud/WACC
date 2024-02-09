@@ -14,7 +14,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/exit/globalReturn.wacc (line 12, column 3):
+Semantic error in test/wacc_examples/invalid/semanticErr/exit/globalReturn.wacc (line 12, column 3):
 type error: return statements are not allowed in the main program
 > begin
 >   return 42 ;

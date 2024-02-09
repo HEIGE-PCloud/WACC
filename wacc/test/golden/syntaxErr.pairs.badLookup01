@@ -14,7 +14,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/syntaxErr/pairs/badLookup01.wacc (line 13, column 11):
+Syntax error in test/wacc_examples/invalid/syntaxErr/pairs/badLookup01.wacc (line 13, column 11):
 unexpected keyword fst
 expected expression
 expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses

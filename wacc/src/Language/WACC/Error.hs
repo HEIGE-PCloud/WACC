@@ -4,7 +4,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Language.WACC.Error (printError, Error (..), isSuccess, isFailure) where
+module Language.WACC.Error (printError, Error (..), isSuccess, isFailure, syntaxError, semanticError) where
 
 import Data.List.Extra ((!?))
 import Data.List.NonEmpty (NonEmpty)
@@ -12,7 +12,7 @@ import Data.Maybe (catMaybes)
 import Data.Set (Set, toList)
 import Data.String (IsString (fromString))
 import Language.WACC.Parser.Token (keywords, nonlexeme, operators)
-import Text.Gigaparsec (Parsec, Result (..), parse, ($>))
+import Text.Gigaparsec (Result (..), ($>))
 import Text.Gigaparsec.Char (whitespace)
 import Text.Gigaparsec.Errors.DefaultErrorBuilder
   ( StringBuilder (..)
@@ -66,13 +66,20 @@ isSuccess (Failure _) = False
 isFailure :: Result e a -> Bool
 isFailure = not . isSuccess
 
+syntaxError :: String
+syntaxError = "Syntax error"
+
+semanticError :: String
+semanticError = "Semantic error"
+
 data Error = Error {errorMessage :: String, position :: Pos, width :: Word}
   deriving (Show)
 
-printError :: FilePath -> [String] -> Error -> String
-printError filePath sourceCodeLines (Error errMsg p@(row, col) w) =
-  unlines [printHeader filePath p, errMsg, lineStr]
+printError :: FilePath -> [String] -> String -> Error -> String
+printError filePath sourceCodeLines errorType (Error errMsg p@(row, col) w) =
+  unlines [headline, errMsg, lineStr]
   where
+    headline = errorType ++ printHeader filePath p
     prevLine = printLine (row - 2, col) sourceCodeLines
     currline = printLine (row - 1, col) sourceCodeLines
     caretLine = replicate (fromIntegral col - 1) ' ' ++ replicate (fromIntegral w) '^'
@@ -89,7 +96,7 @@ printLine :: Pos -> [String] -> Maybe String
 printLine (row, _) ls = ls !? fromIntegral row
 
 printHeader :: FilePath -> Pos -> String
-printHeader filePath p = "In " ++ filePath ++ " " ++ printPos p ++ ":"
+printHeader filePath p = " in " ++ filePath ++ " " ++ printPos p ++ ":"
 
 instance ErrorBuilder Error where
   format :: Position Error -> Source Error -> ErrorInfoLines Error -> Error
@@ -162,11 +169,11 @@ instance ErrorBuilder Error where
   unexpectedToken = lexToken ps singleChar
     where
       ps =
-        map (\x -> T.sym nonlexeme x $> ("keyword " ++ x)) keywords
-          ++ map (\x -> T.sym nonlexeme x $> ("operator " ++ x)) operators
-          ++ [ ("integer " ++) . show <$> T.decimal (T.integer nonlexeme)
-             , ("character " ++) . show <$> T.ascii (T.charLiteral nonlexeme)
-             , ("string " ++) . show <$> T.ascii (T.stringLiteral nonlexeme)
+        map (\x -> T.sym nonlexeme x $> ("keyword " ++ quote x)) keywords
+          ++ map (\x -> T.sym nonlexeme x $> ("operator " ++ quote x)) operators
+          ++ [ (\x -> "integer " ++ quote x) . show <$> T.decimal (T.integer nonlexeme)
+             , (\x -> "character " ++ quote x) . show <$> T.ascii (T.charLiteral nonlexeme)
+             , (\x -> "string " ++ quote x) . show <$> T.ascii (T.stringLiteral nonlexeme)
              , showWhitespace <$> whitespace
              ]
 
@@ -178,3 +185,6 @@ showWhitespace '\r' = "carriage return"
 showWhitespace '\f' = "form feed"
 showWhitespace '\v' = "vertical tab"
 showWhitespace x = "whitespace " ++ show x
+
+quote :: String -> String
+quote x = "\"" ++ x ++ "\""

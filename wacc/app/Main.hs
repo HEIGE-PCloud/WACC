@@ -3,7 +3,7 @@ module Main (main) where
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
 import Language.WACC.AST.Prog (Prog)
-import Language.WACC.Error (Error, printError)
+import Language.WACC.Error (Error, printError, semanticError, syntaxError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (Fnident, VarST, Vident, scopeAnalysis)
@@ -39,21 +39,22 @@ runParse filename = do
   let
     printError' = printError filename (lines sourceCode)
   case res of
-    Failure err -> putStrLn (printError' err) >> exitWithSyntaxError
+    Failure err -> putStrLn (printError' syntaxError err) >> exitWithSyntaxError
     Success ast -> runScopeAnalysis printError' ast
 
-runScopeAnalysis :: (Error -> String) -> Prog String String -> IO ()
+runScopeAnalysis :: (String -> Error -> String) -> Prog String String -> IO ()
 runScopeAnalysis printError' ast = case scopeAnalysis ast of
   Failure errs -> do
-    mapM_ (putStrLn . printError') errs
+    mapM_ (putStrLn . printError' semanticError) errs
     exitWithSemanticError
   Success res -> runTypeCheck printError' res
 
-runTypeCheck :: (Error -> String) -> (Prog Fnident Vident, VarST) -> IO ()
+runTypeCheck
+  :: (String -> Error -> String) -> (Prog Fnident Vident, VarST) -> IO ()
 runTypeCheck printError' ast = case uncurry checkTypes ast of
   [] -> exitSuccess
   errs -> do
-    mapM_ (putStrLn . printError') errs
+    mapM_ (putStrLn . printError' semanticError) errs
     exitWithSemanticError
 
 usageAndExit :: IO ()

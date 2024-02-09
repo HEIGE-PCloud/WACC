@@ -14,7 +14,7 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/function/callUndefFunction.wacc (line 13, column 16):
+Semantic error in test/wacc_examples/invalid/semanticErr/function/callUndefFunction.wacc (line 13, column 16):
 fib was not declared.
 > begin
 >   int result = call fib(5)

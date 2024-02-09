@@ -18,7 +18,7 @@ end
 	
 
 
-In test/wacc_examples/invalid/semanticErr/function/functionBadArgUse.wacc (line 13, column 16):
+Semantic error in test/wacc_examples/invalid/semanticErr/function/functionBadArgUse.wacc (line 13, column 16):
 type error: expected a bool but found an int
 > 	int f(int x) is
 >     bool b = x && true ;
