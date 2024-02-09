@@ -14,10 +14,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/array/indexUndefIdent.wacc (line 13, column 17):
+In test/wacc_examples/invalid/semanticErr/array/indexUndefIdent.wacc (line 13, column 12):
 horse was not declared.
 > begin
 >   char c = horse[2]
->                 ^^^^^
+>            ^^^^^
 > end
 

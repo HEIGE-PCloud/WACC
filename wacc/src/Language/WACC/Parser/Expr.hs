@@ -14,6 +14,7 @@ module Language.WACC.Parser.Expr
   )
 where
 
+import Control.Applicative (liftA3)
 import Data.Set (fromList)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
@@ -24,7 +25,7 @@ import Language.WACC.Parser.Token
   , negateOp
   , stringLiteral
   )
-import Text.Gigaparsec (Parsec, many, ($>), (<|>))
+import Text.Gigaparsec (Parsec, many, some, ($>), (<|>))
 import Text.Gigaparsec.Combinator (choice, option, sepBy)
 import Text.Gigaparsec.Errors.Combinator (explain, label)
 import Text.Gigaparsec.Errors.Patterns (preventativeExplain)
@@ -79,16 +80,6 @@ $( deriveDeferredConstructors
     ]
  )
 
-liftA4
-  :: (Applicative f)
-  => (a -> b -> c -> d -> e)
-  -> f a
-  -> f b
-  -> f c
-  -> f d
-  -> f e
-liftA4 f a b c d = f <$> a <*> b <*> c <*> d
-
 -- | > <int-liter> ::= <int-sign>? <digit>+
 intLiter :: Parsec (WAtom i)
 intLiter = mkIntLit' decimal
@@ -115,7 +106,7 @@ ident = mkIdent' identifier
 
 -- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
 arrayElem :: Parsec (WAtom String)
-arrayElem = mkArrayElem' (mkArrayIndex identifier (many ("[" *> expr <* "]")))
+arrayElem = mkArrayElem' (mkArrayIndex identifier (some ("[" *> expr <* "]")))
 
 {- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
  >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
@@ -129,22 +120,21 @@ atom =
     , mkWAtom stringLiter
     , mkWAtom pairLiter
     , mkWAtom
-        (mkIdentOrArrayElem pos identifier pos (option (many ("[" *> expr <* "]"))))
+        (mkIdentOrArrayElem pos identifier (option (some ("[" *> expr <* "]"))))
     , "(" *> expr <* ")"
     ]
 
 mkIdentOrArrayElem
   :: Parsec Pos
   -> Parsec String
-  -> Parsec Pos
   -> Parsec (Maybe [Expr String])
   -> Parsec (WAtom String)
-mkIdentOrArrayElem = liftA4 mkIdentOrArrayElem'
+mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem'
-      :: Pos -> String -> Pos -> Maybe [Expr String] -> WAtom String
-    mkIdentOrArrayElem' p str p' (Just e) = ArrayElem (ArrayIndex str e p') p
-    mkIdentOrArrayElem' p str _ Nothing = Ident str p
+      :: Pos -> String -> Maybe [Expr String] -> WAtom String
+    mkIdentOrArrayElem' p str (Just e) = ArrayElem (ArrayIndex str e p) p
+    mkIdentOrArrayElem' p str Nothing = Ident str p
 
 {- | > <expr> ::= <unary-oper> <expr>
  >              | <expr> <binary-oper> <expr>

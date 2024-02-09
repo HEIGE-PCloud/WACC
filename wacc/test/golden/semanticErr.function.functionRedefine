@@ -20,9 +20,10 @@ begin
 end
 
 
-In test/wacc_examples/invalid/semanticErr/function/functionRedefine.wacc (line 20, column 1):
-f was already defined in (20,1).
->   println x
-> end
-> ^
+In test/wacc_examples/invalid/semanticErr/function/functionRedefine.wacc (line 15, column 7):
+function f is already defined
+> 	end
+>   int f() is
+>       ^
+>     return 1
 

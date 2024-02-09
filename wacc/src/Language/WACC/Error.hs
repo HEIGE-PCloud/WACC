@@ -70,6 +70,7 @@ isFailure :: Result e a -> Bool
 isFailure = not . isSuccess
 
 data Error = Error {errorMessage :: String, position :: Pos, width :: Word}
+  deriving (Show)
 
 printError :: FilePath -> [String] -> Error -> String
 printError filePath sourceCodeLines (Error errMsg p@(row, col) w) =
