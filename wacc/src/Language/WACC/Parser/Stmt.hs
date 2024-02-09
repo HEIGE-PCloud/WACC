@@ -187,6 +187,9 @@ func =
     ("(" *> (concat <$> option paramList) <* ")")
     ("is" *> stmts <* "end")
 
+{- |
+Checks that function body does not contain any code after a return or exit statement.
+-}
 checkFunc :: Prog fnident ident -> Result Error (Prog fnident ident)
 checkFunc s@(Main [] _ _) = Success s
 checkFunc s@(Main fs _ _) = case res of
@@ -204,9 +207,9 @@ checkFunc s@(Main fs _ _) = case res of
     checkFunc' (Func _ _ _ ss _) = funcExit (D.last ss)
     res = asum $ map checkFunc' fs
 
---   where
---     [s | (Func _ _ _ sts) <- fs, s <- D.toList sts]
-
+{- |
+Traverse Tree to find the last statement in a function body.
+-}
 funcExit :: Stmt fnident ident -> Maybe Pos
 funcExit (Return _ _) = Nothing
 funcExit (Exit _ _) = Nothing
@@ -223,6 +226,9 @@ funcExit (Free _ p) = Just p
 funcExit (Print _ p) = Just p
 funcExit (PrintLn _ p) = Just p
 
+{- |
+Parser which parses the program with trailing statement checks.
+-}
 parseWithError
   :: Parsec (Prog fnident ident) -> String -> Result Error (Prog fnident ident)
 parseWithError parser sourceCode = case res of
