@@ -46,29 +46,15 @@ import Prelude hiding (GT, LT, reverse, unzip)
 
 {- |
 The @Integer@ acts as a UID (which will not clash with variables @Vident@s either).
-The @String@ is the original name required error reporting.
 -}
-data Fnident = Fnident Integer String
-  deriving (Show)
-
-instance Eq Fnident where
-  (Fnident n1 _) == (Fnident n2 _) = n1 == n2
-
-instance Ord Fnident where
-  (Fnident n1 _) <= (Fnident n2 _) = n1 <= n2
+data Fnident = Fnident Integer
+  deriving (Ord, Eq, Show)
 
 {- |
 The @Integer@ acts as a UID (which will not clash with @Fnident@s either)
-The @String@ is the original name required error reporting.
 -}
-data Vident = Vident Integer String
-  deriving (Show)
-
-instance Eq Vident where
-  (Vident n1 _) == (Vident n2 _) = n1 == n2
-
-instance Ord Vident where
-  (Vident n1 _) <= (Vident n2 _) = n1 <= n2
+data Vident = Vident Integer
+  deriving (Ord, Eq, Show)
 
 -- | Symbol Table of variables for all scopes above the current one
 type SuperST = Map String (Integer, Pos)
@@ -174,7 +160,7 @@ insertDecl pos t str = do
     Nothing -> do
       n <- freshN
       modify $ mapPair (insert str (n, pos)) id
-      tell (mempty, Map.singleton (Vident n str) (t, pos))
+      tell (mempty, Map.singleton (Vident n) (t, pos))
       return n
     (Just (_, posOrig)) -> do
       report (alreadyDecl str posOrig) pos 1
@@ -199,23 +185,23 @@ renameRValue (RVNewPair e1 e2 p) = (\x y -> RVNewPair x y p) <$> renameExpr e1 <
 renameRValue (RVPairElem pe p) = (`RVPairElem` p) <$> renamePairElem pe
 renameRValue (RVCall str es pos) = do
   es' <- mapM renameExpr es
-  renameFuncOrErr str pos (\n -> RVCall (Fnident n str) es' pos)
+  renameFuncOrErr str pos (\n -> RVCall (Fnident n) es' pos)
 
 renameLValue :: LValue String -> Analysis (LValue Vident)
-renameLValue (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (Vident n str) pos)
+renameLValue (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (Vident n) pos)
 renameLValue (LVArrayElem arrI p) = (`LVArrayElem` p) <$> renameArrayIndex arrI
 renameLValue (LVPairElem pe p) = (`LVPairElem` p) <$> renamePairElem pe
 
 renameArrayIndex :: ArrayIndex String -> Analysis (ArrayIndex Vident)
 renameArrayIndex (ArrayIndex str es pos) = do
   es' <- mapM renameExpr es
-  renameOrErr str pos (\n -> ArrayIndex (Vident n str) es' pos)
+  renameOrErr str pos (\n -> ArrayIndex (Vident n) es' pos)
 
 {- |
 Use @renameOrErr@ to inspect every occurence of an ident and rename it
 -}
 renameAtom :: WAtom String -> Analysis (WAtom Vident)
-renameAtom (Ident str pos) = renameOrErr str pos (\n -> Ident (Vident n str) pos)
+renameAtom (Ident str pos) = renameOrErr str pos (\n -> Ident (Vident n) pos)
 renameAtom (ArrayElem arrI p) = (`ArrayElem` p) <$> renameArrayIndex arrI
 renameAtom (IntLit x p) = pure (IntLit x p)
 renameAtom (BoolLit x p) = pure (BoolLit x p)
@@ -252,7 +238,7 @@ renameStmt (Skip p) = pure (Skip p)
 renameStmt (Decl t str rv pos) = do
   rv' <- renameRValue rv
   n <- insertDecl pos t str
-  return (Decl t (Vident n str) rv' pos)
+  return (Decl t (Vident n) rv' pos)
 renameStmt (Asgn lv rv p) = do
   lv' <- renameLValue lv
   rv' <- renameRValue rv
@@ -300,12 +286,12 @@ renameFunc (Func t str params ls pos) = do
   let
     (n, _) = funcST ! str
   ls' <- renameStmts ls
-  return (Func t (Fnident n str) params' ls' pos)
+  return (Func t (Fnident n) params' ls' pos)
   where
     renameParam :: (WType, String) -> Analysis (WType, Vident)
     renameParam (t, str) = do
       n <- insertDecl pos t str
-      return (t, Vident n str)
+      return (t, Vident n)
 
 renameProg :: Prog String String -> Analysis (Prog Fnident Vident)
 renameProg (Main fs ls p) = do
