@@ -190,9 +190,10 @@ test =
             [ testCase "accepts empty arrays" $
                 checkRValue' (RVArrayLit [] undefined) @?= pure (BArray BAny)
             , testProperty "accepts arrays of homogeneous expressions" $
-                \n t ->
+                \n wt ->
                   let
                     n' = abs n + 1
+                    t = fix wt
                     xs = replicate n' $ varExpr t
                   in
                     checkRValue' (RVArrayLit xs undefined) == pure (BArray t)
