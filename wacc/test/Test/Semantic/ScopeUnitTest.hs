@@ -33,7 +33,6 @@ showErrored code = (scopeAnalysis t)
   where
     (Success t) = parse @String (fully program) code
 
-
 badPairElemFst = "begin\nint x = 5;\nbegin\nfst y = null\nend\nend\n"
 
 badPairElemSnd = "begin\nint x = 5;\nbegin\nsnd y = null\nend\nend\n"

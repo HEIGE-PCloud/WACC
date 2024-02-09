@@ -14,20 +14,20 @@ import Control.Monad.RWS
   , get
   , gets
   , local
-  , modify 
+  , modify
   , runRWS
   , tell
-  ) 
+  )
 import Data.DList (DList (..), singleton)
 import qualified Data.DList as DList
-import Data.Map (Map, empty, insert, union, (!), (!?))
-import Data.List (nub, nubBy, deleteFirstsBy)
+import Data.Function (on)
+import Data.List (deleteFirstsBy, nub, nubBy)
 import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
-import Data.Function (on) 
+import Data.Map (Map, empty, insert, union, (!), (!?))
 import qualified Data.Map as Map
-import Language.WACC.AST.Expr 
+import Language.WACC.AST.Expr
   ( ArrayIndex (..)
-  , Expr (..) 
+  , Expr (..)
   , WAtom (..)
   )
 import Language.WACC.AST.Prog (Func (..), Prog (..))
@@ -35,15 +35,14 @@ import Language.WACC.AST.Stmt
   ( LValue (..)
   , PairElem (..)
   , RValue (..)
-  , Stmt (..) 
+  , Stmt (..)
   , Stmts
-  ) 
+  )
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error (Error))
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT, reverse, unzip)
-
 
 {- |
 The @Integer  acts as a UID (which will not clash with variable @Vident@s either)
@@ -179,8 +178,7 @@ getDecl str localST maybeSuperST = case localVal of
       Nothing -> Nothing
       Just superST -> superST !? str
 
-
-insertDecl :: Pos -> WType -> String -> Analysis Ctr 
+insertDecl :: Pos -> WType -> String -> Analysis Ctr
 insertDecl pos t str = do
   (localST, _) <- getST
   case getDecl str localST Nothing of
@@ -258,7 +256,7 @@ renameFunc (Func t str params ls pos) = do
   return (Func t (Fnident n str) params' ls' pos)
   where
     renameParam :: (WType, String) -> Analysis (WType, Vident)
-    renameParam (t, str) = do 
+    renameParam (t, str) = do
       n <- insertDecl pos t str
       return (t, Vident n str)
 
@@ -276,20 +274,21 @@ scopeAnalysis p@(Main fs ls pos)
   where
     pass2 e2
       | not (null e2) = Failure e2
-      | otherwise     = Success (p', varST)
+      | otherwise = Success (p', varST)
     errs1 = pass1 (zip names poss)
     names = map (\(Func _ str _ _ _) -> str) fs
     poss = map (\(Func _ _ _ _ pos) -> pos) fs
     n = toInteger $ length fs
-    funcST = Map.fromList $ zip names (zip [1..] poss)
+    funcST = Map.fromList $ zip names (zip [1 ..] poss)
     (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n + 1)
-
-
 
 pass1 :: [(String, Pos)] -> [Error]
 pass1 fns = map mkErr dups
   where
     eqFsts = (==) `on` fst
     dups = nub $ deleteFirstsBy eqFsts fns (nubBy eqFsts fns)
-    mkErr (str, pos) = Error ("in pos" ++ (show pos) ++ str ++ " is redefined") pos (toEnum (length str))
-
+    mkErr (str, pos) =
+      Error
+        ("in pos" ++ (show pos) ++ str ++ " is redefined")
+        pos
+        (toEnum (length str))
