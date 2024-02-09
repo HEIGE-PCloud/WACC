@@ -1,0 +1,23 @@
+# Attempting to array-index an undefined identifier.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  char c = horse[2]
+end
+
+
+In test/wacc_examples/invalid/semanticErr/array/indexUndefIdent.wacc (line 13, column 17):
+horse was not declared.
+> begin
+>   char c = horse[2]
+>                 ^^^^^
+> end
+

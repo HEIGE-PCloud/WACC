@@ -1,0 +1,24 @@
+# true typo
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  while tru do
+    skip
+  done
+end
+
+
+In test/wacc_examples/invalid/semanticErr/while/truErr.wacc (line 12, column 13):
+tru was not declared.
+> begin
+>   while tru do
+>             ^^^
+>     skip
+

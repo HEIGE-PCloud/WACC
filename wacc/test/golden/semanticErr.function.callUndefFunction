@@ -1,0 +1,23 @@
+# Calling an undefined identifier.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int result = call fib(5)
+end
+
+
+In test/wacc_examples/invalid/semanticErr/function/callUndefFunction.wacc (line 13, column 16):
+fib was not declared.
+> begin
+>   int result = call fib(5)
+>                ^^^
+> end
+

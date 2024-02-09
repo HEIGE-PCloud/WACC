@@ -1,0 +1,25 @@
+# assignment to variable not declared in current scope
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  begin 
+  int x = 5
+  end ;
+  x = 10
+end
+
+
+In test/wacc_examples/invalid/semanticErr/variables/undeclaredScopeVar.wacc (line 15, column 5):
+x was not declared.
+>   end ;
+>   x = 10
+>     ^
+> end
+
