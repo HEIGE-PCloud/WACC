@@ -22,8 +22,8 @@ import Control.Monad.RWS
   , tell
   )
 import Data.DList (DList (..), singleton)
-import Data.List (nub)
 import qualified Data.DList as DList
+import Data.List (nub)
 import Data.List.NonEmpty (NonEmpty (..), singleton, unzip, (<|))
 import Data.Map hiding (null, singleton, toList)
 import qualified Data.Map as Map
@@ -240,8 +240,10 @@ renameStmts ls = do
 
 renameFunc :: Func String String -> Analysis (Func Fnident Vident)
 renameFunc (Func t str params ls pos) = do
-  (if params == nub params then applyRename else report "Duplicate parameters" pos 1 >> return undefined) 
-
+  ( if params == nub params
+      then applyRename
+      else report "Duplicate parameters" pos 1 >> return undefined
+    )
   where
     applyRename = do
       ns <- mapM (uncurry $ insertDecl pos) params
