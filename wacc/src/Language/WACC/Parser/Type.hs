@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+{- |
+Defines the parser for WACC types.
+-}
 module Language.WACC.Parser.Type
   ( wType
   , baseType
@@ -37,6 +40,9 @@ $( deriveLiftedConstructors
 wType :: Parsec WType
 wType = mkWType (baseType <|> pairType) (_arrayType (many "[]"))
 
+{- |
+Lifted Constructor for WType
+-}
 mkWType :: Parsec WType -> Parsec [()] -> Parsec WType
 mkWType = liftA2 (foldr (const WArray))
 
@@ -50,6 +56,9 @@ baseType =
     , "string" *> mkWString
     ]
 
+{- |
+Parser for square brackets.
+-}
 squareBrackets :: Parsec ()
 squareBrackets = "[" *> "]"
 
@@ -57,6 +66,9 @@ squareBrackets = "[" *> "]"
 arrayType :: Parsec WType
 arrayType = postfix1 id (baseType <|> pairType) (squareBrackets >> pure WArray)
 
+{- |
+Parser for 'WType' within a pair.
+-}
 pairBrackets :: Parsec WType
 pairBrackets = "(" *> mkWKnownPair (pairElemType <* ",") pairElemType <* ")"
 
@@ -71,9 +83,15 @@ pairElemType =
     *> mkWType baseType (many squareBrackets)
       <|> ("pair" *> (mkWType pairBrackets (some squareBrackets) <|> mkWErasedPair))
 
+{- |
+Labels the array type in error messages.
+-}
 _arrayType :: Parsec a -> Parsec a
 _arrayType = label (Set.singleton "array type")
 
+{- |
+Labels the nested pair in error messages.
+-}
 _nestedPair :: Parsec ()
 _nestedPair =
   preventativeExplain

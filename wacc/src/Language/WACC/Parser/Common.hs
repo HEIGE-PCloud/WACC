@@ -1,5 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
+{- |
+Overload Strings to use the lexer.
+-}
 module Language.WACC.Parser.Common where
 
 import Language.WACC.Parser.Token (lexer)

@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+{- |
+Defines the parser for WACC expressions.
+-}
 module Language.WACC.Parser.Expr
   ( intLiter
   , boolLiter
@@ -124,6 +127,9 @@ atom =
     , "(" *> expr <* ")"
     ]
 
+{- |
+Left-factoring the identifier and array element parsers.
+-}
 mkIdentOrArrayElem
   :: Parsec Pos
   -> Parsec String
@@ -164,33 +170,60 @@ expr =
         )
     )
 
+{- |
+Lifted Constructor for the 'WAtom' 'int' literal.
+-}
 mkIntLit' :: Parsec Integer -> Parsec (WAtom ident)
 mkIntLit' = label (fromList ["integer"]) . mkIntLit
 
+{- |
+Lifted Constructor for the 'WAtom' 'bool' literal.
+-}
 mkBoolLit' :: Parsec Bool -> Parsec (WAtom ident)
 mkBoolLit' = label (fromList ["boolean"]) . mkBoolLit
 
+{- |
+Lifted constructor for the 'WAtom' 'char' literal.
+-}
 mkCharLit' :: Parsec Char -> Parsec (WAtom ident)
 mkCharLit' = label (fromList ["character literal"]) . mkCharLit
 
+{- |
+Lifted constructor for the 'WAtom' 'string' literal.
+-}
 mkStringLit' :: Parsec String -> Parsec (WAtom ident)
 mkStringLit' = label (fromList ["strings"]) . mkStringLit
 
+{- |
+Lifted constructor for the 'WAtom' 'null' literal.
+-}
 mkNull' :: Parsec (WAtom ident)
 mkNull' = label (fromList ["null"]) mkNull
 
+{- |
+Lifted constructor for the 'WAtom' identifier literal.
+-}
 mkIdent' :: Parsec String -> Parsec (WAtom String)
 mkIdent' = label (fromList ["identifier"]) . mkIdent
 
+{- |
+Constructs a parser for the 'Expr' with error messages for expected values.
+-}
 mkExpr' :: Parsec a -> Parsec a
 mkExpr' =
   explain
     "expressions may start with integer, string, character or boolean literals; identifiers; unary operators; null; or parentheses"
     . label (fromList ["expression"])
 
+{- |
+Lifted constructor for the 'WAtom' 'array' element.
+-}
 mkArrayElem' :: Parsec (ArrayIndex String) -> Parsec (WAtom String)
 mkArrayElem' = label (fromList ["array element"]) . mkArrayElem
 
+{- |
+Unit Parser to annnotate error messages for function calls in expressions.
+-}
 _funcExpr :: Parsec ()
 _funcExpr =
   preventativeExplain

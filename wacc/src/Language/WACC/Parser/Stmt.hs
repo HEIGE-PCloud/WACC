@@ -2,6 +2,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
+{- |
+Defines the parser for WACC statements.
+-}
 module Language.WACC.Parser.Stmt
   ( program
   , func
@@ -96,25 +99,43 @@ program =
     <* ("end" <|> _unclosedEnd "main body")
     <* _semiColonAfterEnd
 
+{- |
+> <prog> ::= <func> <prog>
+-}
 program' :: Parsec (Prog String String)
 program' = parseProgPrefix >>= parseProgRest
 
+{- |
+Disambiguating statement declarations from function calls.
+-}
 func' :: Parsec ([(WType, String)], Stmts String String)
 func' =
   ((concat <$> option paramList) <* ")")
     <~> ("is" *> stmts <* ("end" <|> _unclosedEnd "function body"))
 
+{- |
+Parser that handles sequential statements.
+-}
 stmts' :: Parsec [Stmt String String]
 stmts' = many (";" *> (stmt <|> _extraSemiColon))
 
+{- |
+Parser that parses the function declaration prefix.
+-}
 parseFuncPreix :: Parsec (((WType, Pos), String), Bool)
 parseFuncPreix =
   _checkFunc
     *> mkFunc' (wType <~> pos <~> identifier <~> (("(" $> True) <|> ("=" $> False)))
 
+{- |
+Parser that parses the program declaration prefix.
+-}
 parseProgPrefix :: Parsec (Maybe (((WType, Pos), String), Bool))
 parseProgPrefix = option parseFuncPreix
 
+{- |
+Disambiguating Parser that parses the remainder of the program.
+-}
 parseProgRest
   :: Maybe (((WType, Pos), String), Bool) -> Parsec (Prog String String)
 parseProgRest Nothing = mkMain1 stmts
@@ -125,9 +146,15 @@ parseProgRest (Just (((wtype, p), ident), False)) = do
   rvalue <- rValue
   mkMain3 p wtype ident rvalue <$> stmts'
 
+{- |
+Parser that handles empty programs.
+-}
 mkMain1 :: Parsec (Stmts fnident ident) -> Parsec (Prog fnident ident)
 mkMain1 = mkMain (pure [])
 
+{- |
+Parser that handles non-empty programs with function declaration.
+-}
 mkMain2
   :: Pos
   -> WType
@@ -138,6 +165,9 @@ mkMain2
 mkMain2 p' wtype ident (params, ss) (Main fs sts p) =
   Main (Func wtype ident params ss p' : fs) sts p
 
+{- |
+Parser that handles non-empty programs without function declaration and statement declaration.
+-}
 mkMain3
   :: Pos
   -> WType
@@ -157,6 +187,9 @@ func =
     ("(" *> (concat <$> option paramList) <* ")")
     ("is" *> stmts <* "end")
 
+{- |
+Checks that function body does not contain any code after a return or exit statement.
+-}
 checkFunc :: Prog fnident ident -> Result Error (Prog fnident ident)
 checkFunc s@(Main [] _ _) = Success s
 checkFunc s@(Main fs _ _) = case res of
@@ -174,9 +207,9 @@ checkFunc s@(Main fs _ _) = case res of
     checkFunc' (Func _ _ _ ss _) = funcExit (D.last ss)
     res = asum $ map checkFunc' fs
 
---   where
---     [s | (Func _ _ _ sts) <- fs, s <- D.toList sts]
-
+{- |
+Traverse Tree to find the last statement in a function body.
+-}
 funcExit :: Stmt fnident ident -> Maybe Pos
 funcExit (Return _ _) = Nothing
 funcExit (Exit _ _) = Nothing
@@ -193,6 +226,9 @@ funcExit (Free _ p) = Just p
 funcExit (Print _ p) = Just p
 funcExit (PrintLn _ p) = Just p
 
+{- |
+Parser which parses the program with trailing statement checks.
+-}
 parseWithError
   :: Parsec (Prog fnident ident) -> String -> Result Error (Prog fnident ident)
 parseWithError parser sourceCode = case res of
@@ -205,6 +241,9 @@ parseWithError parser sourceCode = case res of
 param :: Parsec (WType, String)
 param = wType <~> identifier
 
+{- |
+Parser that handles the function parameter list.
+-}
 paramList :: Parsec [(WType, String)]
 paramList = param `sepBy1` ","
 
@@ -214,6 +253,9 @@ lValue =
   choice
     [lValueOrIdent, mkLVPairElem pairElem]
 
+{- |
+Parser that handles the identifier and array element parsers disambiguation.
+-}
 mkIdentOrArrayElem
   :: Parsec Pos
   -> Parsec String
@@ -224,6 +266,9 @@ mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
     mkIdentOrArrayElem' p str (Just e) = LVArrayElem (ArrayIndex str e p) p
     mkIdentOrArrayElem' p str Nothing = LVIdent str p
 
+{- |
+Parser that handles the lValues parsers disambiguation.
+-}
 lValueOrIdent :: Parsec (LValue String)
 lValueOrIdent =
   mkIdentOrArrayElem
@@ -231,6 +276,9 @@ lValueOrIdent =
     identifier
     (option (some (arrayIndex "[" *> expr <* "]")))
 
+{- |
+Labels the array index parser.
+-}
 arrayIndex :: Parsec a -> Parsec a
 arrayIndex = label (Set.singleton "array index")
 
@@ -245,6 +293,7 @@ rValue =
     , fnCall
     ]
 
+-- | > <array-liter> ::= '[' <argList>? ']'
 arrayLiter :: Parsec [Expr String]
 arrayLiter = arrayLiteral "[" *> optionalArgList <* "]"
 
@@ -260,6 +309,7 @@ pairElem = mkFstElem ("fst" *> lValue) <|> mkSndElem ("snd" *> lValue)
 fnCall :: Parsec (RValue String String)
 fnCall = mkRVCall (mkCall "call" *> identifier) ("(" *> optionalArgList <* ")")
 
+-- | > <argList>?
 optionalArgList :: Parsec [Expr String]
 optionalArgList = concat <$> option argList
 
@@ -267,6 +317,9 @@ optionalArgList = concat <$> option argList
 argList :: Parsec [Expr String]
 argList = expr `sepBy1` ","
 
+{- |
+Parser that constructs a sequnce of statements.
+-}
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
 mkStmts = label (Set.fromList ["statement"]) . fmap fromList
 
@@ -333,36 +386,63 @@ mkBegin =
   explain
     "all program body and function declarations must be within `begin` and `end`"
 
+{- |
+Labels the function call in error messages.
+-}
 mkCall :: Parsec a -> Parsec a
 mkCall = label (Set.singleton "function call")
 
+{- |
+Labels the function declaration in error messages.
+-}
 mkFunc' :: Parsec a -> Parsec a
 mkFunc' = label (Set.fromList ["function declaration"])
 
+{- |
+Labels the array literal in error messages.
+-}
 arrayLiteral :: Parsec a -> Parsec a
 arrayLiteral = label (Set.singleton "array literal")
 
+{- |
+Explains the empty program body rror message.
+-}
 _emptyProgram :: Parsec b
 _emptyProgram = verifiedExplain (const "missing main program body") "end"
 
+{- |
+Explains the unclosed end of scope error message.
+-}
 _unclosedEnd :: String -> Parsec b
 _unclosedEnd place = verifiedExplain (const $ "unclosed " ++ place) eof
 
+{- |
+Explains the missing do keyword in 'While' error message.
+-}
 _missingDo :: Parsec b
 _missingDo =
   verifiedExplain
     (const "the condition of a while loop must be closed with `do`")
     stmts
 
+{- |
+Explains the missing done keyword in 'While' error message.
+-}
 _done :: Parsec ()
 _done = explain "unclosed while loop" "done"
 
+{- |
+Explains trailing semi-colon after end error message.
+-}
 _semiColonAfterEnd :: Parsec ()
 _semiColonAfterEnd =
   preventativeExplain
     (const "semi-colons cannot follow the `end` of the program")
     ";"
 
+{- |
+Explain the extra semi-colon in sequencing statements error message.
+-}
 _extraSemiColon :: Parsec b
 _extraSemiColon =
   verifiedExplain
@@ -371,24 +451,42 @@ _extraSemiColon =
     )
     ";"
 
+{- |
+Explains array literal usage in error messages.
+-}
 _arrayLiteral :: Parsec b
 _arrayLiteral = verifiedExplain (const "array literals can only appear in assignments") "["
 
+{- |
+Explaions pair lookup usage in error messages.
+-}
 _pairLookup :: Parsec b
 _pairLookup =
   verifiedExplain
     (const "tuple extraction is only allowed in assignments")
     ("fst" <|> "snd")
 
+{- |
+Explains missing 'else' keyword in 'IfElse' error messages.
+-}
 _else :: Parsec ()
 _else = explain "all if statements must have an else clause" "else"
 
+{- |
+Explains missing 'fi' keyword in 'IfElse' error messages.
+-}
 _fi :: Parsec ()
 _fi = explain "unclosed if statement" "fi"
 
+{- |
+Explains missing 'then' keyword in 'IfElse' error messages.
+-}
 _then :: Parsec ()
 _then = explain "the condition of an if statement must be closed with `then`" "then"
 
+{- |
+Explains missing types in function declarations error messages.
+-}
 _checkFunc :: Parsec ()
 _checkFunc =
   preventWith
@@ -399,6 +497,9 @@ _checkFunc =
     )
     (identifier <* "()")
 
+{- |
+Explains the late function declaration error message.
+-}
 _funcLateDefine :: Parsec ()
 _funcLateDefine =
   preventativeExplain
