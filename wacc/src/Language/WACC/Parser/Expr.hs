@@ -21,6 +21,7 @@ import Control.Applicative (liftA3)
 import Data.Set (singleton)
 import Language.WACC.AST.Expr (ArrayIndex (..), Expr (..), WAtom (..))
 import Language.WACC.Parser.Common ()
+import Language.WACC.Parser.Constructors.Expr
 import Language.WACC.Parser.Token
   ( charLiteral
   , decimal
@@ -45,43 +46,6 @@ import Text.Gigaparsec.Patterns
   )
 import Text.Gigaparsec.Position (Pos, pos)
 import Prelude hiding (GT, LT)
-
-$( deriveLiftedConstructors
-    "mk"
-    [ 'IntLit
-    , 'BoolLit
-    , 'CharLit
-    , 'StringLit
-    , 'Null
-    , 'Ident
-    , 'ArrayIndex
-    , 'ArrayElem
-    , 'WAtom
-    ]
- )
-
-$( deriveDeferredConstructors
-    "mk"
-    [ 'Not
-    , 'Negate
-    , 'Len
-    , 'Ord
-    , 'Chr
-    , 'Mul
-    , 'Div
-    , 'Mod
-    , 'Add
-    , 'Sub
-    , 'GT
-    , 'GTE
-    , 'LT
-    , 'LTE
-    , 'Eq
-    , 'Ineq
-    , 'And
-    , 'Or
-    ]
- )
 
 -- | > <int-liter> ::= <int-sign>? <digit>+
 intLiter :: Parsec (WAtom i)

@@ -26,6 +26,7 @@ library
       Language.WACC.AST.WType
       Language.WACC.Error
       Language.WACC.Parser.Common
+      Language.WACC.Parser.Constructors.Expr
       Language.WACC.Parser.Expr
       Language.WACC.Parser.Stmt
       Language.WACC.Parser.Token
