@@ -88,15 +88,15 @@ checkExpr (GT x y p) = reportAt p BAny $ do
   pure BBool
 checkExpr (GTE x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortActual t)
+  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
   pure BBool
 checkExpr (LT x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortActual t)
+  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
   pure BBool
 checkExpr (LTE x y p) = reportAt p BAny $ do
   t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortActual t)
+  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
   pure BBool
 checkExpr (Eq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
 checkExpr (Ineq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
