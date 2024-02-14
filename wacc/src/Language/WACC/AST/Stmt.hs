@@ -15,102 +15,90 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
 import Language.WACC.AST.WType (WType)
-import Text.Gigaparsec.Position (Pos)
 
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
 -}
-data PairElem ident
+data PairElem ann ident
   = -- | > fst <value>
-    FstElem (LValue ident) Pos
+    FstElem (LValue ann ident) ann
   | -- | > snd <value>
-    SndElem (LValue ident) Pos
+    SndElem (LValue ann ident) ann
   deriving (Eq, Show, Functor)
 
 {- |
 A WACC @lvalue@, which is the target of an assignment statement.
 -}
-data LValue ident
+data LValue ann ident
   = -- | > <ident>
-    LVIdent ident Pos
+    LVIdent ident ann
   | -- | > <ident>[<expr>]...
-    LVArrayElem (ArrayIndex ident) Pos
+    LVArrayElem (ArrayIndex ann ident) ann
   | -- |
     -- > fst <lvalue>
     --
     -- or
     --
     -- > snd <lvalue>
-    LVPairElem (PairElem ident) Pos
+    LVPairElem (PairElem ann ident) ann
   deriving (Eq, Show, Functor)
 
 {- |
 A WACC @rvalue@, which is the source of an assignment statement.
 -}
-data RValue fnident ident
+data RValue ann fnident ident
   = -- | > <expr>
-    RVExpr (Expr ident) Pos
+    RVExpr (Expr ann ident) ann
   | -- | > [<expr>, ...]
-    RVArrayLit [Expr ident] Pos
+    RVArrayLit [Expr ann ident] ann
   | -- | > newpair(<expr>, <expr>)
-    RVNewPair (Expr ident) (Expr ident) Pos
+    RVNewPair (Expr ann ident) (Expr ann ident) ann
   | -- |
     -- > fst <rvalue>
     --
     -- or
     --
     -- > snd <rvalue>
-    RVPairElem (PairElem ident) Pos
+    RVPairElem (PairElem ann ident) ann
   | -- | > call <ident>(<expr>, ...)
-    RVCall fnident [Expr ident] Pos
+    RVCall fnident [Expr ann ident] ann
   deriving (Eq, Show, Functor)
-
--- instance Bifunctor RValue where
---   -- first :: (a -> b) -> RValue a c -> RValue b c
---   first f (RVExpr e) = RVExpr e
---   first f (RVArrayLit es) = RVArrayLit es
---   first f (RVNewPair e1 e2) = RVNewPair e1 e2
---   first f (RVPairElem pe) = RVPairElem pe
---   first f (RVCall fnident es pos) = RVCall (f fnident) es pos
-
---   -- second :: (a -> b) -> RValue a c -> RValue b c
---   second f (RVExpr e) = RVExpr (f <$> e)
---   second f (RVArrayLit es) = RVArrayLit ((f <$>) <$> es)
---   second f (RVNewPair e1 e2) = RVNewPair (f <$> e1) (f <$> e2)
---   second f (RVPairElem pe) = RVPairElem (f <$> pe)
---   second f (RVCall fnident es pos) = RVCall fnident ((f <$>) <$> es) pos
 
 {- |
 Individual WACC statements.
 -}
-data Stmt fnident ident
+data Stmt ann fnident ident
   = -- | > skip
-    Skip Pos
+    Skip ann
   | -- | > <type> <ident> = <rvalue>
-    Decl WType ident (RValue fnident ident) Pos
+    Decl WType ident (RValue ann fnident ident) ann
   | -- | > <lvalue> = <rvalue>
-    Asgn (LValue ident) (RValue fnident ident) Pos
+    Asgn (LValue ann ident) (RValue ann fnident ident) ann
   | -- | > read <lvalue>
-    Read (LValue ident) Pos
+    Read (LValue ann ident) ann
   | -- | > free <expr>
-    Free (Expr ident) Pos
+    Free (Expr ann ident) ann
   | -- | > return <expr>
-    Return (Expr ident) Pos
+    Return (Expr ann ident) ann
   | -- | > exit <expr>
-    Exit (Expr ident) Pos
+    Exit (Expr ann ident) ann
   | -- | > print <expr>
-    Print (Expr ident) Pos
+    Print (Expr ann ident) ann
   | -- | > println <expr>
-    PrintLn (Expr ident) Pos
+    PrintLn (Expr ann ident) ann
   | -- | > if <expr> then <stmt> else <stmt> fi
-    IfElse (Expr ident) (Stmts fnident ident) (Stmts fnident ident) Pos
+    IfElse
+      (Expr ann ident)
+      (Stmts ann fnident ident)
+      (Stmts ann fnident ident)
+      ann
   | -- | > while <expr> do <stmt> done
-    While (Expr ident) (Stmts fnident ident) Pos
+    While (Expr ann ident) (Stmts ann fnident ident) ann
   | -- | > begin <stmt> end
-    BeginEnd (Stmts fnident ident) Pos
+    BeginEnd (Stmts ann fnident ident) ann
   deriving (Eq, Show)
 
 {- |
 Sequences of WACC statements separated by @;@.
 -}
-type Stmts fnident ident = NonEmpty (Stmt fnident ident)
+type Stmts ann fnident ident = NonEmpty (Stmt ann fnident ident)

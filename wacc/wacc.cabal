@@ -19,8 +19,8 @@ build-type:     Simple
 library
   exposed-modules:
       Language.WACC.AST
+      Language.WACC.AST.Annotation
       Language.WACC.AST.Expr
-      Language.WACC.AST.HasPos
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
