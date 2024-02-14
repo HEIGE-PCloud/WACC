@@ -18,7 +18,7 @@ end
 
 
 Semantic error in test/wacc_examples/invalid/semanticErr/expressions/lessPairExpr.wacc (line 16, column 13):
-type error: expected a value of unknown type but found a pair of an int and an int (pair(int, int))
+type error: comparisons are only valid between ints and chars, but a pair of an int and an int (pair(int, int)) was found
 >   println y;
 >   println x < y
 >             ^
