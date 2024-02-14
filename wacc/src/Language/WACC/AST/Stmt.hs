@@ -1,17 +1,20 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {- |
 WACC statements.
 -}
 module Language.WACC.AST.Stmt
   ( Stmt (..)
-  , Stmts
+  , Stmts (..)
   , LValue (..)
   , RValue (..)
   , PairElem (..)
   )
 where
 
+import GHC.IsList
 import Data.List.NonEmpty (NonEmpty)
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
 import Language.WACC.AST.WType (WType)
@@ -113,4 +116,5 @@ data Stmt fnident ident
 {- |
 Sequences of WACC statements separated by @;@.
 -}
-type Stmts fnident ident = NonEmpty (Stmt fnident ident)
+newtype Stmts fnident ident = Stmts {unwrap :: NonEmpty (Stmt fnident ident)}
+  deriving (Eq, Show, IsList)

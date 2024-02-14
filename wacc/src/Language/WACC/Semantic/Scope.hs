@@ -36,7 +36,7 @@ import Language.WACC.AST.Stmt
   , PairElem (..)
   , RValue (..)
   , Stmt (..)
-  , Stmts
+  , Stmts (..)
   )
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error (Error), quote)
@@ -275,30 +275,31 @@ instance Rename (Stmt String) where
   rename (PrintLn e p) = (`PrintLn` p) <$> rename e
   rename (IfElse e l1 l2 p) = do
     e' <- rename e
-    l1' <- renameStmts l1
-    l2' <- renameStmts l2
+    l1' <- rename l1
+    l2' <- rename l2
     return (IfElse e' l1' l2' p)
   rename (While e ls p) = do
     e' <- rename e
-    ls' <- renameStmts ls
+    ls' <- rename ls
     return (While e' ls' p)
-  rename (BeginEnd ls p) = (`BeginEnd` p) <$> renameStmts ls
+  rename (BeginEnd ls p) = (`BeginEnd` p) <$> rename ls
 
 {- |
 Rename all statements inside a new scope. Then restore the old scope.
 -}
-renameStmts :: Stmts String String -> Analysis (Stmts Fnident Vident)
-renameStmts ls = do
-  localST <- gets localST
-  modify $ mapPair (const Data.Map.empty) id
-  ls' <-
-    local (mapPair (\globalST -> localST `union` globalST) id) (mapM rename ls)
-  modify $ mapPair (const localST) id
-  return ls'
+instance Rename (Stmts String) where
+  rename :: Stmts String String -> Analysis (Stmts Fnident Vident)
+  rename ls = do
+    localST <- gets localST
+    modify $ mapPair (const Data.Map.empty) id
+    ls' <-
+      local (mapPair (\globalST -> localST `union` globalST) id) (mapM rename (unwrap ls))
+    modify $ mapPair (const localST) id
+    return (Stmts ls')
 
 {- |
 Wipe the localST before looking at the param list because previous function
-params interfere otherwise. Delegate stmts to @renameStmts@
+params interfere otherwise. Delegate stmts to @rename@
 -}
 instance Rename (Func String) where
   rename :: Func String String -> Analysis (Func Fnident Vident)
@@ -308,7 +309,7 @@ instance Rename (Func String) where
     funcST <- asks funcST
     let
       (n, _) = funcST ! str
-    ls' <- renameStmts ls
+    ls' <- rename ls
     return (Func t (Fnident n) params' ls' pos)
     where
       renameParam :: (WType, String) -> Analysis (WType, Vident)
@@ -320,7 +321,7 @@ instance Rename (Prog String) where
   rename :: Prog String String -> Analysis (Prog Fnident Vident)
   rename (Main fs ls p) = do
     fs' <- mapM rename fs
-    ls' <- renameStmts ls
+    ls' <- rename ls
     return (Main fs' ls' p)
 
 {- |
