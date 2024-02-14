@@ -189,13 +189,13 @@ type family R a where
 class Rename t where
   rename :: t String -> Analysis (R (t String))
 
-instance Rename PairElem where
-  rename :: PairElem String -> Analysis (PairElem Vident)
+instance Rename (PairElem Pos) where
+  rename :: PairElem Pos String -> Analysis (PairElem Pos Vident)
   rename (FstElem lv p) = (`FstElem` p) <$> rename lv
   rename (SndElem lv p) = (`SndElem` p) <$> rename lv
 
-instance Rename (RValue String) where
-  rename :: RValue String String -> Analysis (RValue Fnident Vident)
+instance Rename (RValue Pos String) where
+  rename :: RValue Pos String String -> Analysis (RValue Pos Fnident Vident)
   rename (RVExpr e p) = (`RVExpr` p) <$> rename e
   rename (RVArrayLit es p) = (`RVArrayLit` p) <$> mapM rename es
   rename (RVNewPair e1 e2 p) = (\x y -> RVNewPair x y p) <$> rename e1 <*> rename e2
@@ -204,14 +204,14 @@ instance Rename (RValue String) where
     es' <- mapM rename es
     renameFuncOrErr str pos (\n -> RVCall (Fnident n) es' pos)
 
-instance Rename LValue where
-  rename :: LValue String -> Analysis (LValue Vident)
+instance Rename (LValue Pos) where
+  rename :: LValue Pos String -> Analysis (LValue Pos Vident)
   rename (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (Vident n) pos)
   rename (LVArrayElem arrI p) = (`LVArrayElem` p) <$> rename arrI
   rename (LVPairElem pe p) = (`LVPairElem` p) <$> rename pe
 
-instance Rename ArrayIndex where
-  rename :: ArrayIndex String -> Analysis (ArrayIndex Vident)
+instance Rename (ArrayIndex Pos) where
+  rename :: ArrayIndex Pos String -> Analysis (ArrayIndex Pos Vident)
   rename (ArrayIndex str es pos) = do
     es' <- mapM rename es
     renameOrErr str pos (\n -> ArrayIndex (Vident n) es' pos)
@@ -219,8 +219,8 @@ instance Rename ArrayIndex where
 {- |
 Use @renameOrErr@ to inspect every occurence of an ident and rename it
 -}
-instance Rename WAtom where
-  rename :: WAtom String -> Analysis (WAtom Vident)
+instance Rename (WAtom Pos) where
+  rename :: WAtom Pos String -> Analysis (WAtom Pos Vident)
   rename (Ident str pos) = renameOrErr str pos (\n -> Ident (Vident n) pos)
   rename (ArrayElem arrI p) = (`ArrayElem` p) <$> rename arrI
   rename (IntLit x p) = pure (IntLit x p)
@@ -229,8 +229,8 @@ instance Rename WAtom where
   rename (StringLit x p) = pure (StringLit x p)
   rename (Null p) = pure (Null p)
 
-instance Rename Expr where
-  rename :: Expr String -> Analysis (Expr Vident)
+instance Rename (Expr Pos) where
+  rename :: Expr Pos String -> Analysis (Expr Pos Vident)
   rename (WAtom atom p) = (`WAtom` p) <$> rename atom
   rename (Not e p) = (`Not` p) <$> rename e
   rename (Negate e p) = (`Negate` p) <$> rename e
@@ -254,8 +254,8 @@ instance Rename Expr where
 {- |
 Recursively delegate renaming based on the structure of the statment
 -}
-instance Rename (Stmt String) where
-  rename :: Stmt String String -> Analysis (Stmt Fnident Vident)
+instance Rename (Stmt Pos String) where
+  rename :: Stmt Pos String String -> Analysis (Stmt Pos Fnident Vident)
   rename (Skip p) = pure (Skip p)
   rename (Decl t str rv pos) = do
     rv' <- rename rv
@@ -287,8 +287,8 @@ instance Rename (Stmt String) where
 {- |
 Rename all statements inside a new scope. Then restore the old scope.
 -}
-instance Rename (Stmts String) where
-  rename :: Stmts String String -> Analysis (Stmts Fnident Vident)
+instance Rename (Stmts Pos String) where
+  rename :: Stmts Pos String String -> Analysis (Stmts Pos Fnident Vident)
   rename ls = do
     localST <- gets localST
     modify $ mapPair (const Data.Map.empty) id
@@ -303,8 +303,9 @@ instance Rename (Stmts String) where
 Wipe the localST before looking at the param list because previous function
 params interfere otherwise. Delegate stmts to @rename@
 -}
-instance Rename (Func String) where
-  rename :: Func String String -> Analysis (Func Fnident Vident)
+instance Rename (Func Pos WType String) where
+  rename
+    :: Func Pos WType String String -> Analysis (Func Pos WType Fnident Vident)
   rename (Func t str params ls pos) = do
     modify $ mapPair (const Data.Map.empty) id
     params' <- mapM renameParam params
@@ -319,8 +320,9 @@ instance Rename (Func String) where
         n <- insertDecl pos t str
         return (t, Vident n)
 
-instance Rename (Prog String) where
-  rename :: Prog String String -> Analysis (Prog Fnident Vident)
+instance Rename (Prog Pos WType String) where
+  rename
+    :: Prog Pos WType String String -> Analysis (Prog Pos WType Fnident Vident)
   rename (Main fs ls p) = do
     fs' <- mapM rename fs
     ls' <- rename ls
@@ -330,12 +332,14 @@ instance Rename (Prog String) where
 Run both passes failing if errors are encountered at each stage.
 -}
 scopeAnalysis
-  :: Prog String String -> Result [Error] (Prog Fnident Vident, VarST)
+  :: Prog Pos WType String String
+  -> Result [Error] (Prog Pos WType Fnident Vident, VarST)
 scopeAnalysis p@(Main fs _ _)
   | not (null errs1) = Failure errs1
   | otherwise = processPass2 (DList.toList errs2)
   where
-    processPass2 :: [Error] -> Result [Error] (Prog Fnident Vident, VarST)
+    processPass2
+      :: [Error] -> Result [Error] (Prog Pos WType Fnident Vident, VarST)
     processPass2 errs2
       | not (null errs2) = Failure errs2
       | otherwise = Success (p', varST)
