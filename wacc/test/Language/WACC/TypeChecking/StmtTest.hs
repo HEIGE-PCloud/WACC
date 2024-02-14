@@ -153,7 +153,7 @@ test =
             , testProperty "accepts identical return types" $
                 \t ->
                   let
-                    body = (pure . (`Return` undefined)) $ varExpr t
+                    body = [Return (varExpr t) undefined]
                   in
                     checkStmt' (IfElse boolExpr body body undefined) == pure t
             , testCase "rejects incompatible return types" $

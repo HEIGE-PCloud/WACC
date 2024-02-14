@@ -32,7 +32,7 @@ import Language.WACC.AST.Stmt
   , PairElem (..)
   , RValue (..)
   , Stmt (..)
-  , Stmts
+  , Stmts (..)
   )
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error (Error, errorMessage, position, width))
@@ -176,7 +176,7 @@ mkMain3
   -> [Stmt fnident ident]
   -> Prog fnident ident
 mkMain3 p wtype ident rvalue sts =
-  Main [] (fromList (Decl wtype ident rvalue p : sts)) p
+  Main [] (Stmts $ fromList (Decl wtype ident rvalue p : sts)) p
 
 -- | > func ::= <type> <identifier> '(' <paramList>? ')' 'is' <stmt> 'end'
 func :: Parsec (Func String String)
@@ -204,7 +204,7 @@ checkFunc s@(Main fs _ _) = case res of
         }
   Nothing -> Success s
   where
-    checkFunc' (Func _ _ _ ss _) = funcExit (D.last ss)
+    checkFunc' (Func _ _ _ ss _) = funcExit (D.last (unwrap ss))
     res = asum $ map checkFunc' fs
 
 {- |
@@ -214,10 +214,10 @@ funcExit :: Stmt fnident ident -> Maybe Pos
 funcExit (Return _ _) = Nothing
 funcExit (Exit _ _) = Nothing
 funcExit (IfElse _ s1 s2 _) =
-  funcExit (D.last s1)
-    <|> funcExit (D.last s2)
-funcExit (While _ s _) = funcExit (D.last s)
-funcExit (BeginEnd s _) = funcExit (D.last s)
+  funcExit (D.last (unwrap s1))
+    <|> funcExit (D.last (unwrap s2))
+funcExit (While _ s _) = funcExit (D.last (unwrap s))
+funcExit (BeginEnd s _) = funcExit (D.last (unwrap s))
 funcExit (Skip p) = Just p
 funcExit (Decl _ _ _ p) = Just p
 funcExit (Asgn _ _ p) = Just p
@@ -321,7 +321,7 @@ argList = expr `sepBy1` ","
 Parser that constructs a sequnce of statements.
 -}
 mkStmts :: Parsec [Stmt String String] -> Parsec (Stmts String String)
-mkStmts = label (Set.fromList ["statement"]) . fmap fromList
+mkStmts = fmap Stmts . label (Set.fromList ["statement"]) . fmap fromList
 
 -- | > <stmts> ::= <stmt> (';' <stmt>)*
 stmts :: Parsec (Stmts String String)
