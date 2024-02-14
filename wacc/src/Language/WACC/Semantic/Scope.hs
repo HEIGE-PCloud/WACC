@@ -1,4 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 {- |
@@ -33,7 +36,7 @@ import Language.WACC.AST.Stmt
   , PairElem (..)
   , RValue (..)
   , Stmt (..)
-  , Stmts
+  , Stmts (..)
   )
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error (Error), quote)
@@ -179,130 +182,149 @@ getST = (,) <$> gets localST <*> asks superST
 -- Renamer Functions--
 ---------------------
 
-renamePairElem :: PairElem String -> Analysis (PairElem Vident)
-renamePairElem (FstElem lv p) = (`FstElem` p) <$> renameLValue lv
-renamePairElem (SndElem lv p) = (`SndElem` p) <$> renameLValue lv
+type family R a where
+  R (a String b) = a Fnident Vident
+  R (a b) = a Vident
 
-renameRValue :: RValue String String -> Analysis (RValue Fnident Vident)
-renameRValue (RVExpr e p) = (`RVExpr` p) <$> renameExpr e
-renameRValue (RVArrayLit es p) = (`RVArrayLit` p) <$> mapM renameExpr es
-renameRValue (RVNewPair e1 e2 p) = (\x y -> RVNewPair x y p) <$> renameExpr e1 <*> renameExpr e2
-renameRValue (RVPairElem pe p) = (`RVPairElem` p) <$> renamePairElem pe
-renameRValue (RVCall str es pos) = do
-  es' <- mapM renameExpr es
-  renameFuncOrErr str pos (\n -> RVCall (Fnident n) es' pos)
+class Rename t where
+  rename :: t String -> Analysis (R (t String))
 
-renameLValue :: LValue String -> Analysis (LValue Vident)
-renameLValue (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (Vident n) pos)
-renameLValue (LVArrayElem arrI p) = (`LVArrayElem` p) <$> renameArrayIndex arrI
-renameLValue (LVPairElem pe p) = (`LVPairElem` p) <$> renamePairElem pe
+instance Rename PairElem where
+  rename :: PairElem String -> Analysis (PairElem Vident)
+  rename (FstElem lv p) = (`FstElem` p) <$> rename lv
+  rename (SndElem lv p) = (`SndElem` p) <$> rename lv
 
-renameArrayIndex :: ArrayIndex String -> Analysis (ArrayIndex Vident)
-renameArrayIndex (ArrayIndex str es pos) = do
-  es' <- mapM renameExpr es
-  renameOrErr str pos (\n -> ArrayIndex (Vident n) es' pos)
+instance Rename (RValue String) where
+  rename :: RValue String String -> Analysis (RValue Fnident Vident)
+  rename (RVExpr e p) = (`RVExpr` p) <$> rename e
+  rename (RVArrayLit es p) = (`RVArrayLit` p) <$> mapM rename es
+  rename (RVNewPair e1 e2 p) = (\x y -> RVNewPair x y p) <$> rename e1 <*> rename e2
+  rename (RVPairElem pe p) = (`RVPairElem` p) <$> rename pe
+  rename (RVCall str es pos) = do
+    es' <- mapM rename es
+    renameFuncOrErr str pos (\n -> RVCall (Fnident n) es' pos)
+
+instance Rename LValue where
+  rename :: LValue String -> Analysis (LValue Vident)
+  rename (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (Vident n) pos)
+  rename (LVArrayElem arrI p) = (`LVArrayElem` p) <$> rename arrI
+  rename (LVPairElem pe p) = (`LVPairElem` p) <$> rename pe
+
+instance Rename ArrayIndex where
+  rename :: ArrayIndex String -> Analysis (ArrayIndex Vident)
+  rename (ArrayIndex str es pos) = do
+    es' <- mapM rename es
+    renameOrErr str pos (\n -> ArrayIndex (Vident n) es' pos)
 
 {- |
 Use @renameOrErr@ to inspect every occurence of an ident and rename it
 -}
-renameAtom :: WAtom String -> Analysis (WAtom Vident)
-renameAtom (Ident str pos) = renameOrErr str pos (\n -> Ident (Vident n) pos)
-renameAtom (ArrayElem arrI p) = (`ArrayElem` p) <$> renameArrayIndex arrI
-renameAtom (IntLit x p) = pure (IntLit x p)
-renameAtom (BoolLit x p) = pure (BoolLit x p)
-renameAtom (CharLit x p) = pure (CharLit x p)
-renameAtom (StringLit x p) = pure (StringLit x p)
-renameAtom (Null p) = pure (Null p)
+instance Rename WAtom where
+  rename :: WAtom String -> Analysis (WAtom Vident)
+  rename (Ident str pos) = renameOrErr str pos (\n -> Ident (Vident n) pos)
+  rename (ArrayElem arrI p) = (`ArrayElem` p) <$> rename arrI
+  rename (IntLit x p) = pure (IntLit x p)
+  rename (BoolLit x p) = pure (BoolLit x p)
+  rename (CharLit x p) = pure (CharLit x p)
+  rename (StringLit x p) = pure (StringLit x p)
+  rename (Null p) = pure (Null p)
 
-renameExpr :: Expr String -> Analysis (Expr Vident)
-renameExpr (WAtom atom p) = (`WAtom` p) <$> renameAtom atom
-renameExpr (Not e p) = (`Not` p) <$> renameExpr e
-renameExpr (Negate e p) = (`Negate` p) <$> renameExpr e
-renameExpr (Len e p) = (`Len` p) <$> renameExpr e
-renameExpr (Ord e p) = (`Ord` p) <$> renameExpr e
-renameExpr (Chr e p) = (`Chr` p) <$> renameExpr e
-renameExpr (Mul e1 e2 p) = (\x y -> Mul x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Div e1 e2 p) = (\x y -> Div x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Mod e1 e2 p) = (\x y -> Mod x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Add e1 e2 p) = (\x y -> Add x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Sub e1 e2 p) = (\x y -> Sub x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (GT e1 e2 p) = (\x y -> GT x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (GTE e1 e2 p) = (\x y -> GTE x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (LT e1 e2 p) = (\x y -> LT x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (LTE e1 e2 p) = (\x y -> LTE x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Eq e1 e2 p) = (\x y -> Eq x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Ineq e1 e2 p) = (\x y -> Ineq x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (And e1 e2 p) = (\x y -> And x y p) <$> renameExpr e1 <*> renameExpr e2
-renameExpr (Or e1 e2 p) = (\x y -> Or x y p) <$> renameExpr e1 <*> renameExpr e2
+instance Rename Expr where
+  rename :: Expr String -> Analysis (Expr Vident)
+  rename (WAtom atom p) = (`WAtom` p) <$> rename atom
+  rename (Not e p) = (`Not` p) <$> rename e
+  rename (Negate e p) = (`Negate` p) <$> rename e
+  rename (Len e p) = (`Len` p) <$> rename e
+  rename (Ord e p) = (`Ord` p) <$> rename e
+  rename (Chr e p) = (`Chr` p) <$> rename e
+  rename (Mul e1 e2 p) = (\x y -> Mul x y p) <$> rename e1 <*> rename e2
+  rename (Div e1 e2 p) = (\x y -> Div x y p) <$> rename e1 <*> rename e2
+  rename (Mod e1 e2 p) = (\x y -> Mod x y p) <$> rename e1 <*> rename e2
+  rename (Add e1 e2 p) = (\x y -> Add x y p) <$> rename e1 <*> rename e2
+  rename (Sub e1 e2 p) = (\x y -> Sub x y p) <$> rename e1 <*> rename e2
+  rename (GT e1 e2 p) = (\x y -> GT x y p) <$> rename e1 <*> rename e2
+  rename (GTE e1 e2 p) = (\x y -> GTE x y p) <$> rename e1 <*> rename e2
+  rename (LT e1 e2 p) = (\x y -> LT x y p) <$> rename e1 <*> rename e2
+  rename (LTE e1 e2 p) = (\x y -> LTE x y p) <$> rename e1 <*> rename e2
+  rename (Eq e1 e2 p) = (\x y -> Eq x y p) <$> rename e1 <*> rename e2
+  rename (Ineq e1 e2 p) = (\x y -> Ineq x y p) <$> rename e1 <*> rename e2
+  rename (And e1 e2 p) = (\x y -> And x y p) <$> rename e1 <*> rename e2
+  rename (Or e1 e2 p) = (\x y -> Or x y p) <$> rename e1 <*> rename e2
 
 {- |
 Recursively delegate renaming based on the structure of the statment
 -}
-renameStmt :: Stmt String String -> Analysis (Stmt Fnident Vident)
-renameStmt (Skip p) = pure (Skip p)
-renameStmt (Decl t str rv pos) = do
-  rv' <- renameRValue rv
-  n <- insertDecl pos t str
-  return (Decl t (Vident n) rv' pos)
-renameStmt (Asgn lv rv p) = do
-  lv' <- renameLValue lv
-  rv' <- renameRValue rv
-  return (Asgn lv' rv' p)
-renameStmt (Read lv p) = do
-  lv' <- renameLValue lv
-  return (Read lv' p)
-renameStmt (Free e p) = (`Free` p) <$> renameExpr e
-renameStmt (Return e p) = (`Return` p) <$> renameExpr e
-renameStmt (Exit e p) = (`Exit` p) <$> renameExpr e
-renameStmt (Print e p) = (`Print` p) <$> renameExpr e
-renameStmt (PrintLn e p) = (`PrintLn` p) <$> renameExpr e
-renameStmt (IfElse e l1 l2 p) = do
-  e' <- renameExpr e
-  l1' <- renameStmts l1
-  l2' <- renameStmts l2
-  return (IfElse e' l1' l2' p)
-renameStmt (While e ls p) = do
-  e' <- renameExpr e
-  ls' <- renameStmts ls
-  return (While e' ls' p)
-renameStmt (BeginEnd ls p) = (`BeginEnd` p) <$> renameStmts ls
+instance Rename (Stmt String) where
+  rename :: Stmt String String -> Analysis (Stmt Fnident Vident)
+  rename (Skip p) = pure (Skip p)
+  rename (Decl t str rv pos) = do
+    rv' <- rename rv
+    n <- insertDecl pos t str
+    return (Decl t (Vident n) rv' pos)
+  rename (Asgn lv rv p) = do
+    lv' <- rename lv
+    rv' <- rename rv
+    return (Asgn lv' rv' p)
+  rename (Read lv p) = do
+    lv' <- rename lv
+    return (Read lv' p)
+  rename (Free e p) = (`Free` p) <$> rename e
+  rename (Return e p) = (`Return` p) <$> rename e
+  rename (Exit e p) = (`Exit` p) <$> rename e
+  rename (Print e p) = (`Print` p) <$> rename e
+  rename (PrintLn e p) = (`PrintLn` p) <$> rename e
+  rename (IfElse e l1 l2 p) = do
+    e' <- rename e
+    l1' <- rename l1
+    l2' <- rename l2
+    return (IfElse e' l1' l2' p)
+  rename (While e ls p) = do
+    e' <- rename e
+    ls' <- rename ls
+    return (While e' ls' p)
+  rename (BeginEnd ls p) = (`BeginEnd` p) <$> rename ls
 
 {- |
 Rename all statements inside a new scope. Then restore the old scope.
 -}
-renameStmts :: Stmts String String -> Analysis (Stmts Fnident Vident)
-renameStmts ls = do
-  localST <- gets localST
-  modify $ mapPair (const Data.Map.empty) id
-  ls' <-
-    local (mapPair (\globalST -> localST `union` globalST) id) (mapM renameStmt ls)
-  modify $ mapPair (const localST) id
-  return ls'
+instance Rename (Stmts String) where
+  rename :: Stmts String String -> Analysis (Stmts Fnident Vident)
+  rename ls = do
+    localST <- gets localST
+    modify $ mapPair (const Data.Map.empty) id
+    ls' <-
+      local
+        (mapPair (\globalST -> localST `union` globalST) id)
+        (mapM rename (unwrap ls))
+    modify $ mapPair (const localST) id
+    return (Stmts ls')
 
 {- |
 Wipe the localST before looking at the param list because previous function
-params interfere otherwise. Delegate stmts to @renameStmts@
+params interfere otherwise. Delegate stmts to @rename@
 -}
-renameFunc :: Func String String -> Analysis (Func Fnident Vident)
-renameFunc (Func t str params ls pos) = do
-  modify $ mapPair (const Data.Map.empty) id
-  params' <- mapM renameParam params
-  funcST <- asks funcST
-  let
-    (n, _) = funcST ! str
-  ls' <- renameStmts ls
-  return (Func t (Fnident n) params' ls' pos)
-  where
-    renameParam :: (WType, String) -> Analysis (WType, Vident)
-    renameParam (t, str) = do
-      n <- insertDecl pos t str
-      return (t, Vident n)
+instance Rename (Func String) where
+  rename :: Func String String -> Analysis (Func Fnident Vident)
+  rename (Func t str params ls pos) = do
+    modify $ mapPair (const Data.Map.empty) id
+    params' <- mapM renameParam params
+    funcST <- asks funcST
+    let
+      (n, _) = funcST ! str
+    ls' <- rename ls
+    return (Func t (Fnident n) params' ls' pos)
+    where
+      renameParam :: (WType, String) -> Analysis (WType, Vident)
+      renameParam (t, str) = do
+        n <- insertDecl pos t str
+        return (t, Vident n)
 
-renameProg :: Prog String String -> Analysis (Prog Fnident Vident)
-renameProg (Main fs ls p) = do
-  fs' <- mapM renameFunc fs
-  ls' <- renameStmts ls
-  return (Main fs' ls' p)
+instance Rename (Prog String) where
+  rename :: Prog String String -> Analysis (Prog Fnident Vident)
+  rename (Main fs ls p) = do
+    fs' <- mapM rename fs
+    ls' <- rename ls
+    return (Main fs' ls' p)
 
 {- |
 Run both passes failing if errors are encountered at each stage.
@@ -313,6 +335,7 @@ scopeAnalysis p@(Main fs _ _)
   | not (null errs1) = Failure errs1
   | otherwise = processPass2 (DList.toList errs2)
   where
+    processPass2 :: [Error] -> Result [Error] (Prog Fnident Vident, VarST)
     processPass2 errs2
       | not (null errs2) = Failure errs2
       | otherwise = Success (p', varST)
@@ -321,7 +344,7 @@ scopeAnalysis p@(Main fs _ _)
     poss = map (\(Func _ _ _ _ pos) -> pos) fs
     n = toInteger $ length fs
     funcST = Map.fromList $ zip names (zip [1 ..] poss)
-    (p', (errs2, varST)) = evalRWS (renameProg p) (Map.empty, funcST) (Map.empty, n + 1)
+    (p', (errs2, varST)) = evalRWS (rename p) (Map.empty, funcST) (Map.empty, n + 1)
 
 {- |
 Runs the first pass non-monadically checking if there are duplicate function names
