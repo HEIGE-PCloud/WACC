@@ -14,10 +14,13 @@ import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
 {- |
-AST nodes with associated positions.
+Annotated AST nodes.
 -}
 class Annotated a where
+  -- | Annotation type.
   type Ann a
+
+  -- | Get the annotation of a node.
   getAnn :: a -> Ann a
 
 instance Annotated (Expr ann ident) where
@@ -56,7 +59,11 @@ instance Annotated (RValue ann fnident ident) where
   getAnn (RVPairElem _ x) = x
   getAnn (RVCall _ _ x) = x
 
+{- |
+AST nodes with associated positions.
+-}
 class HasPos a where
+  -- | Get the 'Pos' associated with a node.
   getPos :: a -> Pos
 
 instance HasPos Pos where
