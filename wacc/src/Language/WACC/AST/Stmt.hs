@@ -14,8 +14,8 @@ module Language.WACC.AST.Stmt
   )
 where
 
-import GHC.IsList
 import Data.List.NonEmpty (NonEmpty)
+import GHC.IsList
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
 import Language.WACC.AST.WType (WType)
 import Text.Gigaparsec.Position (Pos)

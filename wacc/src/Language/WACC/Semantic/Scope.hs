@@ -293,7 +293,9 @@ instance Rename (Stmts String) where
     localST <- gets localST
     modify $ mapPair (const Data.Map.empty) id
     ls' <-
-      local (mapPair (\globalST -> localST `union` globalST) id) (mapM rename (unwrap ls))
+      local
+        (mapPair (\globalST -> localST `union` globalST) id)
+        (mapM rename (unwrap ls))
     modify $ mapPair (const localST) id
     return (Stmts ls')
 
