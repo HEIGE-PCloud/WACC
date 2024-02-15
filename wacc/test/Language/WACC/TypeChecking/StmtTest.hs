@@ -13,8 +13,9 @@ import Language.WACC.AST.Expr
 import Language.WACC.AST.Stmt
 import Language.WACC.AST.WType
 import Language.WACC.TypeChecking.BType
+import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
-import Language.WACC.TypeChecking.Stmt
+import Language.WACC.TypeChecking.Stmt ()
 import Test
 
 testTypingM :: TypingM () BType a -> Either Int a
@@ -25,16 +26,16 @@ testTypingM action = case runTypingM action id fnMap of
     fnMap = singleton () (FnType [BInt, BBool] BBool)
 
 checkStmt' :: Stmt Pos () BType -> Either Int BType
-checkStmt' = testTypingM . checkStmt
+checkStmt' = testTypingM . fnCheck
 
 checkLValue' :: LValue Pos BType -> Either Int BType
-checkLValue' = testTypingM . checkLValue
+checkLValue' = testTypingM . check
 
 checkRValue' :: RValue Pos () BType -> Either Int BType
-checkRValue' = testTypingM . checkRValue
+checkRValue' = testTypingM . fnCheck
 
 checkPairElem' :: PairElem Pos BType -> Either Int BType
-checkPairElem' = testTypingM . checkPairElem
+checkPairElem' = testTypingM . check
 
 intExpr :: Expr Pos BType
 intExpr = WAtom (IntLit 0 undefined) undefined

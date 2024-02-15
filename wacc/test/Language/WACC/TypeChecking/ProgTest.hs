@@ -11,23 +11,24 @@ where
 import Data.Map ((!?))
 import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
-import Language.WACC.TypeChecking.Prog
+import Language.WACC.TypeChecking.Class
+import Language.WACC.TypeChecking.Prog ()
 import Language.WACC.TypeChecking.State
 import Test
 
 mkParam :: WType -> (WType, BType)
 mkParam wt = (wt, fix wt)
 
-testTypingM :: TypingM Int BType () -> Int -> Either Int FnType
+testTypingM :: TypingM Int BType a -> Int -> Either Int FnType
 testTypingM action = case runTypingM action id mempty of
   (Just _, fs, es) | null es -> maybe (Left 0) pure . (fs !?)
   (_, _, es) -> const . Left $ length es
 
 checkFunc' :: Func Pos WType Int BType -> Int -> Either Int FnType
-checkFunc' = testTypingM . checkFunc
+checkFunc' = testTypingM . fnCheck
 
 checkProg' :: Prog Pos WType Int BType -> Int -> Either Int FnType
-checkProg' = testTypingM . checkProg
+checkProg' = testTypingM . fnCheck
 
 intExpr :: Expr Pos BType
 intExpr = WAtom (IntLit 0 undefined) undefined

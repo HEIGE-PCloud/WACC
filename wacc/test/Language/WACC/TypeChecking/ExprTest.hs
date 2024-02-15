@@ -9,7 +9,8 @@ where
 import Data.Foldable (traverse_)
 import Language.WACC.AST.Expr
 import Language.WACC.TypeChecking.BType
-import Language.WACC.TypeChecking.Expr
+import Language.WACC.TypeChecking.Class
+import Language.WACC.TypeChecking.Expr ()
 import Language.WACC.TypeChecking.State
 import Test
 import Prelude hiding (GT, LT)
@@ -40,13 +41,13 @@ testTypingM action = case runTypingM action id mempty of
   (_, _, es) -> Left $ length es
 
 checkAtom' :: WAtom Pos BType -> Either Int BType
-checkAtom' = testTypingM . checkAtom
+checkAtom' = testTypingM . check
 
 checkExpr' :: Expr Pos BType -> Either Int BType
-checkExpr' = testTypingM . checkExpr
+checkExpr' = testTypingM . check
 
 checkArrayIndex' :: ArrayIndex Pos BType -> Either Int BType
-checkArrayIndex' = testTypingM . checkArrayIndex
+checkArrayIndex' = testTypingM . check
 
 intExpr :: Expr Pos BType
 intExpr = WAtom (IntLit 0 undefined) undefined
