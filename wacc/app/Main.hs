@@ -3,7 +3,7 @@ module Main (main) where
 import Data.List.Extra (replace)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
-import Language.WACC.AST.Prog (Prog)
+import Language.WACC.AST (Prog, WType)
 import Language.WACC.Error (Error, printError, semanticError, syntaxError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
@@ -12,6 +12,7 @@ import Language.WACC.TypeChecking (checkTypes)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
 import Text.Gigaparsec (Result (..))
+import Text.Gigaparsec.Position (Pos)
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
@@ -43,7 +44,8 @@ runParse filename = do
     Failure err -> putStrLn (printError' syntaxError err) >> exitWithSyntaxError
     Success ast -> runScopeAnalysis printError' ast
 
-runScopeAnalysis :: (String -> Error -> String) -> Prog String String -> IO ()
+runScopeAnalysis
+  :: (String -> Error -> String) -> Prog Pos WType String String -> IO ()
 runScopeAnalysis printError' ast = case scopeAnalysis ast of
   Failure errs -> do
     mapM_ (putStrLn . printError' semanticError) errs
@@ -51,7 +53,9 @@ runScopeAnalysis printError' ast = case scopeAnalysis ast of
   Success res -> runTypeCheck printError' res
 
 runTypeCheck
-  :: (String -> Error -> String) -> (Prog Fnident Vident, VarST) -> IO ()
+  :: (String -> Error -> String)
+  -> (Prog Pos WType Fnident Vident, VarST)
+  -> IO ()
 runTypeCheck printError' ast = case uncurry checkTypes ast of
   [] -> exitSuccess
   errs -> do
