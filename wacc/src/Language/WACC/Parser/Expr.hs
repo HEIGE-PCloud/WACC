@@ -40,45 +40,41 @@ import Text.Gigaparsec.Expr
   , precedence
   , (>+)
   )
-import Text.Gigaparsec.Patterns
-  ( deriveDeferredConstructors
-  , deriveLiftedConstructors
-  )
 import Text.Gigaparsec.Position (Pos, pos)
 import Prelude hiding (GT, LT)
 
 -- | > <int-liter> ::= <int-sign>? <digit>+
-intLiter :: Parsec (WAtom i)
+intLiter :: Parsec (WAtom Pos i)
 intLiter = mkIntLit' decimal
 
 -- | > <bool-liter> ::= "true" | "false"
-boolLiter :: Parsec (WAtom i)
+boolLiter :: Parsec (WAtom Pos i)
 boolLiter = mkBoolLit' (("true" $> True) <|> ("false" $> False))
 
 -- | > <char-liter> ::= ''' <character> '''
-charLiter :: Parsec (WAtom i)
+charLiter :: Parsec (WAtom Pos i)
 charLiter = mkCharLit' charLiteral
 
 -- | > <string-liter> ::= '"' <character>* '"'
-stringLiter :: Parsec (WAtom i)
+stringLiter :: Parsec (WAtom Pos i)
 stringLiter = mkStringLit' stringLiteral
 
 -- | > <null-liter> ::= "null"
-pairLiter :: Parsec (WAtom i)
+pairLiter :: Parsec (WAtom Pos i)
 pairLiter = "null" >> mkNull'
 
 -- | > <ident> ::= ('_'|'a'-'z'|'A'-'Z')('_'|'a'-'z'|'A'-'Z'|'0'-'9')*
-ident :: Parsec (WAtom String)
+ident :: Parsec (WAtom Pos String)
 ident = mkIdent' identifier
 
 -- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
-arrayElem :: Parsec (WAtom String)
+arrayElem :: Parsec (WAtom Pos String)
 arrayElem = mkArrayElem' (mkArrayIndex identifier (some ("[" *> expr <* "]")))
 
 {- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
  >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
 -}
-atom :: Parsec (Expr String)
+atom :: Parsec (Expr Pos String)
 atom =
   choice
     [ mkWAtom intLiter
@@ -97,12 +93,12 @@ Left-factoring the identifier and array element parsers.
 mkIdentOrArrayElem
   :: Parsec Pos
   -> Parsec String
-  -> Parsec (Maybe [Expr String])
-  -> Parsec (WAtom String)
+  -> Parsec (Maybe [Expr Pos String])
+  -> Parsec (WAtom Pos String)
 mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem'
-      :: Pos -> String -> Maybe [Expr String] -> WAtom String
+      :: Pos -> String -> Maybe [Expr Pos String] -> WAtom Pos String
     mkIdentOrArrayElem' p str (Just e) = ArrayElem (ArrayIndex str e p) p
     mkIdentOrArrayElem' p str Nothing = Ident str p
 
@@ -110,7 +106,7 @@ mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
  >              | <expr> <binary-oper> <expr>
  >              | <atom>
 -}
-expr :: Parsec (Expr String)
+expr :: Parsec (Expr Pos String)
 expr =
   mkExpr'
     ( precedence
@@ -137,37 +133,37 @@ expr =
 {- |
 Lifted Constructor for the 'WAtom' 'int' literal.
 -}
-mkIntLit' :: Parsec Integer -> Parsec (WAtom ident)
+mkIntLit' :: Parsec Integer -> Parsec (WAtom Pos ident)
 mkIntLit' = label (singleton "integer") . mkIntLit
 
 {- |
 Lifted Constructor for the 'WAtom' 'bool' literal.
 -}
-mkBoolLit' :: Parsec Bool -> Parsec (WAtom ident)
+mkBoolLit' :: Parsec Bool -> Parsec (WAtom Pos ident)
 mkBoolLit' = label (singleton "boolean") . mkBoolLit
 
 {- |
 Lifted constructor for the 'WAtom' 'char' literal.
 -}
-mkCharLit' :: Parsec Char -> Parsec (WAtom ident)
+mkCharLit' :: Parsec Char -> Parsec (WAtom Pos ident)
 mkCharLit' = label (singleton "character literal") . mkCharLit
 
 {- |
 Lifted constructor for the 'WAtom' 'string' literal.
 -}
-mkStringLit' :: Parsec String -> Parsec (WAtom ident)
+mkStringLit' :: Parsec String -> Parsec (WAtom Pos ident)
 mkStringLit' = label (singleton "strings") . mkStringLit
 
 {- |
 Lifted constructor for the 'WAtom' 'null' literal.
 -}
-mkNull' :: Parsec (WAtom ident)
+mkNull' :: Parsec (WAtom Pos ident)
 mkNull' = label (singleton "null") mkNull
 
 {- |
 Lifted constructor for the 'WAtom' identifier literal.
 -}
-mkIdent' :: Parsec String -> Parsec (WAtom String)
+mkIdent' :: Parsec String -> Parsec (WAtom Pos String)
 mkIdent' = label (singleton "identifier") . mkIdent
 
 {- |
@@ -182,7 +178,7 @@ mkExpr' =
 {- |
 Lifted constructor for the 'WAtom' 'array' element.
 -}
-mkArrayElem' :: Parsec (ArrayIndex String) -> Parsec (WAtom String)
+mkArrayElem' :: Parsec (ArrayIndex Pos String) -> Parsec (WAtom Pos String)
 mkArrayElem' = label (singleton "array element") . mkArrayElem
 
 {- |
