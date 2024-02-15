@@ -23,22 +23,22 @@ testTypingM action = case runTypingM action id mempty of
   (Just _, fs, es) | null es -> maybe (Left 0) pure . (fs !?)
   (_, _, es) -> const . Left $ length es
 
-checkFunc' :: Func Int BType -> Int -> Either Int FnType
+checkFunc' :: Func Pos WType Int BType -> Int -> Either Int FnType
 checkFunc' = testTypingM . checkFunc
 
-checkProg' :: Prog Int BType -> Int -> Either Int FnType
+checkProg' :: Prog Pos WType Int BType -> Int -> Either Int FnType
 checkProg' = testTypingM . checkProg
 
-intExpr :: Expr BType
+intExpr :: Expr Pos BType
 intExpr = WAtom (IntLit 0 undefined) undefined
 
-boolExpr :: Expr BType
+boolExpr :: Expr Pos BType
 boolExpr = WAtom (BoolLit False undefined) undefined
 
-varExpr :: BType -> Expr BType
+varExpr :: BType -> Expr Pos BType
 varExpr = flip WAtom undefined . (`Ident` undefined)
 
-func :: Func Int BType
+func :: Func Pos WType Int BType
 func = Func WInt 0 [(WInt, BInt)] [Return intExpr undefined] undefined
 
 funcType :: FnType

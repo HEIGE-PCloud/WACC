@@ -24,28 +24,28 @@ testTypingM action = case runTypingM action id fnMap of
   where
     fnMap = singleton () (FnType [BInt, BBool] BBool)
 
-checkStmt' :: Stmt () BType -> Either Int BType
+checkStmt' :: Stmt Pos () BType -> Either Int BType
 checkStmt' = testTypingM . checkStmt
 
-checkLValue' :: LValue BType -> Either Int BType
+checkLValue' :: LValue Pos BType -> Either Int BType
 checkLValue' = testTypingM . checkLValue
 
-checkRValue' :: RValue () BType -> Either Int BType
+checkRValue' :: RValue Pos () BType -> Either Int BType
 checkRValue' = testTypingM . checkRValue
 
-checkPairElem' :: PairElem BType -> Either Int BType
+checkPairElem' :: PairElem Pos BType -> Either Int BType
 checkPairElem' = testTypingM . checkPairElem
 
-intExpr :: Expr BType
+intExpr :: Expr Pos BType
 intExpr = WAtom (IntLit 0 undefined) undefined
 
-boolExpr :: Expr BType
+boolExpr :: Expr Pos BType
 boolExpr = WAtom (BoolLit False undefined) undefined
 
-nullExpr :: Expr BType
+nullExpr :: Expr Pos BType
 nullExpr = WAtom (Null undefined) undefined
 
-varExpr :: BType -> Expr BType
+varExpr :: BType -> Expr Pos BType
 varExpr = flip WAtom undefined . (`Ident` undefined)
 
 bIntPair :: BType

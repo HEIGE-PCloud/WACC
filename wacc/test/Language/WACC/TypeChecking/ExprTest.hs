@@ -39,28 +39,28 @@ testTypingM action = case runTypingM action id mempty of
   (Just x, _, es) | null es -> Right x
   (_, _, es) -> Left $ length es
 
-checkAtom' :: WAtom BType -> Either Int BType
+checkAtom' :: WAtom Pos BType -> Either Int BType
 checkAtom' = testTypingM . checkAtom
 
-checkExpr' :: Expr BType -> Either Int BType
+checkExpr' :: Expr Pos BType -> Either Int BType
 checkExpr' = testTypingM . checkExpr
 
-checkArrayIndex' :: ArrayIndex BType -> Either Int BType
+checkArrayIndex' :: ArrayIndex Pos BType -> Either Int BType
 checkArrayIndex' = testTypingM . checkArrayIndex
 
-intExpr :: Expr BType
+intExpr :: Expr Pos BType
 intExpr = WAtom (IntLit 0 undefined) undefined
 
-boolExpr :: Expr BType
+boolExpr :: Expr Pos BType
 boolExpr = WAtom (BoolLit False undefined) undefined
 
-charExpr :: Expr BType
+charExpr :: Expr Pos BType
 charExpr = WAtom (CharLit 'C' undefined) undefined
 
-stringExpr :: Expr BType
+stringExpr :: Expr Pos BType
 stringExpr = WAtom (StringLit "String" undefined) undefined
 
-varExpr :: BType -> Expr BType
+varExpr :: BType -> Expr Pos BType
 varExpr = flip WAtom undefined . (`Ident` undefined)
 
 showType :: BType -> String
@@ -79,7 +79,11 @@ mkBad BInt = BBool
 mkBad _ = BInt
 
 testUnOp
-  :: String -> (Expr BType -> a -> Expr BType) -> BType -> BType -> TestTree
+  :: String
+  -> (Expr Pos BType -> Pos -> Expr Pos BType)
+  -> BType
+  -> BType
+  -> TestTree
 testUnOp name op t ret =
   testGroup
     name
@@ -94,7 +98,7 @@ testUnOp name op t ret =
 
 testBinOp
   :: String
-  -> (Expr BType -> Expr BType -> a -> Expr BType)
+  -> (Expr Pos BType -> Expr Pos BType -> a -> Expr Pos BType)
   -> [(BType, BType, BType)]
   -> TestTree
 testBinOp name op ts = testGroup name $ ts >>= mkCases
