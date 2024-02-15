@@ -4,7 +4,7 @@ Type checking actions for WACC programs.
 module Language.WACC.TypeChecking.Prog (checkFunc, checkProg) where
 
 import Control.Monad (when)
-import Language.WACC.AST.Prog (Func (..), Prog (..))
+import Language.WACC.AST (Func (..), Prog (..), WType)
 import Language.WACC.TypeChecking.BType (BType (BAny), FnType (FnType), fix)
 import Language.WACC.TypeChecking.Error (TypeError (ReturnFromMainError))
 import Language.WACC.TypeChecking.State
@@ -14,13 +14,15 @@ import Language.WACC.TypeChecking.State
   , setFnType
   )
 import Language.WACC.TypeChecking.Stmt (unifyStmts, unifyStmtsAt)
+import Text.Gigaparsec.Position (Pos)
 
 {- |
 Type check a WACC function.
 
 Records the type of the function in the 'TypingM' state on success.
 -}
-checkFunc :: (Ord fnident) => Func fnident ident -> TypingM fnident ident ()
+checkFunc
+  :: (Ord fnident) => Func Pos WType fnident ident -> TypingM fnident ident ()
 checkFunc (Func rwt f pwts ss p) = do
   let
     rt = fix rwt
@@ -31,7 +33,8 @@ checkFunc (Func rwt f pwts ss p) = do
 {- |
 Type check a WACC program.
 -}
-checkProg :: (Ord fnident) => Prog fnident ident -> TypingM fnident ident ()
+checkProg
+  :: (Ord fnident) => Prog Pos WType fnident ident -> TypingM fnident ident ()
 checkProg (Main fs ss p) = reportAt p BAny $ do
   mapM_ checkFunc fs
   t <- unifyStmts BAny ss

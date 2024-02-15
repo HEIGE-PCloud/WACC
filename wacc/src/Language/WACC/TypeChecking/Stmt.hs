@@ -22,7 +22,7 @@ import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
 import Text.Gigaparsec.Position (Pos)
 
-unifyPair :: LValue ident -> TypingM fnident ident (BType, BType)
+unifyPair :: LValue Pos ident -> TypingM fnident ident (BType, BType)
 unifyPair lv = do
   lvt <- checkLValue lv
   pt <- tryUnify (BKnownPair BAny BAny) lvt
@@ -33,14 +33,14 @@ unifyPair lv = do
 {- |
 Type check an element of a WACC @pair@.
 -}
-checkPairElem :: PairElem ident -> TypingM fnident ident BType
+checkPairElem :: PairElem Pos ident -> TypingM fnident ident BType
 checkPairElem (FstElem lv _) = fst <$> unifyPair lv
 checkPairElem (SndElem lv _) = snd <$> unifyPair lv
 
 {- |
 Type check a WACC @lvalue@.
 -}
-checkLValue :: LValue ident -> TypingM fnident ident BType
+checkLValue :: LValue Pos ident -> TypingM fnident ident BType
 checkLValue (LVIdent v _) = typeOf v
 checkLValue (LVArrayElem ai _) = checkArrayIndex ai
 checkLValue (LVPairElem pe _) = checkPairElem pe
@@ -49,7 +49,7 @@ checkLValue (LVPairElem pe _) = checkPairElem pe
 Type check a WACC @rvalue@.
 -}
 checkRValue
-  :: (Ord fnident) => RValue fnident ident -> TypingM fnident ident BType
+  :: (Ord fnident) => RValue Pos fnident ident -> TypingM fnident ident BType
 checkRValue (RVExpr x _) = checkExpr x
 checkRValue (RVArrayLit xs p) = do
   mt <- tryUnifyExprs BAny xs
@@ -77,7 +77,7 @@ If a unification fails, the traversal is aborted.
 unifyStmts
   :: (Ord fnident)
   => BType
-  -> Stmts fnident ident
+  -> Stmts Pos fnident ident
   -> TypingM fnident ident BType
 unifyStmts t ss =
   traverse (resumeAfter . checkStmt) (unwrap ss)
@@ -90,7 +90,7 @@ unifyStmtsAt
   :: (Ord fnident)
   => Pos
   -> BType
-  -> Stmts fnident ident
+  -> Stmts Pos fnident ident
   -> TypingM fnident ident BType
 unifyStmtsAt p t ss = reportAt p t $ unifyStmts t ss
 
@@ -107,7 +107,8 @@ Type check a WACC statement.
 
 Otherwise, 'BAny' is returned.
 -}
-checkStmt :: (Ord fnident) => Stmt fnident ident -> TypingM fnident ident BType
+checkStmt
+  :: (Ord fnident) => Stmt Pos fnident ident -> TypingM fnident ident BType
 checkStmt (Skip _) = pure BAny
 checkStmt (Decl wt v rv p) =
   [ BAny

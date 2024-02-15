@@ -1,3 +1,5 @@
+{-# LANGUAGE MonoLocalBinds #-}
+
 {- |
 Type checking actions for WACC expressions.
 -}
@@ -16,12 +18,13 @@ import Data.List (sort)
 import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.State
+import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
 {- |
 Type check a WACC array indexing subexpression.
 -}
-checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
+checkArrayIndex :: ArrayIndex Pos ident -> TypingM fnident ident BType
 checkArrayIndex (ArrayIndex v xs p) =
   reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
   where
@@ -35,7 +38,7 @@ checkArrayIndex (ArrayIndex v xs p) =
 {- |
 Type check an atomic WACC expression.
 -}
-checkAtom :: WAtom ident -> TypingM fnident ident BType
+checkAtom :: WAtom Pos ident -> TypingM fnident ident BType
 checkAtom (IntLit _ _) = pure BInt
 checkAtom (BoolLit _ _) = pure BBool
 checkAtom (CharLit _ _) = pure BChar
@@ -50,27 +53,28 @@ checkAtom (ArrayElem ai _) = checkArrayIndex ai
 
 If a unification fails, the traversal is aborted.
 -}
-unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
+unifyExprs :: BType -> [Expr Pos ident] -> TypingM fnident ident BType
 unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Text.Gigaparsec.Position.Pos' with a @unifyExprs@ action.
 -}
 unifyExprsAt
-  :: (HasPos a) => a -> BType -> [Expr ident] -> TypingM fnident ident BType
+  :: (HasPos a) => a -> BType -> [Expr Pos ident] -> TypingM fnident ident BType
 unifyExprsAt x t xs = reportAt (getPos x) t $ unifyExprs t xs
 
 {- |
 @tryUnifyExprs@ unifies multiple expressions like @unifyExprsAt@ but does not
 report a type error on failure.
 -}
-tryUnifyExprs :: BType -> [Expr ident] -> TypingM fnident ident (Maybe BType)
+tryUnifyExprs
+  :: BType -> [Expr Pos ident] -> TypingM fnident ident (Maybe BType)
 tryUnifyExprs t xs = foldM unify t <$> traverse checkExpr xs
 
 {- |
 Type check a composite WACC expression.
 -}
-checkExpr :: Expr ident -> TypingM fnident ident BType
+checkExpr :: Expr Pos ident -> TypingM fnident ident BType
 checkExpr (WAtom atom _) = checkAtom atom
 checkExpr (Not x p) = unifyExprsAt p BBool [x]
 checkExpr (Negate x p) = unifyExprsAt p BInt [x]

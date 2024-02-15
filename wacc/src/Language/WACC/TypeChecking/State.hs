@@ -1,3 +1,4 @@
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TupleSections #-}
 

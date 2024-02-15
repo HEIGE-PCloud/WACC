@@ -60,14 +60,19 @@ instance Annotated (RValue ann fnident ident) where
   getAnn (RVCall _ _ x) = x
 
 {- |
+This instance is needed instead of @'HasPos' 'Pos'@ to avoid overlapping
+instances.
+-}
+instance Annotated Pos where
+  type Ann Pos = Pos
+  getAnn = id
+
+{- |
 AST nodes with associated positions.
 -}
 class HasPos a where
   -- | Get the 'Pos' associated with a node.
   getPos :: a -> Pos
-
-instance HasPos Pos where
-  getPos = id
 
 instance (Annotated a, Ann a ~ Pos) => HasPos a where
   getPos = getAnn
