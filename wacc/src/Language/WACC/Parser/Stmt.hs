@@ -37,6 +37,8 @@ import Language.WACC.AST.Stmt
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error (Error, errorMessage, position, width))
 import Language.WACC.Parser.Common ()
+import Language.WACC.Parser.Constructors.Prog
+import Language.WACC.Parser.Constructors.Stmt
 import Language.WACC.Parser.Expr (expr)
 import Language.WACC.Parser.Token (identifier)
 import Language.WACC.Parser.Type (wType)
@@ -63,33 +65,6 @@ import Text.Gigaparsec.Errors.Patterns
   )
 import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 import Text.Gigaparsec.Position (Pos, pos)
-
-$( deriveLiftedConstructors
-    "mk"
-    [ 'LVPairElem
-    , 'FstElem
-    , 'SndElem
-    , 'RVExpr
-    , 'RVArrayLit
-    , 'RVPairElem
-    , 'Skip
-    , 'Read
-    , 'Free
-    , 'Return
-    , 'Exit
-    , 'Print
-    , 'PrintLn
-    , 'IfElse
-    , 'While
-    , 'BeginEnd
-    , 'RVNewPair
-    , 'Decl
-    , 'Asgn
-    , 'RVCall
-    , 'Func
-    , 'Main
-    ]
- )
 
 -- | > program ::= "begin" <func>* <stmt> "end"
 program :: Parsec (Prog String String)
