@@ -1,9 +1,4 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveFunctor #-}
 
 {- |
 WACC programs.
@@ -11,26 +6,24 @@ WACC programs.
 module Language.WACC.AST.Prog (Prog (..), Func (..)) where
 
 import Language.WACC.AST.Stmt (Stmts)
-import Language.WACC.AST.WType (WType)
-import Text.Gigaparsec.Position (Pos)
 
 {- |
 WACC programs.
 -}
-data Prog fnident ident
-  = -- | > 'begin' (func)* stmt 'end'
-    Main [Func fnident ident] (Stmts fnident ident) Pos
-  deriving (Eq, Show)
+data Prog typ fnident ident ann
+  = -- | > begin <func> ... <stmt> end
+    Main [Func typ fnident ident ann] (Stmts fnident ident ann) ann
+  deriving (Eq, Functor, Show)
 
 {- |
-WACC Function definition and body
+WACC function definitions.
 -}
-data Func fnident ident
+data Func typ fnident ident ann
   = -- | > <type> <ident>(<type> <ident>, ...) is <stmt> end
     Func
-      WType
+      typ
       fnident
-      [(WType, ident)]
-      (Stmts fnident ident)
-      Pos
-  deriving (Eq, Show)
+      [(typ, ident)]
+      (Stmts fnident ident ann)
+      ann
+  deriving (Eq, Functor, Show)

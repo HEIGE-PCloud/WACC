@@ -1,3 +1,4 @@
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -27,10 +28,11 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, catchE, runExceptT, throwE)
 import Control.Monad.Trans.RWS (RWS, asks, gets, modify, runRWS, tell)
 import Data.DList (DList)
+import Data.Functor.Identity (Identity)
 import Data.Map (Map, insert, (!?))
 import Data.Maybe (fromMaybe)
 import Language.WACC.AST (HasPos (getPos))
-import Language.WACC.TypeChecking.BType (BType (BAny), FnType, unify)
+import Language.WACC.TypeChecking.BType (BType, FnType, unify)
 import Language.WACC.TypeChecking.Error
 import Text.Gigaparsec.Position (Pos)
 
@@ -48,6 +50,9 @@ type TypingM fnident ident =
   ExceptT
     (Maybe BType, Maybe Pos)
     (RWS (ident -> BType) TypeErrors (FnTypes fnident))
+
+instance MonadFail Identity where
+  fail = undefined
 
 {- |
 Run a type checking action.
@@ -140,7 +145,7 @@ abortWith err = lift (tell [err]) *> abort
 {- |
 Allow type checking to continue after an error was reported.
 
-Returns 'BAny' if an exception was caught.
+Returns the first argument if an exception was caught.
 -}
-resumeAfter :: TypingM fnident ident BType -> TypingM fnident ident BType
-resumeAfter action = catchE action (const $ pure BAny)
+resumeAfter :: a -> TypingM fnident ident a -> TypingM fnident ident a
+resumeAfter x action = catchE action (const $ pure x)

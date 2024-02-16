@@ -11,34 +11,35 @@ where
 import Data.Map ((!?))
 import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
-import Language.WACC.TypeChecking.Prog
+import Language.WACC.TypeChecking.Class
+import Language.WACC.TypeChecking.Prog ()
 import Language.WACC.TypeChecking.State
 import Test
 
 mkParam :: WType -> (WType, BType)
 mkParam wt = (wt, fix wt)
 
-testTypingM :: TypingM Int BType () -> Int -> Either Int FnType
+testTypingM :: TypingM Int BType a -> Int -> Either Int FnType
 testTypingM action = case runTypingM action id mempty of
   (Just _, fs, es) | null es -> maybe (Left 0) pure . (fs !?)
   (_, _, es) -> const . Left $ length es
 
-checkFunc' :: Func Int BType -> Int -> Either Int FnType
-checkFunc' = testTypingM . checkFunc
+checkFunc' :: Func WType Int BType Pos -> Int -> Either Int FnType
+checkFunc' = testTypingM . fnCheck
 
-checkProg' :: Prog Int BType -> Int -> Either Int FnType
-checkProg' = testTypingM . checkProg
+checkProg' :: Prog WType Int BType Pos -> Int -> Either Int FnType
+checkProg' = testTypingM . fnCheck
 
-intExpr :: Expr BType
+intExpr :: Expr BType Pos
 intExpr = WAtom (IntLit 0 undefined) undefined
 
-boolExpr :: Expr BType
+boolExpr :: Expr BType Pos
 boolExpr = WAtom (BoolLit False undefined) undefined
 
-varExpr :: BType -> Expr BType
+varExpr :: BType -> Expr BType Pos
 varExpr = flip WAtom undefined . (`Ident` undefined)
 
-func :: Func Int BType
+func :: Func WType Int BType Pos
 func = Func WInt 0 [(WInt, BInt)] [Return intExpr undefined] undefined
 
 funcType :: FnType

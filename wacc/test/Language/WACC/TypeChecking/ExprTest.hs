@@ -7,9 +7,10 @@ module Language.WACC.TypeChecking.ExprTest
 where
 
 import Data.Foldable (traverse_)
-import Language.WACC.AST.Expr
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
-import Language.WACC.TypeChecking.Expr
+import Language.WACC.TypeChecking.Class
+import Language.WACC.TypeChecking.Expr ()
 import Language.WACC.TypeChecking.State
 import Test
 import Prelude hiding (GT, LT)
@@ -34,33 +35,33 @@ btypes =
 forEachBType :: (BType -> Assertion) -> Assertion
 forEachBType = flip traverse_ btypes
 
-testTypingM :: TypingM () BType a -> Either Int a
+testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
 testTypingM action = case runTypingM action id mempty of
-  (Just x, _, es) | null es -> Right x
+  (Just x, _, es) | null es -> Right (getAnn x)
   (_, _, es) -> Left $ length es
 
-checkAtom' :: WAtom BType -> Either Int BType
-checkAtom' = testTypingM . checkAtom
+checkAtom' :: WAtom BType Pos -> Either Int BType
+checkAtom' = testTypingM . check
 
-checkExpr' :: Expr BType -> Either Int BType
-checkExpr' = testTypingM . checkExpr
+checkExpr' :: Expr BType Pos -> Either Int BType
+checkExpr' = testTypingM . check
 
-checkArrayIndex' :: ArrayIndex BType -> Either Int BType
-checkArrayIndex' = testTypingM . checkArrayIndex
+checkArrayIndex' :: ArrayIndex BType Pos -> Either Int BType
+checkArrayIndex' = testTypingM . check
 
-intExpr :: Expr BType
+intExpr :: Expr BType Pos
 intExpr = WAtom (IntLit 0 undefined) undefined
 
-boolExpr :: Expr BType
+boolExpr :: Expr BType Pos
 boolExpr = WAtom (BoolLit False undefined) undefined
 
-charExpr :: Expr BType
+charExpr :: Expr BType Pos
 charExpr = WAtom (CharLit 'C' undefined) undefined
 
-stringExpr :: Expr BType
+stringExpr :: Expr BType Pos
 stringExpr = WAtom (StringLit "String" undefined) undefined
 
-varExpr :: BType -> Expr BType
+varExpr :: BType -> Expr BType Pos
 varExpr = flip WAtom undefined . (`Ident` undefined)
 
 showType :: BType -> String
@@ -79,7 +80,11 @@ mkBad BInt = BBool
 mkBad _ = BInt
 
 testUnOp
-  :: String -> (Expr BType -> a -> Expr BType) -> BType -> BType -> TestTree
+  :: String
+  -> (Expr BType Pos -> Pos -> Expr BType Pos)
+  -> BType
+  -> BType
+  -> TestTree
 testUnOp name op t ret =
   testGroup
     name
@@ -94,7 +99,7 @@ testUnOp name op t ret =
 
 testBinOp
   :: String
-  -> (Expr BType -> Expr BType -> a -> Expr BType)
+  -> (Expr BType Pos -> Expr BType Pos -> a -> Expr BType Pos)
   -> [(BType, BType, BType)]
   -> TestTree
 testBinOp name op ts = testGroup name $ ts >>= mkCases

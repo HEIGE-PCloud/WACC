@@ -9,43 +9,42 @@ module Language.WACC.TypeChecking.StmtTest
 where
 
 import Data.Map (singleton)
-import Language.WACC.AST.Expr
-import Language.WACC.AST.Stmt
-import Language.WACC.AST.WType
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
+import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
-import Language.WACC.TypeChecking.Stmt
+import Language.WACC.TypeChecking.Stmt ()
 import Test
 
-testTypingM :: TypingM () BType a -> Either Int a
+testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
 testTypingM action = case runTypingM action id fnMap of
-  (Just x, _, []) -> Right x
+  (Just x, _, []) -> Right (getAnn x)
   (_, _, es) -> Left $ length es
   where
     fnMap = singleton () (FnType [BInt, BBool] BBool)
 
-checkStmt' :: Stmt () BType -> Either Int BType
-checkStmt' = testTypingM . checkStmt
+checkStmt' :: Stmt () BType Pos -> Either Int BType
+checkStmt' = testTypingM . fnCheck
 
-checkLValue' :: LValue BType -> Either Int BType
-checkLValue' = testTypingM . checkLValue
+checkLValue' :: LValue BType Pos -> Either Int BType
+checkLValue' = testTypingM . check
 
-checkRValue' :: RValue () BType -> Either Int BType
-checkRValue' = testTypingM . checkRValue
+checkRValue' :: RValue () BType Pos -> Either Int BType
+checkRValue' = testTypingM . fnCheck
 
-checkPairElem' :: PairElem BType -> Either Int BType
-checkPairElem' = testTypingM . checkPairElem
+checkPairElem' :: PairElem BType Pos -> Either Int BType
+checkPairElem' = testTypingM . check
 
-intExpr :: Expr BType
+intExpr :: Expr BType Pos
 intExpr = WAtom (IntLit 0 undefined) undefined
 
-boolExpr :: Expr BType
+boolExpr :: Expr BType Pos
 boolExpr = WAtom (BoolLit False undefined) undefined
 
-nullExpr :: Expr BType
+nullExpr :: Expr BType Pos
 nullExpr = WAtom (Null undefined) undefined
 
-varExpr :: BType -> Expr BType
+varExpr :: BType -> Expr BType Pos
 varExpr = flip WAtom undefined . (`Ident` undefined)
 
 bIntPair :: BType

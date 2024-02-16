@@ -18,103 +18,93 @@ import Data.List.NonEmpty (NonEmpty)
 import GHC.IsList
 import Language.WACC.AST.Expr (ArrayIndex, Expr)
 import Language.WACC.AST.WType (WType)
-import Text.Gigaparsec.Position (Pos)
 
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
 -}
-data PairElem ident
+data PairElem ident ann
   = -- | > fst <value>
-    FstElem (LValue ident) Pos
+    FstElem (LValue ident ann) ann
   | -- | > snd <value>
-    SndElem (LValue ident) Pos
-  deriving (Eq, Show, Functor)
+    SndElem (LValue ident ann) ann
+  deriving (Eq, Functor, Show)
 
 {- |
 A WACC @lvalue@, which is the target of an assignment statement.
 -}
-data LValue ident
+data LValue ident ann
   = -- | > <ident>
-    LVIdent ident Pos
+    LVIdent ident ann
   | -- | > <ident>[<expr>]...
-    LVArrayElem (ArrayIndex ident) Pos
+    LVArrayElem (ArrayIndex ident ann) ann
   | -- |
     -- > fst <lvalue>
     --
     -- or
     --
     -- > snd <lvalue>
-    LVPairElem (PairElem ident) Pos
-  deriving (Eq, Show, Functor)
+    LVPairElem (PairElem ident ann) ann
+  deriving (Eq, Functor, Show)
 
 {- |
 A WACC @rvalue@, which is the source of an assignment statement.
 -}
-data RValue fnident ident
+data RValue fnident ident ann
   = -- | > <expr>
-    RVExpr (Expr ident) Pos
+    RVExpr (Expr ident ann) ann
   | -- | > [<expr>, ...]
-    RVArrayLit [Expr ident] Pos
+    RVArrayLit [Expr ident ann] ann
   | -- | > newpair(<expr>, <expr>)
-    RVNewPair (Expr ident) (Expr ident) Pos
+    RVNewPair (Expr ident ann) (Expr ident ann) ann
   | -- |
     -- > fst <rvalue>
     --
     -- or
     --
     -- > snd <rvalue>
-    RVPairElem (PairElem ident) Pos
+    RVPairElem (PairElem ident ann) ann
   | -- | > call <ident>(<expr>, ...)
-    RVCall fnident [Expr ident] Pos
-  deriving (Eq, Show, Functor)
-
--- instance Bifunctor RValue where
---   -- first :: (a -> b) -> RValue a c -> RValue b c
---   first f (RVExpr e) = RVExpr e
---   first f (RVArrayLit es) = RVArrayLit es
---   first f (RVNewPair e1 e2) = RVNewPair e1 e2
---   first f (RVPairElem pe) = RVPairElem pe
---   first f (RVCall fnident es pos) = RVCall (f fnident) es pos
-
---   -- second :: (a -> b) -> RValue a c -> RValue b c
---   second f (RVExpr e) = RVExpr (f <$> e)
---   second f (RVArrayLit es) = RVArrayLit ((f <$>) <$> es)
---   second f (RVNewPair e1 e2) = RVNewPair (f <$> e1) (f <$> e2)
---   second f (RVPairElem pe) = RVPairElem (f <$> pe)
---   second f (RVCall fnident es pos) = RVCall fnident ((f <$>) <$> es) pos
+    RVCall fnident [Expr ident ann] ann
+  deriving (Eq, Functor, Show)
 
 {- |
 Individual WACC statements.
 -}
-data Stmt fnident ident
+data Stmt fnident ident ann
   = -- | > skip
-    Skip Pos
+    Skip ann
   | -- | > <type> <ident> = <rvalue>
-    Decl WType ident (RValue fnident ident) Pos
+    Decl WType ident (RValue fnident ident ann) ann
   | -- | > <lvalue> = <rvalue>
-    Asgn (LValue ident) (RValue fnident ident) Pos
+    Asgn (LValue ident ann) (RValue fnident ident ann) ann
   | -- | > read <lvalue>
-    Read (LValue ident) Pos
+    Read (LValue ident ann) ann
   | -- | > free <expr>
-    Free (Expr ident) Pos
+    Free (Expr ident ann) ann
   | -- | > return <expr>
-    Return (Expr ident) Pos
+    Return (Expr ident ann) ann
   | -- | > exit <expr>
-    Exit (Expr ident) Pos
+    Exit (Expr ident ann) ann
   | -- | > print <expr>
-    Print (Expr ident) Pos
+    Print (Expr ident ann) ann
   | -- | > println <expr>
-    PrintLn (Expr ident) Pos
+    PrintLn (Expr ident ann) ann
   | -- | > if <expr> then <stmt> else <stmt> fi
-    IfElse (Expr ident) (Stmts fnident ident) (Stmts fnident ident) Pos
+    IfElse
+      (Expr ident ann)
+      (Stmts fnident ident ann)
+      (Stmts fnident ident ann)
+      ann
   | -- | > while <expr> do <stmt> done
-    While (Expr ident) (Stmts fnident ident) Pos
+    While (Expr ident ann) (Stmts fnident ident ann) ann
   | -- | > begin <stmt> end
-    BeginEnd (Stmts fnident ident) Pos
-  deriving (Eq, Show)
+    BeginEnd (Stmts fnident ident ann) ann
+  deriving (Eq, Functor, Show)
 
 {- |
 Sequences of WACC statements separated by @;@.
 -}
-newtype Stmts fnident ident = Stmts {unwrap :: NonEmpty (Stmt fnident ident)}
-  deriving (Eq, Show, IsList)
+newtype Stmts fnident ident ann = Stmts
+  { unwrap :: NonEmpty (Stmt fnident ident ann)
+  }
+  deriving (Eq, Functor, IsList, Show)

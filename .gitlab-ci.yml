@@ -61,6 +61,8 @@ code_quality:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   services:            # Shut off Docker-in-Docker
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
 
 integration-test:
   script:

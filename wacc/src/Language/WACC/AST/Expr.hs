@@ -5,76 +5,74 @@ WACC expressions.
 -}
 module Language.WACC.AST.Expr (WAtom (..), Expr (..), ArrayIndex (..)) where
 
-import Text.Gigaparsec.Position (Pos)
-
 {- |
 WACC array indexing subexpressions.
 
 > <ident>[<expr>]...
 -}
-data ArrayIndex ident = ArrayIndex ident [Expr ident] Pos
+data ArrayIndex ident ann = ArrayIndex ident [Expr ident ann] ann
   deriving (Eq, Show, Functor)
 
 {- |
 Atomic WACC expressions.
 -}
-data WAtom ident
+data WAtom ident ann
   = -- | @int@ literals.
-    IntLit Integer Pos
+    IntLit Integer ann
   | -- | @bool@ literals.
-    BoolLit Bool Pos
+    BoolLit Bool ann
   | -- | @char@ literals.
-    CharLit Char Pos
+    CharLit Char ann
   | -- | @string@ literals.
-    StringLit String Pos
+    StringLit String ann
   | -- | > null
-    Null Pos
+    Null ann
   | -- | > <ident>
-    Ident ident Pos
+    Ident ident ann
   | -- | > <ident>[<expr>]...
-    ArrayElem (ArrayIndex ident) Pos
+    ArrayElem (ArrayIndex ident ann) ann
   deriving (Eq, Show, Functor)
 
 {- |
 Composite WACC expressions.
 -}
-data Expr ident
+data Expr ident ann
   = -- | > <atom>
-    WAtom (WAtom ident) Pos
+    WAtom (WAtom ident ann) ann
   | -- | > !<expr>
-    Not (Expr ident) Pos
+    Not (Expr ident ann) ann
   | -- | > -<expr>
-    Negate (Expr ident) Pos
+    Negate (Expr ident ann) ann
   | -- | > len <expr>
-    Len (Expr ident) Pos
+    Len (Expr ident ann) ann
   | -- | > ord <expr>
-    Ord (Expr ident) Pos
+    Ord (Expr ident ann) ann
   | -- | > chr <expr>
-    Chr (Expr ident) Pos
+    Chr (Expr ident ann) ann
   | -- | > <expr> * <expr>
-    Mul (Expr ident) (Expr ident) Pos
+    Mul (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> / <expr>
-    Div (Expr ident) (Expr ident) Pos
+    Div (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> % <expr>
-    Mod (Expr ident) (Expr ident) Pos
+    Mod (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> + <expr>
-    Add (Expr ident) (Expr ident) Pos
+    Add (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> - <expr>
-    Sub (Expr ident) (Expr ident) Pos
+    Sub (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> > <expr>
-    GT (Expr ident) (Expr ident) Pos
+    GT (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> >= <expr>
-    GTE (Expr ident) (Expr ident) Pos
+    GTE (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> < <expr>
-    LT (Expr ident) (Expr ident) Pos
+    LT (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> <= <expr>
-    LTE (Expr ident) (Expr ident) Pos
+    LTE (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> == <expr>
-    Eq (Expr ident) (Expr ident) Pos
+    Eq (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> != <expr>
-    Ineq (Expr ident) (Expr ident) Pos
+    Ineq (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> && <expr>
-    And (Expr ident) (Expr ident) Pos
+    And (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> || <expr>
-    Or (Expr ident) (Expr ident) Pos
+    Or (Expr ident ann) (Expr ident ann) ann
   deriving (Eq, Show, Functor)

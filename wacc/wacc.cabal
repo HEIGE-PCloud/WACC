@@ -19,13 +19,16 @@ build-type:     Simple
 library
   exposed-modules:
       Language.WACC.AST
+      Language.WACC.AST.Annotation
       Language.WACC.AST.Expr
-      Language.WACC.AST.HasPos
       Language.WACC.AST.Prog
       Language.WACC.AST.Stmt
       Language.WACC.AST.WType
       Language.WACC.Error
       Language.WACC.Parser.Common
+      Language.WACC.Parser.Constructors.Expr
+      Language.WACC.Parser.Constructors.Prog
+      Language.WACC.Parser.Constructors.Stmt
       Language.WACC.Parser.Expr
       Language.WACC.Parser.Stmt
       Language.WACC.Parser.Token
@@ -33,6 +36,7 @@ library
       Language.WACC.Semantic.Scope
       Language.WACC.TypeChecking
       Language.WACC.TypeChecking.BType
+      Language.WACC.TypeChecking.Class
       Language.WACC.TypeChecking.Error
       Language.WACC.TypeChecking.Expr
       Language.WACC.TypeChecking.Prog

@@ -1,13 +1,16 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MonadComprehensions #-}
+{-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 {- |
 Type checking actions for WACC expressions.
 -}
 module Language.WACC.TypeChecking.Expr
-  ( checkAtom
-  , checkExpr
-  , unifyExprs
+  ( unifyExprs
   , unifyExprsAt
   , tryUnifyExprs
-  , checkArrayIndex
   )
 where
 
@@ -15,34 +18,34 @@ import Control.Monad (foldM, unless)
 import Data.List (sort)
 import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
+import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
+import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
-{- |
-Type check a WACC array indexing subexpression.
--}
-checkArrayIndex :: ArrayIndex ident -> TypingM fnident ident BType
-checkArrayIndex (ArrayIndex v xs p) =
-  reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
-  where
-    go (BArray t) x = t <$ reportAt x BInt (unifyExprs BInt [x])
-    -- Move the caret one character to the left to align it with the opening
-    -- bracket.
-    go t x = abortActualOverridePos t (tryPred <$> getPos x)
-    tryPred 0 = 0
-    tryPred n = pred n
+instance TypeChecked (ArrayIndex ident Pos) where
+  check (ArrayIndex v xs p) = do
+    vt <- typeOf v
+    let
+      go (BArray t) x = t <$ reportAt x BInt (unifyExprs BInt [x])
+      -- Move the caret one character to the left to align it with the opening
+      -- bracket.
+      go t x = abortActualOverridePos t (tryPred <$> getPos x)
+      tryPred 0 = 0
+      tryPred n = pred n
+    t <- reportAt p (BArray BAny) $ foldM go vt xs
+    pure $ ArrayIndex v (fmap (BInt <$) xs) t
 
-{- |
-Type check an atomic WACC expression.
--}
-checkAtom :: WAtom ident -> TypingM fnident ident BType
-checkAtom (IntLit _ _) = pure BInt
-checkAtom (BoolLit _ _) = pure BBool
-checkAtom (CharLit _ _) = pure BChar
-checkAtom (StringLit _ _) = pure BString
-checkAtom (Null _) = pure (BKnownPair BAny BAny)
-checkAtom (Ident v _) = typeOf v
-checkAtom (ArrayElem ai _) = checkArrayIndex ai
+instance TypeChecked (WAtom ident Pos) where
+  check i@(IntLit _ _) = pure $ BInt <$ i
+  check b@(BoolLit _ _) = pure $ BBool <$ b
+  check c@(CharLit _ _) = pure $ BChar <$ c
+  check s@(StringLit _ _) = pure $ BString <$ s
+  check (Null _) = pure . Null $ BKnownPair BAny BAny
+  check (Ident v _) = Ident v <$> typeOf v
+  check (ArrayElem ai _) = do
+    ai' <- check ai
+    pure $ ArrayElem ai' (getAnn ai')
 
 {- |
 @unifyExprs t0 [x1, x2, ..., xn]@ attempts to unify @x1@ with @t0@ to obtain
@@ -50,55 +53,121 @@ checkAtom (ArrayElem ai _) = checkArrayIndex ai
 
 If a unification fails, the traversal is aborted.
 -}
-unifyExprs :: BType -> [Expr ident] -> TypingM fnident ident BType
-unifyExprs t xs = traverse checkExpr xs >>= foldM (flip tryUnify) t . sort
+unifyExprs
+  :: BType
+  -> [Expr ident Pos]
+  -> TypingM fnident ident (BType, [Expr ident BType])
+unifyExprs t xs =
+  [ (t', xs')
+  | xs' <- traverse check xs
+  , t' <- foldM (flip tryUnify) t $ sort (getAnn <$> xs')
+  ]
 
 {- |
 Associate a 'Text.Gigaparsec.Position.Pos' with a @unifyExprs@ action.
 -}
 unifyExprsAt
-  :: (HasPos a) => a -> BType -> [Expr ident] -> TypingM fnident ident BType
+  :: (HasPos a)
+  => a
+  -> BType
+  -> [Expr ident Pos]
+  -> TypingM fnident ident (BType, [Expr ident BType])
 unifyExprsAt x t xs = reportAt (getPos x) t $ unifyExprs t xs
 
 {- |
 @tryUnifyExprs@ unifies multiple expressions like @unifyExprsAt@ but does not
 report a type error on failure.
 -}
-tryUnifyExprs :: BType -> [Expr ident] -> TypingM fnident ident (Maybe BType)
-tryUnifyExprs t xs = foldM unify t <$> traverse checkExpr xs
+tryUnifyExprs
+  :: BType
+  -> [Expr ident Pos]
+  -> TypingM fnident ident (Maybe (BType, [Expr ident BType]))
+tryUnifyExprs t xs =
+  [ (,xs') <$> foldM unify t (getAnn <$> xs')
+  | xs' <- traverse check xs
+  ]
 
-{- |
-Type check a composite WACC expression.
--}
-checkExpr :: Expr ident -> TypingM fnident ident BType
-checkExpr (WAtom atom _) = checkAtom atom
-checkExpr (Not x p) = unifyExprsAt p BBool [x]
-checkExpr (Negate x p) = unifyExprsAt p BInt [x]
-checkExpr (Len x p) = BInt <$ unifyExprsAt p (BArray BAny) [x]
-checkExpr (Ord x p) = BInt <$ unifyExprsAt p BChar [x]
-checkExpr (Chr x p) = BChar <$ unifyExprsAt p BInt [x]
-checkExpr (Mul x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
-checkExpr (Div x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
-checkExpr (Mod x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
-checkExpr (Add x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
-checkExpr (Sub x y p) = unifyExprsAt p BInt [x] *> unifyExprsAt p BInt [y]
-checkExpr (GT x y p) = reportAt p BAny $ do
-  t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
-  pure BBool
-checkExpr (GTE x y p) = reportAt p BAny $ do
-  t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
-  pure BBool
-checkExpr (LT x y p) = reportAt p BAny $ do
-  t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
-  pure BBool
-checkExpr (LTE x y p) = reportAt p BAny $ do
-  t <- unifyExprsAt p BAny [x, y]
-  unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
-  pure BBool
-checkExpr (Eq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
-checkExpr (Ineq x y p) = BBool <$ unifyExprsAt p BAny [x, y]
-checkExpr (And x y p) = unifyExprsAt p BBool [x] *> unifyExprsAt p BBool [y]
-checkExpr (Or x y p) = unifyExprsAt p BBool [x] *> unifyExprsAt p BBool [y]
+instance TypeChecked (Expr ident Pos) where
+  check (WAtom atom _) =
+    [ WAtom atom' (getAnn atom')
+    | atom' <- check atom
+    ]
+  check (Not x p) =
+    [ Not x' BBool
+    | (_, [x']) <- unifyExprsAt p BBool [x]
+    ]
+  check (Negate x p) =
+    [ Negate x' BInt
+    | (_, [x']) <- unifyExprsAt p BInt [x]
+    ]
+  check (Len x p) =
+    [ Len x' BInt
+    | (_, [x']) <- unifyExprsAt p (BArray BAny) [x]
+    ]
+  check (Ord x p) =
+    [ Ord x' BInt
+    | (_, [x']) <- unifyExprsAt p BChar [x]
+    ]
+  check (Chr x p) =
+    [ Chr x' BChar
+    | (_, [x']) <- unifyExprsAt p BInt [x]
+    ]
+  check (Mul x y p) =
+    [ Mul x' y' BInt
+    | (_, [x']) <- unifyExprsAt p BInt [x]
+    , (_, [y']) <- unifyExprsAt p BInt [y]
+    ]
+  check (Div x y p) =
+    [ Div x' y' BInt
+    | (_, [x']) <- unifyExprsAt p BInt [x]
+    , (_, [y']) <- unifyExprsAt p BInt [y]
+    ]
+  check (Mod x y p) =
+    [ Mod x' y' BInt
+    | (_, [x']) <- unifyExprsAt p BInt [x]
+    , (_, [y']) <- unifyExprsAt p BInt [y]
+    ]
+  check (Add x y p) =
+    [ Add x' y' BInt
+    | (_, [x']) <- unifyExprsAt p BInt [x]
+    , (_, [y']) <- unifyExprsAt p BInt [y]
+    ]
+  check (Sub x y p) =
+    [ Sub x' y' BInt
+    | (_, [x']) <- unifyExprsAt p BInt [x]
+    , (_, [y']) <- unifyExprsAt p BInt [y]
+    ]
+  check (GT x y p) = reportAt p BAny $ do
+    (t, [x', y']) <- unifyExprsAt p BAny [x, y]
+    unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
+    pure $ GT x' y' BBool
+  check (GTE x y p) = reportAt p BAny $ do
+    (t, [x', y']) <- unifyExprsAt p BAny [x, y]
+    unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
+    pure $ GTE x' y' BBool
+  check (LT x y p) = reportAt p BAny $ do
+    (t, [x', y']) <- unifyExprsAt p BAny [x, y]
+    unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
+    pure $ LT x' y' BBool
+  check (LTE x y p) = reportAt p BAny $ do
+    (t, [x', y']) <- unifyExprsAt p BAny [x, y]
+    unless (t `elem` orderedTypes) (abortWith $ ExpectedOrderedTypeError t p)
+    pure $ LTE x' y' BBool
+  check (Eq x y p) =
+    [ Eq x' y' BBool
+    | (_, [x', y']) <- unifyExprsAt p BAny [x, y]
+    ]
+  check (Ineq x y p) =
+    [ Ineq x' y' BBool
+    | (_, [x', y']) <- unifyExprsAt p BAny [x, y]
+    ]
+  check (And x y p) =
+    [ And x' y' BBool
+    | (_, [x']) <- unifyExprsAt p BBool [x]
+    , (_, [y']) <- unifyExprsAt p BBool [y]
+    ]
+  check (Or x y p) =
+    [ And x' y' BBool
+    | (_, [x']) <- unifyExprsAt p BBool [x]
+    , (_, [y']) <- unifyExprsAt p BBool [y]
+    ]
