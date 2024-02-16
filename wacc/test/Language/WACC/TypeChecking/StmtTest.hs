@@ -9,18 +9,16 @@ module Language.WACC.TypeChecking.StmtTest
 where
 
 import Data.Map (singleton)
-import Language.WACC.AST.Expr
-import Language.WACC.AST.Stmt
-import Language.WACC.AST.WType
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
 import Language.WACC.TypeChecking.Stmt ()
 import Test
 
-testTypingM :: TypingM () BType a -> Either Int a
+testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
 testTypingM action = case runTypingM action id fnMap of
-  (Just x, _, []) -> Right x
+  (Just x, _, []) -> Right (getAnn x)
   (_, _, es) -> Left $ length es
   where
     fnMap = singleton () (FnType [BInt, BBool] BBool)

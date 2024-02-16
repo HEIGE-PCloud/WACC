@@ -7,7 +7,7 @@ module Language.WACC.TypeChecking.ExprTest
 where
 
 import Data.Foldable (traverse_)
-import Language.WACC.AST.Expr
+import Language.WACC.AST
 import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.Expr ()
@@ -35,9 +35,9 @@ btypes =
 forEachBType :: (BType -> Assertion) -> Assertion
 forEachBType = flip traverse_ btypes
 
-testTypingM :: TypingM () BType a -> Either Int a
+testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
 testTypingM action = case runTypingM action id mempty of
-  (Just x, _, es) | null es -> Right x
+  (Just x, _, es) | null es -> Right (getAnn x)
   (_, _, es) -> Left $ length es
 
 checkAtom' :: WAtom BType Pos -> Either Int BType

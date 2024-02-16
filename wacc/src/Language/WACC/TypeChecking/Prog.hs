@@ -22,13 +22,13 @@ instance (Ord fnident) => FnTypeChecked (Func WType fnident ident Pos) where
     let
       rt = fix rwt
     setFnType f (FnType (fix . fst <$> pwts) rt)
-    _ <- unifyStmtsAt p rt ss
-    pure BAny
+    (_, ss') <- unifyStmtsAt p rt ss
+    pure $ Func rwt f pwts ss' BAny
 
 instance (Ord fnident) => FnTypeChecked (Prog WType fnident ident Pos) where
   type TypingFnIdent (Prog WType fnident ident Pos) = fnident
   fnCheck (Main fs ss p) = reportAt p BAny $ do
-    mapM_ fnCheck fs
-    t <- unifyStmts BAny ss
+    fs' <- mapM fnCheck fs
+    (t, ss') <- unifyStmts BAny ss
     when (t /= BAny) (abortWith $ ReturnFromMainError p)
-    pure BAny
+    pure $ Main fs' ss' BAny

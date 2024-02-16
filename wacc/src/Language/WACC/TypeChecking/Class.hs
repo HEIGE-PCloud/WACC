@@ -13,26 +13,20 @@ where
 
 import Language.WACC.TypeChecking.BType (BType)
 import Language.WACC.TypeChecking.State (TypingM)
-
--- import Text.Gigaparsec.Position (Pos)
+import Text.Gigaparsec.Position (Pos)
 
 {- |
 Re-annotated AST types.
 -}
 type family Typed t where
-  Typed t = BType
-
-{-
-  Typed (t Pos a b c) = t BType a b c
-  Typed (t Pos a b) = t BType a b
-  Typed (t Pos a) = t BType a
--}
+  Typed (t a b c Pos) = t a b c BType
+  Typed (t a b Pos) = t a b BType
+  Typed (t a Pos) = t a BType
 
 {- |
 Identifier type used by 'TypeChecked' and 'FnTypeChecked'
 -}
 type family TypingIdent t where
-  TypingIdent (t a b c ident ann) = ident
   TypingIdent (t a b ident ann) = ident
   TypingIdent (t a ident ann) = ident
   TypingIdent (t ident ann) = ident
