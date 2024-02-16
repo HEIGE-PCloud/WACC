@@ -8,8 +8,9 @@ Type class for extracting annotations from AST nodes.
 -}
 module Language.WACC.AST.Annotation (Annotated (..), HasPos (..)) where
 
-import Language.WACC.AST.Expr (Expr (..))
-import Language.WACC.AST.Stmt (LValue (..), RValue (..))
+import Language.WACC.AST.Expr
+import Language.WACC.AST.Prog
+import Language.WACC.AST.Stmt
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
@@ -22,6 +23,20 @@ class Annotated a where
 
   -- | Get the annotation of a node.
   getAnn :: a -> Ann a
+
+instance Annotated (ArrayIndex ident ann) where
+  type Ann (ArrayIndex ident ann) = ann
+  getAnn (ArrayIndex _ _ x) = x
+
+instance Annotated (WAtom ident ann) where
+  type Ann (WAtom ident ann) = ann
+  getAnn (IntLit _ x) = x
+  getAnn (BoolLit _ x) = x
+  getAnn (CharLit _ x) = x
+  getAnn (StringLit _ x) = x
+  getAnn (Null x) = x
+  getAnn (Ident _ x) = x
+  getAnn (ArrayElem _ x) = x
 
 instance Annotated (Expr ident ann) where
   type Ann (Expr ident ann) = ann
@@ -45,6 +60,11 @@ instance Annotated (Expr ident ann) where
   getAnn (And _ _ x) = x
   getAnn (Or _ _ x) = x
 
+instance Annotated (PairElem ident ann) where
+  type Ann (PairElem ident ann) = ann
+  getAnn (FstElem _ x) = x
+  getAnn (SndElem _ x) = x
+
 instance Annotated (LValue ident ann) where
   type Ann (LValue ident ann) = ann
   getAnn (LVIdent _ x) = x
@@ -58,6 +78,29 @@ instance Annotated (RValue fnident ident ann) where
   getAnn (RVNewPair _ _ x) = x
   getAnn (RVPairElem _ x) = x
   getAnn (RVCall _ _ x) = x
+
+instance Annotated (Stmt fnident ident ann) where
+  type Ann (Stmt fnident ident ann) = ann
+  getAnn (Skip x) = x
+  getAnn (Decl _ _ _ x) = x
+  getAnn (Asgn _ _ x) = x
+  getAnn (Read _ x) = x
+  getAnn (Free _ x) = x
+  getAnn (Return _ x) = x
+  getAnn (Exit _ x) = x
+  getAnn (Print _ x) = x
+  getAnn (PrintLn _ x) = x
+  getAnn (IfElse _ _ _ x) = x
+  getAnn (While _ _ x) = x
+  getAnn (BeginEnd _ x) = x
+
+instance Annotated (Prog typ fnident ident ann) where
+  type Ann (Prog typ fnident ident ann) = ann
+  getAnn (Main _ _ x) = x
+
+instance Annotated (Func typ fnident ident ann) where
+  type Ann (Func typ fnident ident ann) = ann
+  getAnn (Func _ _ _ _ x) = x
 
 {- |
 This instance is needed instead of @'HasPos' 'Pos'@ to avoid overlapping
