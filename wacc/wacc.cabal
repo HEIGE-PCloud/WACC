@@ -38,6 +38,7 @@ library
       Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
+      Language.WACC.X86.X86
   other-modules:
       Paths_wacc
   hs-source-dirs:
