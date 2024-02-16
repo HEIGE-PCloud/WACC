@@ -23,8 +23,8 @@ class Annotated a where
   -- | Get the annotation of a node.
   getAnn :: a -> Ann a
 
-instance Annotated (Expr ann ident) where
-  type Ann (Expr ann ident) = ann
+instance Annotated (Expr ident ann) where
+  type Ann (Expr ident ann) = ann
   getAnn (WAtom _ x) = x
   getAnn (Not _ x) = x
   getAnn (Negate _ x) = x
@@ -45,14 +45,14 @@ instance Annotated (Expr ann ident) where
   getAnn (And _ _ x) = x
   getAnn (Or _ _ x) = x
 
-instance Annotated (LValue ann ident) where
-  type Ann (LValue ann ident) = ann
+instance Annotated (LValue ident ann) where
+  type Ann (LValue ident ann) = ann
   getAnn (LVIdent _ x) = x
   getAnn (LVArrayElem _ x) = x
   getAnn (LVPairElem _ x) = x
 
-instance Annotated (RValue ann fnident ident) where
-  type Ann (RValue ann fnident ident) = ann
+instance Annotated (RValue fnident ident ann) where
+  type Ann (RValue fnident ident ann) = ann
   getAnn (RVExpr _ x) = x
   getAnn (RVArrayLit _ x) = x
   getAnn (RVNewPair _ _ x) = x

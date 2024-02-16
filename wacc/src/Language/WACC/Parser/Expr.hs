@@ -43,37 +43,37 @@ import Text.Gigaparsec.Position (Pos, pos)
 import Prelude hiding (GT, LT)
 
 -- | > <int-liter> ::= <int-sign>? <digit>+
-intLiter :: Parsec (WAtom Pos i)
+intLiter :: Parsec (WAtom i Pos)
 intLiter = mkIntLit' decimal
 
 -- | > <bool-liter> ::= "true" | "false"
-boolLiter :: Parsec (WAtom Pos i)
+boolLiter :: Parsec (WAtom i Pos)
 boolLiter = mkBoolLit' (("true" $> True) <|> ("false" $> False))
 
 -- | > <char-liter> ::= ''' <character> '''
-charLiter :: Parsec (WAtom Pos i)
+charLiter :: Parsec (WAtom i Pos)
 charLiter = mkCharLit' charLiteral
 
 -- | > <string-liter> ::= '"' <character>* '"'
-stringLiter :: Parsec (WAtom Pos i)
+stringLiter :: Parsec (WAtom i Pos)
 stringLiter = mkStringLit' stringLiteral
 
 -- | > <null-liter> ::= "null"
-pairLiter :: Parsec (WAtom Pos i)
+pairLiter :: Parsec (WAtom i Pos)
 pairLiter = "null" >> mkNull'
 
 -- | > <ident> ::= ('_'|'a'-'z'|'A'-'Z')('_'|'a'-'z'|'A'-'Z'|'0'-'9')*
-ident :: Parsec (WAtom Pos String)
+ident :: Parsec (WAtom String Pos)
 ident = mkIdent' identifier
 
 -- | > <array-elem> ::= <ident> | <ident> ('['⟨expr⟩']')+
-arrayElem :: Parsec (WAtom Pos String)
+arrayElem :: Parsec (WAtom String Pos)
 arrayElem = mkArrayElem' (mkArrayIndex identifier (some ("[" *> expr <* "]")))
 
 {- | > <atom> ::= <int-liter> | <bool-liter> | <char-liter> | <string-liter>
  >              | <pair-liter> | <ident> | <array-elem> | '(' <expr> ')'
 -}
-atom :: Parsec (Expr Pos String)
+atom :: Parsec (Expr String Pos)
 atom =
   choice
     [ mkWAtom intLiter
@@ -92,12 +92,12 @@ Left-factoring the identifier and array element parsers.
 mkIdentOrArrayElem
   :: Parsec Pos
   -> Parsec String
-  -> Parsec (Maybe [Expr Pos String])
-  -> Parsec (WAtom Pos String)
+  -> Parsec (Maybe [Expr String Pos])
+  -> Parsec (WAtom String Pos)
 mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem'
-      :: Pos -> String -> Maybe [Expr Pos String] -> WAtom Pos String
+      :: Pos -> String -> Maybe [Expr String Pos] -> WAtom String Pos
     mkIdentOrArrayElem' p str (Just e) = ArrayElem (ArrayIndex str e p) p
     mkIdentOrArrayElem' p str Nothing = Ident str p
 
@@ -105,7 +105,7 @@ mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
  >              | <expr> <binary-oper> <expr>
  >              | <atom>
 -}
-expr :: Parsec (Expr Pos String)
+expr :: Parsec (Expr String Pos)
 expr =
   mkExpr'
     ( precedence
@@ -132,37 +132,37 @@ expr =
 {- |
 Lifted Constructor for the 'WAtom' 'int' literal.
 -}
-mkIntLit' :: Parsec Integer -> Parsec (WAtom Pos ident)
+mkIntLit' :: Parsec Integer -> Parsec (WAtom ident Pos)
 mkIntLit' = label (singleton "integer") . mkIntLit
 
 {- |
 Lifted Constructor for the 'WAtom' 'bool' literal.
 -}
-mkBoolLit' :: Parsec Bool -> Parsec (WAtom Pos ident)
+mkBoolLit' :: Parsec Bool -> Parsec (WAtom ident Pos)
 mkBoolLit' = label (singleton "boolean") . mkBoolLit
 
 {- |
 Lifted constructor for the 'WAtom' 'char' literal.
 -}
-mkCharLit' :: Parsec Char -> Parsec (WAtom Pos ident)
+mkCharLit' :: Parsec Char -> Parsec (WAtom ident Pos)
 mkCharLit' = label (singleton "character literal") . mkCharLit
 
 {- |
 Lifted constructor for the 'WAtom' 'string' literal.
 -}
-mkStringLit' :: Parsec String -> Parsec (WAtom Pos ident)
+mkStringLit' :: Parsec String -> Parsec (WAtom ident Pos)
 mkStringLit' = label (singleton "strings") . mkStringLit
 
 {- |
 Lifted constructor for the 'WAtom' 'null' literal.
 -}
-mkNull' :: Parsec (WAtom Pos ident)
+mkNull' :: Parsec (WAtom ident Pos)
 mkNull' = label (singleton "null") mkNull
 
 {- |
 Lifted constructor for the 'WAtom' identifier literal.
 -}
-mkIdent' :: Parsec String -> Parsec (WAtom Pos String)
+mkIdent' :: Parsec String -> Parsec (WAtom String Pos)
 mkIdent' = label (singleton "identifier") . mkIdent
 
 {- |
@@ -177,7 +177,7 @@ mkExpr' =
 {- |
 Lifted constructor for the 'WAtom' 'array' element.
 -}
-mkArrayElem' :: Parsec (ArrayIndex Pos String) -> Parsec (WAtom Pos String)
+mkArrayElem' :: Parsec (ArrayIndex String Pos) -> Parsec (WAtom String Pos)
 mkArrayElem' = label (singleton "array element") . mkArrayElem
 
 {- |

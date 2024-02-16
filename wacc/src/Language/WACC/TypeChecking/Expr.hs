@@ -21,7 +21,7 @@ import Language.WACC.TypeChecking.State
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
-instance TypeChecked (ArrayIndex Pos ident) where
+instance TypeChecked (ArrayIndex ident Pos) where
   check (ArrayIndex v xs p) =
     reportAt p (BArray BAny) $ typeOf v >>= flip (foldM go) xs
     where
@@ -32,7 +32,7 @@ instance TypeChecked (ArrayIndex Pos ident) where
       tryPred 0 = 0
       tryPred n = pred n
 
-instance TypeChecked (WAtom Pos ident) where
+instance TypeChecked (WAtom ident Pos) where
   check (IntLit _ _) = pure BInt
   check (BoolLit _ _) = pure BBool
   check (CharLit _ _) = pure BChar
@@ -47,14 +47,14 @@ instance TypeChecked (WAtom Pos ident) where
 
 If a unification fails, the traversal is aborted.
 -}
-unifyExprs :: BType -> [Expr Pos ident] -> TypingM fnident ident BType
+unifyExprs :: BType -> [Expr ident Pos] -> TypingM fnident ident BType
 unifyExprs t xs = traverse check xs >>= foldM (flip tryUnify) t . sort
 
 {- |
 Associate a 'Text.Gigaparsec.Position.Pos' with a @unifyExprs@ action.
 -}
 unifyExprsAt
-  :: (HasPos a) => a -> BType -> [Expr Pos ident] -> TypingM fnident ident BType
+  :: (HasPos a) => a -> BType -> [Expr ident Pos] -> TypingM fnident ident BType
 unifyExprsAt x t xs = reportAt (getPos x) t $ unifyExprs t xs
 
 {- |
@@ -62,10 +62,10 @@ unifyExprsAt x t xs = reportAt (getPos x) t $ unifyExprs t xs
 report a type error on failure.
 -}
 tryUnifyExprs
-  :: BType -> [Expr Pos ident] -> TypingM fnident ident (Maybe BType)
+  :: BType -> [Expr ident Pos] -> TypingM fnident ident (Maybe BType)
 tryUnifyExprs t xs = foldM unify t <$> traverse check xs
 
-instance TypeChecked (Expr Pos ident) where
+instance TypeChecked (Expr ident Pos) where
   check (WAtom atom _) = check atom
   check (Not x p) = unifyExprsAt p BBool [x]
   check (Negate x p) = unifyExprsAt p BInt [x]

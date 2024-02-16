@@ -32,10 +32,10 @@ type family Typed t where
 Identifier type used by 'TypeChecked' and 'FnTypeChecked'
 -}
 type family TypingIdent t where
-  TypingIdent (t a b c d ident) = ident
-  TypingIdent (t a b c ident) = ident
-  TypingIdent (t a b ident) = ident
-  TypingIdent (t a ident) = ident
+  TypingIdent (t a b c ident ann) = ident
+  TypingIdent (t a b ident ann) = ident
+  TypingIdent (t a ident ann) = ident
+  TypingIdent (t ident ann) = ident
 
 {- |
 Type checked AST nodes without function identifiers.

@@ -10,13 +10,13 @@ WACC array indexing subexpressions.
 
 > <ident>[<expr>]...
 -}
-data ArrayIndex ann ident = ArrayIndex ident [Expr ann ident] ann
+data ArrayIndex ident ann = ArrayIndex ident [Expr ident ann] ann
   deriving (Eq, Show, Functor)
 
 {- |
 Atomic WACC expressions.
 -}
-data WAtom ann ident
+data WAtom ident ann
   = -- | @int@ literals.
     IntLit Integer ann
   | -- | @bool@ literals.
@@ -30,49 +30,49 @@ data WAtom ann ident
   | -- | > <ident>
     Ident ident ann
   | -- | > <ident>[<expr>]...
-    ArrayElem (ArrayIndex ann ident) ann
+    ArrayElem (ArrayIndex ident ann) ann
   deriving (Eq, Show, Functor)
 
 {- |
 Composite WACC expressions.
 -}
-data Expr ann ident
+data Expr ident ann
   = -- | > <atom>
-    WAtom (WAtom ann ident) ann
+    WAtom (WAtom ident ann) ann
   | -- | > !<expr>
-    Not (Expr ann ident) ann
+    Not (Expr ident ann) ann
   | -- | > -<expr>
-    Negate (Expr ann ident) ann
+    Negate (Expr ident ann) ann
   | -- | > len <expr>
-    Len (Expr ann ident) ann
+    Len (Expr ident ann) ann
   | -- | > ord <expr>
-    Ord (Expr ann ident) ann
+    Ord (Expr ident ann) ann
   | -- | > chr <expr>
-    Chr (Expr ann ident) ann
+    Chr (Expr ident ann) ann
   | -- | > <expr> * <expr>
-    Mul (Expr ann ident) (Expr ann ident) ann
+    Mul (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> / <expr>
-    Div (Expr ann ident) (Expr ann ident) ann
+    Div (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> % <expr>
-    Mod (Expr ann ident) (Expr ann ident) ann
+    Mod (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> + <expr>
-    Add (Expr ann ident) (Expr ann ident) ann
+    Add (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> - <expr>
-    Sub (Expr ann ident) (Expr ann ident) ann
+    Sub (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> > <expr>
-    GT (Expr ann ident) (Expr ann ident) ann
+    GT (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> >= <expr>
-    GTE (Expr ann ident) (Expr ann ident) ann
+    GTE (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> < <expr>
-    LT (Expr ann ident) (Expr ann ident) ann
+    LT (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> <= <expr>
-    LTE (Expr ann ident) (Expr ann ident) ann
+    LTE (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> == <expr>
-    Eq (Expr ann ident) (Expr ann ident) ann
+    Eq (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> != <expr>
-    Ineq (Expr ann ident) (Expr ann ident) ann
+    Ineq (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> && <expr>
-    And (Expr ann ident) (Expr ann ident) ann
+    And (Expr ident ann) (Expr ident ann) ann
   | -- | > <expr> || <expr>
-    Or (Expr ann ident) (Expr ann ident) ann
+    Or (Expr ident ann) (Expr ident ann) ann
   deriving (Eq, Show, Functor)

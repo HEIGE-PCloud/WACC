@@ -45,7 +45,7 @@ runParse filename = do
     Success ast -> runScopeAnalysis printError' ast
 
 runScopeAnalysis
-  :: (String -> Error -> String) -> Prog Pos WType String String -> IO ()
+  :: (String -> Error -> String) -> Prog WType String String Pos -> IO ()
 runScopeAnalysis printError' ast = case scopeAnalysis ast of
   Failure errs -> do
     mapM_ (putStrLn . printError' semanticError) errs
@@ -54,7 +54,7 @@ runScopeAnalysis printError' ast = case scopeAnalysis ast of
 
 runTypeCheck
   :: (String -> Error -> String)
-  -> (Prog Pos WType Fnident Vident, VarST)
+  -> (Prog WType Fnident Vident Pos, VarST)
   -> IO ()
 runTypeCheck printError' ast = case uncurry checkTypes ast of
   [] -> exitSuccess

@@ -65,7 +65,7 @@ import Text.Gigaparsec.Errors.Patterns
 import Text.Gigaparsec.Position (Pos, pos)
 
 -- | > program ::= "begin" <func>* <stmt> "end"
-program :: Parsec (Prog Pos WType String String)
+program :: Parsec (Prog WType String String Pos)
 program =
   mkBegin "begin"
     *> (program' <|> _emptyProgram)
@@ -75,13 +75,13 @@ program =
 {- |
 > <prog> ::= <func> <prog>
 -}
-program' :: Parsec (Prog Pos WType String String)
+program' :: Parsec (Prog WType String String Pos)
 program' = parseProgPrefix >>= parseProgRest
 
 {- |
 Disambiguating statement declarations from function calls.
 -}
-func' :: Parsec ([(WType, String)], Stmts Pos String String)
+func' :: Parsec ([(WType, String)], Stmts String String Pos)
 func' =
   ((concat <$> option paramList) <* ")")
     <~> ("is" *> stmts <* ("end" <|> _unclosedEnd "function body"))
@@ -89,7 +89,7 @@ func' =
 {- |
 Parser that handles sequential statements.
 -}
-stmts' :: Parsec [Stmt Pos String String]
+stmts' :: Parsec [Stmt String String Pos]
 stmts' = many (";" *> (stmt <|> _extraSemiColon))
 
 {- |
@@ -110,7 +110,7 @@ parseProgPrefix = option parseFuncPreix
 Disambiguating Parser that parses the remainder of the program.
 -}
 parseProgRest
-  :: Maybe (((WType, Pos), String), Bool) -> Parsec (Prog Pos WType String String)
+  :: Maybe (((WType, Pos), String), Bool) -> Parsec (Prog WType String String Pos)
 parseProgRest Nothing = mkMain1 stmts
 parseProgRest (Just (((wtype, p), ident), True)) = do
   (params, ss) <- func'
@@ -123,7 +123,7 @@ parseProgRest (Just (((wtype, p), ident), False)) = do
 Parser that handles empty programs.
 -}
 mkMain1
-  :: Parsec (Stmts Pos fnident ident) -> Parsec (Prog Pos typ fnident ident)
+  :: Parsec (Stmts fnident ident Pos) -> Parsec (Prog typ fnident ident Pos)
 mkMain1 = mkMain (pure [])
 
 {- |
@@ -133,9 +133,9 @@ mkMain2
   :: Pos
   -> WType
   -> fnident
-  -> ([(WType, ident)], Stmts Pos fnident ident)
-  -> Prog Pos WType fnident ident
-  -> Prog Pos WType fnident ident
+  -> ([(WType, ident)], Stmts fnident ident Pos)
+  -> Prog WType fnident ident Pos
+  -> Prog WType fnident ident Pos
 mkMain2 p' wtype ident (params, ss) (Main fs sts p) =
   Main (Func wtype ident params ss p' : fs) sts p
 
@@ -146,14 +146,14 @@ mkMain3
   :: Pos
   -> WType
   -> ident
-  -> RValue Pos fnident ident
-  -> [Stmt Pos fnident ident]
-  -> Prog Pos WType fnident ident
+  -> RValue fnident ident Pos
+  -> [Stmt fnident ident Pos]
+  -> Prog WType fnident ident Pos
 mkMain3 p wtype ident rvalue sts =
   Main [] (Stmts $ fromList (Decl wtype ident rvalue p : sts)) p
 
 -- | > func ::= <type> <identifier> '(' <paramList>? ')' 'is' <stmt> 'end'
-func :: Parsec (Func Pos WType String String)
+func :: Parsec (Func WType String String Pos)
 func =
   mkFunc
     wType
@@ -165,7 +165,7 @@ func =
 Checks that function body does not contain any code after a return or exit statement.
 -}
 checkFunc
-  :: Prog Pos typ fnident ident -> Result Error (Prog Pos typ fnident ident)
+  :: Prog typ fnident ident Pos -> Result Error (Prog typ fnident ident Pos)
 checkFunc s@(Main [] _ _) = Success s
 checkFunc s@(Main fs _ _) = case res of
   Just p ->
@@ -185,7 +185,7 @@ checkFunc s@(Main fs _ _) = case res of
 {- |
 Traverse Tree to find the last statement in a function body.
 -}
-funcExit :: Stmt Pos fnident ident -> Maybe Pos
+funcExit :: Stmt fnident ident Pos -> Maybe Pos
 funcExit (Return _ _) = Nothing
 funcExit (Exit _ _) = Nothing
 funcExit (IfElse _ s1 s2 _) =
@@ -205,9 +205,9 @@ funcExit (PrintLn _ p) = Just p
 Parser which parses the program with trailing statement checks.
 -}
 parseWithError
-  :: Parsec (Prog Pos typ fnident ident)
+  :: Parsec (Prog typ fnident ident Pos)
   -> String
-  -> Result Error (Prog Pos typ fnident ident)
+  -> Result Error (Prog typ fnident ident Pos)
 parseWithError parser sourceCode = case res of
   Success x -> checkFunc x
   e -> e
@@ -225,7 +225,7 @@ paramList :: Parsec [(WType, String)]
 paramList = param `sepBy1` ","
 
 -- | > <lvalue> ::= <ident> | <array-elem> | <pair-elem>
-lValue :: Parsec (LValue Pos String)
+lValue :: Parsec (LValue String Pos)
 lValue =
   choice
     [lValueOrIdent, mkLVPairElem pairElem]
@@ -236,8 +236,8 @@ Parser that handles the identifier and array element parsers disambiguation.
 mkIdentOrArrayElem
   :: Parsec Pos
   -> Parsec String
-  -> Parsec (Maybe [Expr Pos String])
-  -> Parsec (LValue Pos String)
+  -> Parsec (Maybe [Expr String Pos])
+  -> Parsec (LValue String Pos)
 mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
   where
     mkIdentOrArrayElem' p str (Just e) = LVArrayElem (ArrayIndex str e p) p
@@ -246,7 +246,7 @@ mkIdentOrArrayElem = liftA3 mkIdentOrArrayElem'
 {- |
 Parser that handles the lValues parsers disambiguation.
 -}
-lValueOrIdent :: Parsec (LValue Pos String)
+lValueOrIdent :: Parsec (LValue String Pos)
 lValueOrIdent =
   mkIdentOrArrayElem
     pos
@@ -260,7 +260,7 @@ arrayIndex :: Parsec a -> Parsec a
 arrayIndex = label (Set.singleton "array index")
 
 -- | > <rvalue> ::= <expr> | <array-liter> | <newpair> | <pair-elem> | <fn-call>
-rValue :: Parsec (RValue Pos String String)
+rValue :: Parsec (RValue String String Pos)
 rValue =
   choice
     [ mkRVExpr expr
@@ -271,37 +271,37 @@ rValue =
     ]
 
 -- | > <array-liter> ::= '[' <argList>? ']'
-arrayLiter :: Parsec [Expr Pos String]
+arrayLiter :: Parsec [Expr String Pos]
 arrayLiter = arrayLiteral "[" *> optionalArgList <* "]"
 
 -- | > <newpair> ::= "newpair" '(' <expr> ',' <expr> ')'
-newPair :: Parsec (RValue Pos fnident String)
+newPair :: Parsec (RValue fnident String Pos)
 newPair = mkRVNewPair ("newpair" *> "(" *> expr) ("," *> expr <* ")")
 
 -- | > <pair-elem> ::= "fst" <lvalue> | "snd" <lvalue>
-pairElem :: Parsec (PairElem Pos String)
+pairElem :: Parsec (PairElem String Pos)
 pairElem = mkFstElem ("fst" *> lValue) <|> mkSndElem ("snd" *> lValue)
 
 -- | > <fn-call> ::= <identifier> '(' <argList>? ')'
-fnCall :: Parsec (RValue Pos String String)
+fnCall :: Parsec (RValue String String Pos)
 fnCall = mkRVCall (mkCall "call" *> identifier) ("(" *> optionalArgList <* ")")
 
 -- | > <argList>?
-optionalArgList :: Parsec [Expr Pos String]
+optionalArgList :: Parsec [Expr String Pos]
 optionalArgList = concat <$> option argList
 
 -- | > <argList> ::= <expr> (',' <expr>)*
-argList :: Parsec [Expr Pos String]
+argList :: Parsec [Expr String Pos]
 argList = expr `sepBy1` ","
 
 {- |
 Parser that constructs a sequnce of statements.
 -}
-mkStmts :: Parsec [Stmt Pos String String] -> Parsec (Stmts Pos String String)
+mkStmts :: Parsec [Stmt String String Pos] -> Parsec (Stmts String String Pos)
 mkStmts = fmap Stmts . label (Set.fromList ["statement"]) . fmap fromList
 
 -- | > <stmts> ::= <stmt> (';' <stmt>)*
-stmts :: Parsec (Stmts Pos String String)
+stmts :: Parsec (Stmts String String Pos)
 stmts = mkStmts ((stmt <|> _extraSemiColon) `sepBy1` ";")
 
 {- | > <stmt> ::= "skip"
@@ -317,7 +317,7 @@ stmts = mkStmts ((stmt <|> _extraSemiColon) `sepBy1` ";")
 >              | <while>
 >              | <begin-end>
 -}
-stmt :: Parsec (Stmt Pos String String)
+stmt :: Parsec (Stmt String String Pos)
 stmt =
   _funcLateDefine
     *> choice
@@ -336,26 +336,26 @@ stmt =
       ]
 
 -- | > <decl> ::= <type> <ident> '=' <rvalue>
-decl :: Parsec (Stmt Pos String String)
+decl :: Parsec (Stmt String String Pos)
 decl = mkDecl wType (identifier <* "=") rValue
 
 -- | > <asgn> ::= <lvalue> '=' <rvalue>
-asgn :: Parsec (Stmt Pos String String)
+asgn :: Parsec (Stmt String String Pos)
 asgn = mkAsgn (lValue <* "=") rValue
 
 -- | > <if-else> ::= "if" <expr> "then" <stmts> "else" <stmts> "fi"
-ifElse :: Parsec (Stmt Pos String String)
+ifElse :: Parsec (Stmt String String Pos)
 ifElse = mkIfElse ("if" *> expr <* _then) stmts (_else *> stmts <* _fi)
 
 -- | > <while> ::= "while" <expr> "do" <stmts> "done"
-while :: Parsec (Stmt Pos String String)
+while :: Parsec (Stmt String String Pos)
 while =
   mkWhile
     ("while" *> expr <* ("do" <|> _missingDo))
     (stmts <* _done)
 
 -- | > <begin-end> ::= "begin" <stmts> "end"
-beginEnd :: Parsec (Stmt Pos String String)
+beginEnd :: Parsec (Stmt String String Pos)
 beginEnd = mkBeginEnd ("begin" *> stmts <* ("end" <|> _unclosedEnd "block"))
 
 mkBegin :: Parsec a -> Parsec a

@@ -22,89 +22,89 @@ import Language.WACC.AST.WType (WType)
 {- |
 The @fst@ or @snd@ element of a WACC @pair@.
 -}
-data PairElem ann ident
+data PairElem ident ann
   = -- | > fst <value>
-    FstElem (LValue ann ident) ann
+    FstElem (LValue ident ann) ann
   | -- | > snd <value>
-    SndElem (LValue ann ident) ann
-  deriving (Eq, Show, Functor)
+    SndElem (LValue ident ann) ann
+  deriving (Eq, Functor, Show)
 
 {- |
 A WACC @lvalue@, which is the target of an assignment statement.
 -}
-data LValue ann ident
+data LValue ident ann
   = -- | > <ident>
     LVIdent ident ann
   | -- | > <ident>[<expr>]...
-    LVArrayElem (ArrayIndex ann ident) ann
+    LVArrayElem (ArrayIndex ident ann) ann
   | -- |
     -- > fst <lvalue>
     --
     -- or
     --
     -- > snd <lvalue>
-    LVPairElem (PairElem ann ident) ann
-  deriving (Eq, Show, Functor)
+    LVPairElem (PairElem ident ann) ann
+  deriving (Eq, Functor, Show)
 
 {- |
 A WACC @rvalue@, which is the source of an assignment statement.
 -}
-data RValue ann fnident ident
+data RValue fnident ident ann
   = -- | > <expr>
-    RVExpr (Expr ann ident) ann
+    RVExpr (Expr ident ann) ann
   | -- | > [<expr>, ...]
-    RVArrayLit [Expr ann ident] ann
+    RVArrayLit [Expr ident ann] ann
   | -- | > newpair(<expr>, <expr>)
-    RVNewPair (Expr ann ident) (Expr ann ident) ann
+    RVNewPair (Expr ident ann) (Expr ident ann) ann
   | -- |
     -- > fst <rvalue>
     --
     -- or
     --
     -- > snd <rvalue>
-    RVPairElem (PairElem ann ident) ann
+    RVPairElem (PairElem ident ann) ann
   | -- | > call <ident>(<expr>, ...)
-    RVCall fnident [Expr ann ident] ann
-  deriving (Eq, Show, Functor)
+    RVCall fnident [Expr ident ann] ann
+  deriving (Eq, Functor, Show)
 
 {- |
 Individual WACC statements.
 -}
-data Stmt ann fnident ident
+data Stmt fnident ident ann
   = -- | > skip
     Skip ann
   | -- | > <type> <ident> = <rvalue>
-    Decl WType ident (RValue ann fnident ident) ann
+    Decl WType ident (RValue fnident ident ann) ann
   | -- | > <lvalue> = <rvalue>
-    Asgn (LValue ann ident) (RValue ann fnident ident) ann
+    Asgn (LValue ident ann) (RValue fnident ident ann) ann
   | -- | > read <lvalue>
-    Read (LValue ann ident) ann
+    Read (LValue ident ann) ann
   | -- | > free <expr>
-    Free (Expr ann ident) ann
+    Free (Expr ident ann) ann
   | -- | > return <expr>
-    Return (Expr ann ident) ann
+    Return (Expr ident ann) ann
   | -- | > exit <expr>
-    Exit (Expr ann ident) ann
+    Exit (Expr ident ann) ann
   | -- | > print <expr>
-    Print (Expr ann ident) ann
+    Print (Expr ident ann) ann
   | -- | > println <expr>
-    PrintLn (Expr ann ident) ann
+    PrintLn (Expr ident ann) ann
   | -- | > if <expr> then <stmt> else <stmt> fi
     IfElse
-      (Expr ann ident)
-      (Stmts ann fnident ident)
-      (Stmts ann fnident ident)
+      (Expr ident ann)
+      (Stmts fnident ident ann)
+      (Stmts fnident ident ann)
       ann
   | -- | > while <expr> do <stmt> done
-    While (Expr ann ident) (Stmts ann fnident ident) ann
+    While (Expr ident ann) (Stmts fnident ident ann) ann
   | -- | > begin <stmt> end
-    BeginEnd (Stmts ann fnident ident) ann
-  deriving (Eq, Show)
+    BeginEnd (Stmts fnident ident ann) ann
+  deriving (Eq, Functor, Show)
 
 {- |
 Sequences of WACC statements separated by @;@.
 -}
-newtype Stmts ann fnident ident = Stmts
-  { unwrap :: NonEmpty (Stmt ann fnident ident)
+newtype Stmts fnident ident ann = Stmts
+  { unwrap :: NonEmpty (Stmt fnident ident ann)
   }
-  deriving (Eq, Show, IsList)
+  deriving (Eq, Functor, IsList, Show)

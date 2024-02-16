@@ -16,8 +16,8 @@ import Language.WACC.TypeChecking.State (abortWith, reportAt, setFnType)
 import Language.WACC.TypeChecking.Stmt (unifyStmts, unifyStmtsAt)
 import Text.Gigaparsec.Position (Pos)
 
-instance (Ord fnident) => FnTypeChecked (Func Pos WType fnident ident) where
-  type TypingFnIdent (Func Pos WType fnident ident) = fnident
+instance (Ord fnident) => FnTypeChecked (Func WType fnident ident Pos) where
+  type TypingFnIdent (Func WType fnident ident Pos) = fnident
   fnCheck (Func rwt f pwts ss p) = do
     let
       rt = fix rwt
@@ -25,8 +25,8 @@ instance (Ord fnident) => FnTypeChecked (Func Pos WType fnident ident) where
     _ <- unifyStmtsAt p rt ss
     pure BAny
 
-instance (Ord fnident) => FnTypeChecked (Prog Pos WType fnident ident) where
-  type TypingFnIdent (Prog Pos WType fnident ident) = fnident
+instance (Ord fnident) => FnTypeChecked (Prog WType fnident ident Pos) where
+  type TypingFnIdent (Prog WType fnident ident Pos) = fnident
   fnCheck (Main fs ss p) = reportAt p BAny $ do
     mapM_ fnCheck fs
     t <- unifyStmts BAny ss

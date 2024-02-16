@@ -19,19 +19,19 @@ import Text.Gigaparsec.Patterns (deriveLiftedConstructors)
 import Text.Gigaparsec.Position (Pos)
 
 pattern Main
-  :: [Func Pos typ fnident ident]
-  -> Stmts Pos fnident ident
+  :: [Func typ fnident ident Pos]
+  -> Stmts fnident ident Pos
   -> Pos
-  -> Prog Pos typ fnident ident
+  -> Prog typ fnident ident Pos
 pattern Main fs b p = AST.Main fs b p
 
 pattern Func
   :: typ
   -> fnident
   -> [(typ, ident)]
-  -> Stmts Pos fnident ident
+  -> Stmts fnident ident Pos
   -> Pos
-  -> Func Pos typ fnident ident
+  -> Func typ fnident ident Pos
 pattern Func rt f ps b p = AST.Func rt f ps b p
 
 $( deriveLiftedConstructors
