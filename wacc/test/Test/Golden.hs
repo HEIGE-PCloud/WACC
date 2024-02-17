@@ -12,9 +12,12 @@ import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (scopeAnalysis)
 import Language.WACC.TypeChecking (checkTypes)
+import Language.WACC.X86.X86 (formatA)
+import qualified Language.WACC.X86.X86 as X86
 import Test.Common (semanticErrTests, syntaxErrTests, takeBaseName)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Golden (goldenVsStringDiff)
+import Test.Tasty.Golden (goldenVsString, goldenVsStringDiff)
+import Test.X86Examples (x86Examples)
 import Text.Gigaparsec (Result (Failure, Success))
 
 goldenBasePath :: FilePath
@@ -67,9 +70,18 @@ syntaxCheck res path ls = case res of
 semanticCheck :: [Error] -> FilePath -> [String] -> String
 semanticCheck errs path ls = concat [printError path ls semanticError err | err <- errs]
 
+runX86CheckATNT :: X86.Prog -> String -> TestTree
+runX86CheckATNT p name = goldenVsStringDiff testname diff goldenPath testAction
+  where
+    testname = "X86Example." ++ name
+    diff ref new = ["diff", "-u", ref, new]
+    goldenPath = goldenBasePath ++ "/" ++ testname
+    testAction = return (fromString (formatA p))
+
 test =
   testGroup
     "goldenTests"
     ( [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]
         ++ [runSemanticCheck (inputBasePath ++ test) | test <- semanticErrTests]
+        ++ [runX86CheckATNT prog name | (prog, name) <- x86Examples]
     )

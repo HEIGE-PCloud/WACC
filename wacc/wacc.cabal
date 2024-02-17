@@ -92,6 +92,7 @@ test-suite wacc-test
       Test.Program
       Test.Semantic.QuickCheck
       Test.Semantic.ScopeUnitTest
+      Test.X86Examples
       Paths_wacc
   hs-source-dirs:
       test

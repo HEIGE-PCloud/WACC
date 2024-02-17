@@ -1,7 +1,18 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Language.WACC.X86.X86 (Instr, Prog, calleeSaved, callerSaved, args) where
+module Language.WACC.X86.X86
+  ( formatA
+  , Instr (..)
+  , Operand (..)
+  , Register (..)
+  , Label (..)
+  , Prog
+  , calleeSaved
+  , callerSaved
+  , args
+  )
+where
 
 import Data.Char
 import Data.Data
@@ -152,7 +163,7 @@ instance ATNT Label where
   formatA (CLib str) = str
 
 instance ATNT Instr where
-  formatA (Lab x) = 'f' : formatA x
+  formatA (Lab x) = 'f' : formatA x ++ ":"
   formatA Ret = "ret"
   formatA i@(Pushq op) = unwords [instrName i, formatA op]
   formatA i@(Popq op) = unwords [instrName i, formatA op]
