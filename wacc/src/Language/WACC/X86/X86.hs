@@ -7,6 +7,7 @@ import Data.Char
 import Data.Data
 import Data.List (intercalate)
 import Data.Typeable ()
+import Language.WACC.Error (quote)
 
 data Label = I Int | CLib String
   deriving (Data)
@@ -16,14 +17,26 @@ type Prog = [Instr]
 -- | cannot have two Mem operands for the same instruction
 data Instr
   = Lab Int
-  | Mov Operand Operand
-  | Lea Operand Operand
-  | Sub Operand Operand
-  | Add Operand Operand
-  | Cmp Operand Operand
+  | Ret
+  | Pushq Operand
+  | Popq Operand
+  | Movq Operand Operand
+  | Leaq Operand Operand
+  | Subq Operand Operand
+  | Addq Operand Operand
+  | Cmpq Operand Operand
   | Call Label
   | Je Label
   | Jmp Label
+  | -- | Int directives
+    DirInt Int
+  | -- | String directives (insert ascii binary at location)
+    DirAsciz String
+  | DirText
+  | DirSection
+  | DirRodata
+  | DirGlobl Label
+  | Comment String
   deriving (Typeable, Data)
 
 data Operand = Imm Int | Reg Register | Mem Memory
@@ -119,7 +132,7 @@ instance ATNT Memory where
   formatA (MScaleI x r1 r2 s) = formatA x ++ paren (intercalate ", " (map formatA [r1, r2] ++ [formatA s]))
 
 instance ATNT Operand where
-  formatA (Imm x) = formatA x
+  formatA (Imm x) = '$' : formatA x
   formatA (Reg r) = formatA r
   formatA (Mem m) = formatA m
 
@@ -128,7 +141,11 @@ use magic to get name of the constructor as a string and make it lower case
 So constr Mov becomes instr mov
 -}
 instrName :: Instr -> String
-instrName = (map toLower) . showConstr . toConstr
+instrName = ifDirective . (map toLower) . showConstr . toConstr
+  where
+    ifDirective str = case str of
+      'd' : 'i' : 'r' : cs -> '.' : cs -- dealing with directives
+      cs -> cs
 
 instance ATNT Label where
   formatA (I x) = 'f' : formatA x
@@ -136,14 +153,22 @@ instance ATNT Label where
 
 instance ATNT Instr where
   formatA (Lab x) = 'f' : formatA x
-  formatA i@(Mov op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Lea op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Sub op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Add op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Cmp op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA Ret = "ret"
+  formatA i@(Pushq op) = unwords [instrName i, formatA op]
+  formatA i@(Popq op) = unwords [instrName i, formatA op]
+  formatA i@(Movq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Leaq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Subq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Addq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Cmpq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
   formatA i@(Call l) = unwords [instrName i, formatA l]
   formatA i@(Je l) = unwords [instrName i, formatA l]
   formatA i@(Jmp l) = unwords [instrName i, formatA l]
+  formatA i@(Comment str) = "# " ++ str
+  formatA i@(DirInt x) = unwords [instrName i, formatA x]
+  formatA i@(DirAsciz str) = unwords [instrName i, quote str]
+  formatA i@(DirGlobl l) = unwords [instrName i, formatA l]
+  formatA i = instrName i
 
 instance ATNT [Instr] where
   formatA = unlines . map formatA
