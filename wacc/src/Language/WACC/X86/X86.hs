@@ -8,8 +8,6 @@ import Data.Data
 import Data.List (intercalate)
 import Data.Typeable ()
 
--- import instances only
-
 data Label = I Int | CLib String
   deriving (Data)
 
@@ -133,19 +131,19 @@ instrName :: Instr -> String
 instrName = (map toLower) . showConstr . toConstr
 
 instance ATNT Label where
-  formatA (I x) = 'f' : (formatA x)
+  formatA (I x) = 'f' : formatA x
   formatA (CLib str) = str
 
 instance ATNT Instr where
-  formatA (Lab x) = 'f' : (formatA x)
-  formatA i@(Mov op1 op2) = intercalate " " [instrName i, formatA op1, formatA op2]
-  formatA i@(Lea op1 op2) = intercalate " " [instrName i, formatA op1, formatA op2]
-  formatA i@(Sub op1 op2) = intercalate " " [instrName i, formatA op1, formatA op2]
-  formatA i@(Add op1 op2) = intercalate " " [instrName i, formatA op1, formatA op2]
-  formatA i@(Cmp op1 op2) = intercalate " " [instrName i, formatA op1, formatA op2]
-  formatA i@(Call l) = instrName i ++ " " ++ formatA l
-  formatA i@(Je l) = instrName i ++ " " ++ formatA l
-  formatA i@(Jmp l) = instrName i ++ " " ++ formatA l
+  formatA (Lab x) = 'f' : formatA x
+  formatA i@(Mov op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Lea op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Sub op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Add op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Cmp op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Call l) = unwords [instrName i, formatA l]
+  formatA i@(Je l) = unwords [instrName i, formatA l]
+  formatA i@(Jmp l) = unwords [instrName i, formatA l]
 
 instance ATNT [Instr] where
-  formatA = unlines . (map formatA)
+  formatA = unlines . map formatA
