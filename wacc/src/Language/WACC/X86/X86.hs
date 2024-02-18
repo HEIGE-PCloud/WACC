@@ -20,8 +20,12 @@ import Data.List (intercalate)
 import Data.Typeable ()
 import Language.WACC.Error (quote)
 
-data Label = I Int | CLib String
+data Label = I Int | C CCall
   deriving (Data)
+
+-- | TODO formatting for the underscores is not quite done. Also what's the @ stuff?
+data CCall = Prints | Println | Printf | Fflush | Puts
+  deriving (Show, Data)
 
 type Prog = [Instr]
 
@@ -58,16 +62,18 @@ data Memory
     MI Int
   | -- | (%rax) :- single register memory access
     MReg Register
-  | -- | 7(%rax) = M[7 + R[rax]] :- offset single register memory access
-    MRegI Int Register
   | -- | (%rsp, %rax) = M[R[rsp] + R[rax]] :- register sum memory access
     MTwoReg Register Register
-  | -- | 7(%rsp, %rax) = M[7 + R[rsp] + R[rax]] :- offset register sum memory access
-    MTwoRegI Int Register Register
   | -- | (%rsp, %rax, 4) = M[R[rsp] + R[rax]*4] :- register scaled (by 1,2,4 or 8) memory access
     MScale Register Register Int
+  | -- | 7(%rax) = M[7 + R[rax]] :- offset single register memory access
+    MRegI Int Register
+  | -- | 7(%rsp, %rax) = M[7 + R[rsp] + R[rax]] :- offset register sum memory access
+    MTwoRegI Int Register Register
   | -- | 7(%rsp, %rax, 4) = M[7 + R[rsp] + R[rax]*4] :- offset register scaled (by 1,2,4 or 8) memory access
     MScaleI Int Register Register Int
+  | -- | f4(%rax) :- offset to label, single register memory access
+    MRegL Label Register
   deriving (Data)
 
 {- |
@@ -127,6 +133,7 @@ instance ATNT Memory where
   formatA (MRegI x r) = formatA x ++ paren (formatA r)
   formatA (MTwoRegI x r1 r2) = formatA x ++ paren (intercalate ", " (map formatA [r1, r2]))
   formatA (MScaleI x r1 r2 s) = formatA x ++ paren (intercalate ", " (map formatA [r1, r2] ++ [formatA s]))
+  formatA (MRegL l r) = formatA l ++ paren (formatA r)
 
 instance ATNT Operand where
   formatA (Imm x) = '$' : formatA x
@@ -144,9 +151,12 @@ instrName = ifDirective . (map toLower) . showConstr . toConstr
       'd' : 'i' : 'r' : cs -> '.' : cs -- dealing with directives
       cs -> cs
 
+instance ATNT CCall where
+  formatA = map toLower . show
+
 instance ATNT Label where
   formatA (I x) = 'f' : formatA x
-  formatA (CLib str) = str
+  formatA (C c) = formatA c
 
 instance ATNT Instr where
   formatA (Lab x) = 'f' : formatA x ++ ":"
