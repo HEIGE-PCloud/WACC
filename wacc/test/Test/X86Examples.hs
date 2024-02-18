@@ -16,9 +16,9 @@ helloWorld =
   , DirAsciz "Hello World!"
   , DirText
   , Lab 0
-  , Pushq (Reg $ Callee (calleeSaved !! 2))
-  , Pushq (Reg $ Callee (calleeSaved !! 1))
-  , Movq (Reg Rsp) (Reg $ Callee (calleeSaved !! 1))
+  , Pushq (Reg (callee !! 2))
+  , Pushq (Reg (callee !! 1))
+  , Movq (Reg Rsp) (Reg (callee !! 1))
   ]
 
 x86Examples = [(writeReg, "writeReg"), (helloWorld, "helloWorld")]

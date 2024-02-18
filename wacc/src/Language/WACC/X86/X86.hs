@@ -8,8 +8,8 @@ module Language.WACC.X86.X86
   , Register (..)
   , Label (..)
   , Prog
-  , calleeSaved
-  , callerSaved
+  , callee
+  , caller
   , args
   )
 where
@@ -79,33 +79,32 @@ data Register
     Rsp
   | -- | return value
     Rax
-  | -- | callee saved
-    Callee CalleeR
-  | -- | caller saved
-    Caller CallerR
-  | -- | arguments from caller
-    Arg ArgR
-  deriving (Data)
-
-data CalleeR = Rbx | Rbp | R12 | R13 | R14 | R15
+  | -- | callee saved starts here
+    Rbx
+  | Rbp
+  | R12
+  | R13
+  | R14
+  | R15
+  | -- | caller saved starts here
+    R10
+  | R11
+  | -- | arguments from caller starts here
+    Rdi
+  | Rsi
+  | Rdx
+  | Rcx
+  | R8
+  | R9
   deriving (Show, Data)
 
-data CallerR = R10 | R11
-  deriving (Show, Data)
+callee :: [Register]
+callee = [Rbx, Rbp, R12, R13, R14, R15]
 
-data ArgR = Rdi | Rsi | Rdx | Rcx | R8 | R9
-  deriving (Show, Data)
+caller :: [Register]
+caller = [R10, R11]
 
-calleeSaved :: [CalleeR]
-calleeSaved = [Rbx, Rbp, R12, R13, R14, R15]
-
-callerSaved :: [CallerR]
-callerSaved = [R10, R11]
-
--- maybe add a list callerSaved ++ args,
--- as args are effectively caller saved
-
-args :: [ArgR]
+args :: [Register]
 args = [Rdi, Rsi, Rdx, Rcx, R8, R9]
 
 class ATNT a where
@@ -114,21 +113,8 @@ class ATNT a where
 instance ATNT Int where
   formatA = show
 
-instance ATNT CalleeR where
-  formatA = ('%' :) . map toLower . show
-
-instance ATNT CallerR where
-  formatA = ('%' :) . map toLower . show
-
-instance ATNT ArgR where
-  formatA = ('%' :) . map toLower . show
-
 instance ATNT Register where
-  formatA Rsp = "%rsp"
-  formatA Rax = "%rax"
-  formatA (Callee x) = formatA x
-  formatA (Caller x) = formatA x
-  formatA (Arg x) = formatA x
+  formatA r = '%' : (map toLower (show r))
 
 paren :: String -> String
 paren x = "(" ++ x ++ ")"
