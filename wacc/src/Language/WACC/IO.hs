@@ -3,6 +3,7 @@ The entrypoint for the compiler executable.
 -}
 module Language.WACC.IO (main, readProgramFile) where
 
+import Control.Exception (handle)
 import Data.List.Extra (replace)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
@@ -14,14 +15,15 @@ import Language.WACC.Semantic.Scope (Fnident, VarST, Vident, scopeAnalysis)
 import Language.WACC.TypeChecking (checkTypes)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
+import System.IO.Error
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 
-{- |
-Read a WACC source file, replacing each tab character with two spaces.
--}
-readProgramFile :: FilePath -> IO String
-readProgramFile = fmap (replace "\t" "  ") . readFile
+ioErrorCode :: Int
+ioErrorCode = 255
+
+exitWithIOErrorCode :: IO a
+exitWithIOErrorCode = exitWith (ExitFailure ioErrorCode)
 
 syntaxErrorCode :: Int
 syntaxErrorCode = 100
@@ -35,11 +37,32 @@ semanticErrorCode = 200
 exitWithSemanticError :: IO a
 exitWithSemanticError = exitWith (ExitFailure semanticErrorCode)
 
+handleIOExceptions :: IO a -> IO a
+handleIOExceptions =
+  handle
+    ( (*> exitWithIOErrorCode)
+        . hPutStrLn stderr
+        . ("File I/O error: " ++)
+        . getReason
+    )
+  where
+    getReason err
+      | isDoesNotExistError err = "input file does not exist"
+      | isFullError err = "disk is full"
+      | isPermissionError err = "input file cannot be read (permission error)"
+      | otherwise = show err
+
+{- |
+Read a WACC source file, replacing each tab character with two spaces.
+-}
+readProgramFile :: FilePath -> IO String
+readProgramFile = fmap (replace "\t" "  ") . readFile
+
 {- |
 The entrypoint.
 -}
 main :: IO ()
-main = do
+main = handleIOExceptions $ do
   args <- getArgs
   case args of
     [filename] -> runParse filename
