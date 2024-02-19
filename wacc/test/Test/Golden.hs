@@ -6,8 +6,8 @@ module Test.Golden
 where
 
 import Data.ByteString.Lazy.UTF8 (fromString)
-import Data.List.Extra (replace)
 import Language.WACC.Error (Error (..), printError, semanticError, syntaxError)
+import Language.WACC.IO (readProgramFile)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (scopeAnalysis)
@@ -33,7 +33,7 @@ runSyntaxCheck path = goldenVsStringDiff testname diff goldenPath testAction
     diff ref new = ["diff", "-u", ref, new]
     goldenPath = goldenBasePath ++ "/" ++ testname
     testAction = do
-      input <- replace "\t" "  " <$> readFile path
+      input <- readProgramFile path
       let
         res = parseWithError (fully program) input
       return (fromString (input ++ "\n\n" ++ syntaxCheck res path (lines input)))
@@ -45,7 +45,7 @@ runSemanticCheck path = goldenVsStringDiff testname diff goldenPath testAction
     diff ref new = ["diff", "-u", ref, new]
     goldenPath = goldenBasePath ++ "/" ++ testname
     testAction = do
-      input <- replace "\t" "  " <$> readFile path
+      input <- readProgramFile path
       let
         res1 = parseWithError (fully program) input
       case res1 of
