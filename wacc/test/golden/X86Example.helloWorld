@@ -1,0 +1,11 @@
+.globl f0
+.section
+.rodata
+.int 12
+f1:
+.asciz "Hello World!"
+.text
+f0:
+pushq %r12
+pushq %rbp
+movq %rsp %rbp

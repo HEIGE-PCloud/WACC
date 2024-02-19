@@ -42,6 +42,7 @@ library
       Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
+      Language.WACC.X86.X86
   other-modules:
       Paths_wacc
   hs-source-dirs:
@@ -95,6 +96,7 @@ test-suite wacc-test
       Test.Program
       Test.Semantic.QuickCheck
       Test.Semantic.ScopeUnitTest
+      Test.X86Examples
       Paths_wacc
   hs-source-dirs:
       test
