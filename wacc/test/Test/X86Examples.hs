@@ -8,13 +8,13 @@ writeReg = [Movq (Imm 4) (Reg Rax)]
 -- first few lines of valid/IO/print/println.wacc
 helloWorld :: Prog
 helloWorld =
-  [ DirGlobl (I 0)
-  , DirSection
-  , DirRodata
-  , DirInt 12
+  [ Dir $ DirGlobl (I 0)
+  , Dir $ DirSection
+  , Dir $ DirRodata
+  , Dir $ DirInt 12
   , Lab 1
-  , DirAsciz "Hello World!"
-  , DirText
+  , Dir $ DirAsciz "Hello World!"
+  , Dir $ DirText
   , Lab 0
   , Pushq (Reg (callee !! 2))
   , Pushq (Reg (callee !! 1))

@@ -7,6 +7,7 @@ module Language.WACC.X86.X86
   , Operand (..)
   , Register (..)
   , Label (..)
+  , Directive (..)
   , Prog
   , callee
   , caller
@@ -43,7 +44,12 @@ data Instr
   | Call Label
   | Je Label
   | Jmp Label
-  | -- | Int directives
+  | Dir Directive
+  | Comment String
+  deriving (Typeable, Data)
+
+
+data Directive = 
     DirInt Int
   | -- | String directives (insert ascii binary at location)
     DirAsciz String
@@ -51,7 +57,6 @@ data Instr
   | DirSection
   | DirRodata
   | DirGlobl Label
-  | Comment String
   deriving (Typeable, Data)
 
 data Operand = Imm Int | Reg Register | Mem Memory
@@ -145,7 +150,10 @@ use magic to get name of the constructor as a string and make it lower case
 So constr Mov becomes instr mov
 -}
 instrName :: Instr -> String
-instrName = ifDirective . (map toLower) . showConstr . toConstr
+instrName = (map toLower) . showConstr . toConstr
+
+dirName :: Directive -> String 
+dirName = ifDirective . (map toLower) . showConstr . toConstr
   where
     ifDirective str = case str of
       'd' : 'i' : 'r' : cs -> '.' : cs -- dealing with directives
@@ -171,11 +179,14 @@ instance ATNT Instr where
   formatA i@(Call l) = unwords [instrName i, formatA l]
   formatA i@(Je l) = unwords [instrName i, formatA l]
   formatA i@(Jmp l) = unwords [instrName i, formatA l]
-  formatA i@(Comment str) = "# " ++ str
-  formatA i@(DirInt x) = unwords [instrName i, formatA x]
-  formatA i@(DirAsciz str) = unwords [instrName i, quote str]
-  formatA i@(DirGlobl l) = unwords [instrName i, formatA l]
-  formatA i = instrName i
+  formatA (Dir d) = formatA d
+  formatA (Comment str) = "# " ++ str
+
+instance ATNT Directive where
+  formatA d@(DirInt x) = unwords [dirName d, formatA x]
+  formatA d@(DirAsciz str) = unwords [dirName d, quote str]
+  formatA d@(DirGlobl l) = unwords   [dirName d, formatA l]
+  formatA d = dirName d
 
 instance ATNT [Instr] where
   formatA = unlines . map formatA

@@ -16,7 +16,7 @@ import Language.WACC.X86.X86 (formatA)
 import qualified Language.WACC.X86.X86 as X86
 import Test.Common (semanticErrTests, syntaxErrTests, takeBaseName)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Golden (goldenVsString, goldenVsStringDiff)
+import Test.Tasty.Golden (goldenVsStringDiff)
 import Test.X86Examples (x86Examples)
 import Text.Gigaparsec (Result (Failure, Success))
 
