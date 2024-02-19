@@ -48,9 +48,8 @@ data Instr
   | Comment String
   deriving (Typeable, Data)
 
-
-data Directive = 
-    DirInt Int
+data Directive
+  = DirInt Int
   | -- | String directives (insert ascii binary at location)
     DirAsciz String
   | DirText
@@ -152,7 +151,7 @@ So constr Mov becomes instr mov
 instrName :: Instr -> String
 instrName = (map toLower) . showConstr . toConstr
 
-dirName :: Directive -> String 
+dirName :: Directive -> String
 dirName = ifDirective . (map toLower) . showConstr . toConstr
   where
     ifDirective str = case str of
@@ -185,7 +184,7 @@ instance ATNT Instr where
 instance ATNT Directive where
   formatA d@(DirInt x) = unwords [dirName d, formatA x]
   formatA d@(DirAsciz str) = unwords [dirName d, quote str]
-  formatA d@(DirGlobl l) = unwords   [dirName d, formatA l]
+  formatA d@(DirGlobl l) = unwords [dirName d, formatA l]
   formatA d = dirName d
 
 instance ATNT [Instr] where
