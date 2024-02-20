@@ -1,19 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Language.WACC.X86.X86
-  ( formatA
-  , Instr (..)
-  , Operand (..)
-  , Register (..)
-  , Label (..)
-  , Directive (..)
-  , Prog
-  , callee
-  , caller
-  , args
-  )
-where
+module Language.WACC.X86.X86 where
 
 import Data.Char
 import Data.Data
@@ -21,18 +9,14 @@ import Data.List (intercalate)
 import Data.Typeable ()
 import Language.WACC.Error (quote)
 
-data Label = I Int | C CCall
+data Label = I Int | R String
   deriving (Data)
-
--- | TODO formatting for the underscores is not quite done. Also what's the @ stuff?
-data CCall = Prints | Println | Printf | Fflush | Puts
-  deriving (Show, Data)
 
 type Prog = [Instr]
 
 -- | cannot have two Mem operands for the same instruction
 data Instr
-  = Lab Int
+  = Lab Label
   | Ret
   | Pushq Operand
   | Popq Operand
@@ -40,6 +24,7 @@ data Instr
   | Leaq Operand Operand
   | Subq Operand Operand
   | Addq Operand Operand
+  | Andq Operand Operand
   | Cmpq Operand Operand
   | Call Label
   | Je Label
@@ -104,6 +89,7 @@ data Register
   | Rsi
   | Rdx
   | Rcx
+  | Rip
   | R8
   | R9
   deriving (Show, Data)
@@ -158,15 +144,13 @@ dirName = ifDirective . (map toLower) . showConstr . toConstr
       'd' : 'i' : 'r' : cs -> '.' : cs -- dealing with directives
       cs -> cs
 
-instance ATNT CCall where
-  formatA = map toLower . show
-
 instance ATNT Label where
   formatA (I x) = 'f' : formatA x
-  formatA (C c) = formatA c
+  formatA (R c) = c
 
 instance ATNT Instr where
-  formatA (Lab x) = 'f' : formatA x ++ ":"
+  formatA (Lab (I i)) = "_label" ++ formatA i ++ ":"
+  formatA (Lab (R s)) = s ++ ":"
   formatA Ret = "ret"
   formatA i@(Pushq op) = unwords [instrName i, formatA op]
   formatA i@(Popq op) = unwords [instrName i, formatA op]
@@ -174,6 +158,7 @@ instance ATNT Instr where
   formatA i@(Leaq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
   formatA i@(Subq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
   formatA i@(Addq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Andq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
   formatA i@(Cmpq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
   formatA i@(Call l) = unwords [instrName i, formatA l]
   formatA i@(Je l) = unwords [instrName i, formatA l]
@@ -189,3 +174,47 @@ instance ATNT Directive where
 
 instance ATNT [Instr] where
   formatA = unlines . map formatA
+
+{-
+.section 
+.rodata
+.int 0
+.L._println_str0:
+  .asciz ""
+.text
+_println:
+  pushq %rbp
+  movq %rsp, %rbp
+  andq $-16, %rsp
+  leaq .L._println_str0(%rip), %rdi
+  call puts@plt
+  movq $0, %rdi
+  call fflush@plt
+  movq %rbp, %rsp
+  popq %rbp
+  ret
+-}
+println :: Prog
+println =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 0
+  , Lab (R ".L._println_str0")
+  , Dir $ DirAsciz ""
+  , Dir DirText
+  , Lab (R "_println")
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Comment "external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0"
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Leaq (Mem (MRegL (R ".L._println_str0") Rip)) (Reg Rdi)
+  , Call (R "puts@plt")
+  , Movq (Imm 0) (Reg Rdi)
+  , Call (R "fflush@plt")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
+pprintln :: IO ()
+pprintln = putStrLn $ formatA println
