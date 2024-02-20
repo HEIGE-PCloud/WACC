@@ -58,7 +58,6 @@ import System.Directory (canonicalizePath, createDirectoryIfMissing)
 import System.FilePath (takeDirectory)
 import qualified Test.Tasty as Tasty
 import qualified Test.Tasty.Options as Tasty
-import qualified Test.Tasty.Providers as Tasty
 import qualified Test.Tasty.Runners as Tasty
 import qualified Text.XML.Light as XML
 
@@ -77,6 +76,7 @@ data Summary = Summary
   { summaryFailures :: Sum Int
   , summaryErrors :: Sum Int
   , summarySuccesses :: Sum Int
+  , summaryIgnoreds :: Sum Int
   , xmlRenderer :: Endo [XML.Element]
   }
   deriving (Generic)
@@ -91,10 +91,10 @@ instance Semigroup Summary where
 
 {- |
 
-  To run tests using this ingredient, use 'Tasty.defaultMainWithIngredients',
-  passing 'antXMLRunner' as one possible ingredient. This ingredient will run
-  tests if you pass the @--xml@ command line option. For example,
-  @--xml=junit.xml@ will run all the tests and generate @junit.xml@ as output.
+ To run tests using this ingredient, use 'Tasty.defaultMainWithIngredients',
+ passing 'antXMLRunner' as one possible ingredient. This ingredient will run
+ tests if you pass the @--xml@ command line option. For example,
+ @--xml=junit.xml@ will run all the tests and generate @junit.xml@ as output.
 -}
 antXMLRunner :: Tasty.Ingredient
 antXMLRunner = Tasty.TestReporter optionDescription runner
@@ -109,8 +109,7 @@ antXMLRunner = Tasty.TestReporter optionDescription runner
           showTime time = showFFloat (Just timeDigits) time ""
 
           runTest
-            :: (Tasty.IsTest t)
-            => Tasty.OptionSet
+            :: Tasty.OptionSet
             -> Tasty.TestName
             -> t
             -> Tasty.Traversal
@@ -152,9 +151,16 @@ antXMLRunner = Tasty.TestReporter optionDescription runner
                     , XML.node (XML.unqual "failure") reason
                     )
 
+                mkIgnored time reason =
+                  (mkSummary (testCaseAttributes time, XML.node (XML.unqual "skipped") reason))
+                    { summaryIgnoreds = Sum 1
+                    }
+
               case status of
                 -- If the test is done, generate XML for it
                 Tasty.Done result
+                  | Tasty.resultShortDescription result == "IGNORED" ->
+                      pure (mkIgnored (Tasty.resultTime result) (Tasty.resultDescription result))
                   | Tasty.resultSuccessful result -> pure (mkSuccess (Tasty.resultTime result))
                   | otherwise ->
                       case resultException result of
@@ -193,8 +199,12 @@ antXMLRunner = Tasty.TestReporter optionDescription runner
                         (XML.unqual "tests")
                         ( show
                             . getSum
-                            . (summaryFailures `mappend` summaryErrors `mappend` summarySuccesses) $
-                            soFar
+                            . ( summaryFailures
+                                  `mappend` summaryErrors
+                                  `mappend` summarySuccesses
+                                  `mappend` summaryIgnoreds
+                              )
+                            $ soFar
                         )
                     ]
                   , appEndo (xmlRenderer soFar) []
@@ -232,6 +242,9 @@ antXMLRunner = Tasty.TestReporter optionDescription runner
                       , XML.Attr
                           (XML.unqual "failures")
                           (show . getSum . summaryFailures $ summary)
+                      , XML.Attr
+                          (XML.unqual "skipped")
+                          (show . getSum . summaryIgnoreds $ summary)
                       , XML.Attr (XML.unqual "tests") (show tests)
                       , XML.Attr (XML.unqual "time") (showTime elapsedTime)
                       ]
