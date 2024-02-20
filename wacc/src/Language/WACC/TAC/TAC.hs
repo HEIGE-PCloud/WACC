@@ -90,11 +90,18 @@ newtype Label lident = Label lident
 
 -- | Jump instructions in TAC Basic Blocks for control flow.
 data Jump ident lident
-  = -- | > jmp <lident>
+  = -- |  > jmp <lident>
     Jump (Label lident)
-  | -- | > cjmp <var> <lident> <lident>
+  | -- |
+    -- > cjmp <var> <lident> <lident>
+    --
+    -- Jump to the first label if @var@ is non-zero. Otherwise, jump to the
+    -- second label.
     CJump (Var ident) (Label lident) (Label lident)
-  | -- | > ret <var>
+  | -- |
+    -- > ret <var>
+    --
+    -- Return @var@ to the caller block and continue execution there.
     Ret (Var ident)
 
 -- | Block labels in TAC for basic blocks.
