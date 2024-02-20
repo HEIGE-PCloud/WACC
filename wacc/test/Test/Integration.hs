@@ -12,8 +12,7 @@ import Test.Common (allTests, takeBaseName)
 import Test.Program
 import Test.Tasty
 
--- test = testGroup "integrationTests" allIntegrationTests
-test_ignoreTestBecause "Issue #123" = testGroup "integrationTests" allIntegrationTests
+test = testGroup "integrationTests" allIntegrationTests
 
 data IntegrationTestKind = Valid | SyntaxError | SemanticError
 
