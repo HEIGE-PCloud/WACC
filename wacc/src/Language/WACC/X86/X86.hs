@@ -12,7 +12,7 @@ import Language.WACC.Error (quote)
 data Label = I Int | R Runtime | S String
   deriving (Data)
 
-data Runtime = PrintI | PrintLn
+data Runtime = PrintI | PrintLn | Free | Malloc
   deriving (Typeable, Data, Show)
 
 type Prog = [Instr]
@@ -218,5 +218,29 @@ println =
   , Ret
   ]
 
-pprintln :: IO ()
-pprintln = putStrLn $ formatA println
+{-
+_free:
+  pushq %rbp
+  movq %rsp, %rbp
+  # external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+  andq $-16, %rsp
+  call free@plt
+  movq %rbp, %rsp
+  popq %rbp
+  ret
+-}
+free :: Prog
+free =
+  [ Lab (R Free)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Call (S "free@plt")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
+
+pprog :: Prog -> IO ()
+pprog prog = putStrLn $ formatA prog
