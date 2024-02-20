@@ -3,9 +3,9 @@ module Test.Ingredients
   )
 where
 
+import Test.AntXML (antXMLRunner)
 import Test.Tasty.Ingredients (Ingredient, composeReporters)
 import Test.Tasty.Ingredients.Basic (consoleTestReporter)
-import Test.Tasty.Runners.AntXML (antXMLRunner)
 
 testReporter :: Ingredient
 testReporter = composeReporters consoleTestReporter antXMLRunner

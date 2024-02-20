@@ -64,7 +64,6 @@ tests:
       - tasty-hunit
       - tasty-quickcheck
       - tasty-hunit
-      - tasty-ant-xml
       - tasty-golden
       - wacc
       - deepseq
@@ -73,3 +72,8 @@ tests:
       - QuickCheck
       - bytestring
       - utf8-string
+      - tagged
+      - generic-deriving
+      - filepath
+      - stm
+      - xml

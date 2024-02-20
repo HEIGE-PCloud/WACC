@@ -88,6 +88,7 @@ test-suite wacc-test
       Language.WACC.TypeChecking.ProgTest
       Language.WACC.TypeChecking.StmtTest
       Test
+      Test.AntXML
       Test.Arbitrary
       Test.Common
       Test.Golden
@@ -113,13 +114,16 @@ test-suite wacc-test
     , directory
     , dlist
     , extra
+    , filepath
     , generic-arbitrary
+    , generic-deriving
     , gigaparsec
     , mtl
     , process
     , recursion-schemes
+    , stm
+    , tagged
     , tasty
-    , tasty-ant-xml
     , tasty-autocollect
     , tasty-golden
     , tasty-hspec
@@ -128,4 +132,5 @@ test-suite wacc-test
     , transformers
     , utf8-string
     , wacc
+    , xml
   default-language: Haskell2010
