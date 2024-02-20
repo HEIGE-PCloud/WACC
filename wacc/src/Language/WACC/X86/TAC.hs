@@ -8,26 +8,29 @@ import Data.Map (Map)
 import Language.WACC.AST.WType (WType)
 
 data TAC ident lident
-  = BinInstr (Val ident) (Val ident) BinOp (Val ident)
-  | UnInstr (Val ident) UnOp (Val ident)
-  | Store (Var ident) (Offset ident) (Val ident)
-  | LoadCI (Var ident) Int (Val ident)
-  | LoadCS (Var ident) String (Val ident)
-  | LoadM (Var ident) (Offset ident) (Val ident)
+  = BinInstr (Var ident) (Var ident) BinOp (Var ident)
+  | Eqr (Var ident) (Var ident) (Var ident)
+  | InEqr (Var ident) (Var ident) (Var ident)
+  | Eqv (Var ident) (Var ident) (Var ident)
+  | InEqv (Var ident) (Var ident) (Var ident)
+  | UnInstr (Var ident) UnOp (Var ident)
+  | Store (Var ident) (Offset ident) (Var ident)
+  | LoadCI (Var ident) Int (Var ident)
+  | LoadCS (Var ident) String (Var ident)
+  | LoadM (Var ident) (Var ident) (Offset ident)
   | Call (Var ident) (Label lident) [Var ident]
-  | Args [Var ident]
   | Print (Var ident) WType
   | PrintLn (Var ident) WType
   | Exit (Var ident)
   | Read (Var ident) WType
+  | Malloc (Var ident) (Offset ident)
+  | Free (Var ident)
 
-data BinOp = Add | Sub | Mul | Div | Mod | And | Or | Eq | Neq | Lt | Gt | Le | Ge
+data BinOp = Add | Sub | Mul | Div | Mod | And | Or | Lt | Gt | Le | Ge
 
 data UnOp = Neg | Not
 
 data Var ident = Temp ident | Var ident
-
-data Val ident = VarAddr (Var ident) | VarDeref (Var ident)
 
 type Offset = Var
 
@@ -35,8 +38,8 @@ newtype Label lident = Label lident
 
 data Jump ident lident
   = Jump (Label lident)
-  | CJump (Val ident) (Label lident) (Label lident)
-  | Ret (Val ident)
+  | CJump (Var ident) (Label lident) (Label lident)
+  | Ret (Var ident)
 
 newtype BlockLabel ident = BlockLabel ident
 
