@@ -9,14 +9,18 @@ import Data.List (intercalate)
 import Data.Typeable ()
 import Language.WACC.Error (quote)
 
-data Label = I Int | R String
+data Label = I Int | R Runtime | S String
+  deriving (Data)
+
+data Runtime = PrintI | PrintLn
   deriving (Data)
 
 type Prog = [Instr]
 
 -- | cannot have two Mem operands for the same instruction
 data Instr
-  = Lab Label
+  = Lab Int
+  | LabRaw String
   | Ret
   | Pushq Operand
   | Popq Operand
@@ -146,11 +150,13 @@ dirName = ifDirective . (map toLower) . showConstr . toConstr
 
 instance ATNT Label where
   formatA (I x) = 'f' : formatA x
-  formatA (R c) = c
+  formatA (R PrintI) = "_printi"
+  formatA (R PrintLn) = "_println"
+  formatA (S x) = x
 
 instance ATNT Instr where
-  formatA (Lab (I i)) = "_label" ++ formatA i ++ ":"
-  formatA (Lab (R s)) = s ++ ":"
+  formatA (Lab x) = formatA x ++ ":"
+  formatA (LabRaw x) = x ++ ":"
   formatA Ret = "ret"
   formatA i@(Pushq op) = unwords [instrName i, formatA op]
   formatA i@(Popq op) = unwords [instrName i, formatA op]
@@ -176,7 +182,7 @@ instance ATNT [Instr] where
   formatA = unlines . map formatA
 
 {-
-.section 
+.section
 .rodata
 .int 0
 .L._println_str0:
@@ -199,18 +205,17 @@ println =
   [ Dir DirSection
   , Dir DirRodata
   , Dir $ DirInt 0
-  , Lab (R ".L._println_str0")
+  , LabRaw ".L._println_str0"
   , Dir $ DirAsciz ""
   , Dir DirText
-  , Lab (R "_println")
+  , LabRaw (formatA (R PrintLn))
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Comment "external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0"
   , Andq (Imm (-16)) (Reg Rsp)
-  , Leaq (Mem (MRegL (R ".L._println_str0") Rip)) (Reg Rdi)
-  , Call (R "puts@plt")
+  , Leaq (Mem (MRegL (S ".L._println_str0") Rip)) (Reg Rdi)
+  , Call (S "puts@plt")
   , Movq (Imm 0) (Reg Rdi)
-  , Call (R "fflush@plt")
+  , Call (S "fflush@plt")
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
