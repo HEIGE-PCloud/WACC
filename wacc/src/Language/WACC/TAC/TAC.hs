@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 
-module Language.WACC.X86.TAC where
+module Language.WACC.TAC.TAC where
 
 import Data.Map (Map)
 import Language.WACC.AST.WType (WType)
