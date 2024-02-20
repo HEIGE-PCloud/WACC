@@ -19,22 +19,22 @@ data TAC ident lident
   | -- |
     -- > <var> := <var> == <var>
     --
-    -- where <var> is a @array@ or @pair@
+    -- where @var@ is a @array@ or @pair@
     EqR (Var ident) (Var ident) (Var ident)
   | -- |
     -- > <var> := <var> != <var>
     --
-    -- where <var> is a @array@ or @pair@
+    -- where @var@ is a @array@ or @pair@
     IneqR (Var ident) (Var ident) (Var ident)
   | -- |
     -- > <var> := <var> == <var>
     --
-    -- where <var> is a @int@, @bool@, @char@, or @string@
+    -- where @var@ is a @int@, @bool@, @char@, or @string@
     EqV (Var ident) (Var ident) (Var ident)
   | -- |
     -- > <var> := <var> != <var>
     --
-    -- where <var> is a @int@, @bool@, @char@, or @string@
+    -- where @var@ is a @int@, @bool@, @char@, or @string@
     IneqV (Var ident) (Var ident) (Var ident)
   | -- | > <var> := <unop> <var>
     UnInstr (Var ident) UnOp (Var ident)
@@ -49,7 +49,7 @@ data TAC ident lident
   | -- |
     -- > <var> := call <lident>([<var>])
     --
-    -- where <lident> is a function identifier
+    -- where @lident@ is a function identifier
     Call (Var ident) (Label lident) [Var ident]
   | -- |
     -- > print <var>
