@@ -222,7 +222,6 @@ println =
 _free:
   pushq %rbp
   movq %rsp, %rbp
-  # external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
   andq $-16, %rsp
   call free@plt
   movq %rbp, %rsp
@@ -241,6 +240,31 @@ free =
   , Ret
   ]
 
+{-
+_malloc:
+	pushq %rbp
+	movq %rsp, %rbp
+	andq $-16, %rsp
+	call malloc@plt
+	cmpq $0, %rax
+	je _errOutOfMemory
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+malloc :: Prog
+malloc =
+  [ Lab (R Malloc)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Call (S "malloc@plt")
+  , Cmpq (Imm 0) (Reg Rax)
+  , Je (S "_errOutOfMemory")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
 
 pprog :: Prog -> IO ()
 pprog prog = putStrLn $ formatA prog
