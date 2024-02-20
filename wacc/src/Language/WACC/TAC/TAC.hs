@@ -20,22 +20,22 @@ data TAC ident lident
     -- > <var> := <var> == <var>
     --
     -- where <var> is a @array@ or @pair@
-    Eqr (Var ident) (Var ident) (Var ident)
+    EqR (Var ident) (Var ident) (Var ident)
   | -- |
     -- > <var> := <var> != <var>
     --
     -- where <var> is a @array@ or @pair@
-    InEqr (Var ident) (Var ident) (Var ident)
+    IneqR (Var ident) (Var ident) (Var ident)
   | -- |
     -- > <var> := <var> == <var>
     --
     -- where <var> is a @int@, @bool@, @char@, or @string@
-    Eqv (Var ident) (Var ident) (Var ident)
+    EqV (Var ident) (Var ident) (Var ident)
   | -- |
     -- > <var> := <var> != <var>
     --
     -- where <var> is a @int@, @bool@, @char@, or @string@
-    InEqv (Var ident) (Var ident) (Var ident)
+    IneqV (Var ident) (Var ident) (Var ident)
   | -- | > <var> := <unop> <var>
     UnInstr (Var ident) UnOp (Var ident)
   | -- | > <var> := <var>[<Offset>]
