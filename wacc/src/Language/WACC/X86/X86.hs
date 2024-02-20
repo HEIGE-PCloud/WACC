@@ -13,14 +13,13 @@ data Label = I Int | R Runtime | S String
   deriving (Data)
 
 data Runtime = PrintI | PrintLn
-  deriving (Data)
+  deriving (Typeable, Data, Show)
 
 type Prog = [Instr]
 
 -- | cannot have two Mem operands for the same instruction
 data Instr
-  = Lab Int
-  | LabRaw String
+  = Lab Label
   | Ret
   | Pushq Operand
   | Popq Operand
@@ -150,13 +149,11 @@ dirName = ifDirective . (map toLower) . showConstr . toConstr
 
 instance ATNT Label where
   formatA (I x) = 'f' : formatA x
-  formatA (R PrintI) = "_printi"
-  formatA (R PrintLn) = "_println"
+  formatA (R x) = '_' : map toLower (show x)
   formatA (S x) = x
 
 instance ATNT Instr where
   formatA (Lab x) = formatA x ++ ":"
-  formatA (LabRaw x) = x ++ ":"
   formatA Ret = "ret"
   formatA i@(Pushq op) = unwords [instrName i, formatA op]
   formatA i@(Popq op) = unwords [instrName i, formatA op]
@@ -205,10 +202,10 @@ println =
   [ Dir DirSection
   , Dir DirRodata
   , Dir $ DirInt 0
-  , LabRaw ".L._println_str0"
+  , Lab (S ".L._println_str0")
   , Dir $ DirAsciz ""
   , Dir DirText
-  , LabRaw (formatA (R PrintLn))
+  , Lab (R PrintLn)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
