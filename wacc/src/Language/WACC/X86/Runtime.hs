@@ -97,6 +97,80 @@ prints =
   ]
 
 {-
+.section .rodata
+# length of .L._printb_str0
+	.int 5
+.L._printb_str0:
+	.asciz "false"
+# length of .L._printb_str1
+	.int 4
+.L._printb_str1:
+	.asciz "true"
+# length of .L._printb_str2
+	.int 4
+.L._printb_str2:
+	.asciz "%.*s"
+.text
+_printb:
+	pushq %rbp
+	movq %rsp, %rbp
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	cmpb $0, %dil
+	jne .L_printb0
+	leaq .L._printb_str0(%rip), %rdx
+	jmp .L_printb1
+.L_printb0:
+	leaq .L._printb_str1(%rip), %rdx
+.L_printb1:
+	movl -4(%rdx), %esi
+	leaq .L._printb_str2(%rip), %rdi
+	# on x86, al represents the number of SIMD registers used as variadic arguments
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+printb :: Prog
+printb =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 5
+  , Lab (S ".L._printb_str0")
+  , Dir $ DirAsciz "false"
+  , Dir $ DirInt 4
+  , Lab (S ".L._printb_str1")
+  , Dir $ DirAsciz "true"
+  , Dir $ DirInt 4
+  , Lab (S ".L._printb_str2")
+  , Dir $ DirAsciz "%.*s"
+  , Dir DirText
+  , Lab (R PrintB)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Cmpb (Imm 0) (Reg Dil)
+  , Jne (S ".L_printb0")
+  , Leaq (Mem (MRegL (S ".L._printb_str0") Rip)) (Reg Rdx)
+  , Jmp (S ".L_printb1")
+  , Lab (S ".L_printb0")
+  , Leaq (Mem (MRegL (S ".L._printb_str1") Rip)) (Reg Rdx)
+  , Lab (S ".L_printb1")
+  , Movl (Mem (MRegI (-4) Rdx)) (Reg Esi)
+  , Leaq (Mem (MRegL (S ".L._printb_str2") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call (S "printf@plt")
+  , Movq (Imm 0) (Reg Rdi)
+  , Call (S "fflush@plt")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
+{-
 .section
 .rodata
 .int 0
