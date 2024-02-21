@@ -17,7 +17,7 @@ data Runtime
   | PrintB
   | PrintC
   | PrintS
-  | PrintA
+  | PrintP
   | PrintLn
   | Free
   | Malloc

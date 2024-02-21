@@ -217,6 +217,53 @@ printc =
   ]
 
 {-
+.section .rodata
+# length of .L._printp_str0
+	.int 2
+.L._printp_str0:
+	.asciz "%p"
+.text
+_printp:
+	pushq %rbp
+	movq %rsp, %rbp
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	movq %rdi, %rsi
+	leaq .L._printp_str0(%rip), %rdi
+	# on x86, al represents the number of SIMD registers used as variadic arguments
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+
+printp :: Prog
+printp =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 2
+  , Lab (S ".L._printp_str0")
+  , Dir $ DirAsciz "%p"
+  , Dir DirText
+  , Lab (R PrintP)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Movq (Reg Rdi) (Reg Rsi)
+  , Leaq (Mem (MRegL (S ".L._printp_str0") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call (S "printf@plt")
+  , Movq (Imm 0) (Reg Rdi)
+  , Call (S "fflush@plt")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
+{-
 .section
 .rodata
 .int 0
