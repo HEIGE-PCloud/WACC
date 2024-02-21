@@ -49,6 +49,54 @@ printi =
   ]
 
 {-
+.section .rodata
+# length of .L._prints_str0
+	.int 4
+.L._prints_str0:
+	.asciz "%.*s"
+.text
+_prints:
+	pushq %rbp
+	movq %rsp, %rbp
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	movq %rdi, %rdx
+	movl -4(%rdi), %esi
+	leaq .L._prints_str0(%rip), %rdi
+	# on x86, al represents the number of SIMD registers used as variadic arguments
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+prints :: Prog
+prints =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 4
+  , Lab (S ".L._prints_str0")
+  , Dir $ DirAsciz "%.*s"
+  , Dir DirText
+  , Lab (R PrintS)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Movq (Reg Rdi) (Reg Rdx)
+  , Movl (Mem (MRegI (-4) Rdi)) (Reg Esi)
+  , Leaq (Mem (MRegL (S ".L._prints_str0") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call (S "printf@plt")
+  , Movq (Imm 0) (Reg Rdi)
+  , Call (S "fflush@plt")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
+{-
 .section
 .rodata
 .int 0

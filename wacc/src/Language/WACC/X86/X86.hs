@@ -3,8 +3,8 @@
 
 module Language.WACC.X86.X86 where
 
-import Data.Char
-import Data.Data
+import Data.Char (toLower)
+import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.List (intercalate)
 import Data.Typeable ()
 import Language.WACC.Error (quote)
@@ -12,7 +12,17 @@ import Language.WACC.Error (quote)
 data Label = I Int | R Runtime | S String
   deriving (Data)
 
-data Runtime = PrintI | PrintLn | Free | Malloc
+data Runtime
+  = PrintI
+  | PrintB
+  | PrintC
+  | PrintS
+  | PrintA
+  | PrintLn
+  | Free
+  | Malloc
+  | ReadI
+  | ReadC
   deriving (Typeable, Data, Show)
 
 type Prog = [Instr]
@@ -204,8 +214,8 @@ instance ATNT Label where
 instance ATNT Instr where
   formatA (Lab x) = formatA x ++ ":"
   formatA Ret = "ret"
-  formatA i@(Pushq op) = unwords [instrName i, formatA op]
-  formatA i@(Popq op) = unwords [instrName i, formatA op]
+  formatA i@(Pushq op) = formatUnOp i op
+  formatA i@(Popq op) = formatUnOp i op
   formatA i@(Movq op1 op2) = formatBinOp i op1 op2
   formatA i@(Movl op1 op2) = formatBinOp i op1 op2
   formatA i@(Movb op1 op2) = formatBinOp i op1 op2
@@ -214,16 +224,16 @@ instance ATNT Instr where
   formatA i@(Addq op1 op2) = formatBinOp i op1 op2
   formatA i@(Andq op1 op2) = formatBinOp i op1 op2
   formatA i@(Cmpq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Call l) = unwords [instrName i, formatA l]
-  formatA i@(Je l) = unwords [instrName i, formatA l]
-  formatA i@(Jmp l) = unwords [instrName i, formatA l]
+  formatA i@(Call l) = formatUnOp i l
+  formatA i@(Je l) = formatUnOp i l
+  formatA i@(Jmp l) = formatUnOp i l
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
 
-formatUnOp :: Instr -> Operand -> String
+formatUnOp :: ATNT a => Instr -> a -> String
 formatUnOp i op = unwords [instrName i, formatA op]
 
-formatBinOp :: Instr -> Operand -> Operand -> String
+formatBinOp :: (ATNT a, ATNT b) => Instr -> a -> b -> [Char]
 formatBinOp i op1 op2 = instrName i ++ " " ++ formatA op1 ++ ", " ++ formatA op2
 
 instance ATNT Directive where
