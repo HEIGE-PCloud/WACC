@@ -6,7 +6,6 @@ build-test:
 
 test-all:
 	stack test \
-		--test-arguments --hide-successes \
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
 		--test-arguments --timeout=1m \
@@ -22,7 +21,7 @@ integration-test: compile
 		--test-arguments --timeout=10s \
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 ~ /integrationTests/"'
+		--test-arguments '--pattern "$$0 ~ /integrationTest/"'
 
 unit-test:
 	stack test \
@@ -30,7 +29,7 @@ unit-test:
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=1m \
 		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 ~ /unitTests/"' \
+		--test-arguments '--pattern "$$0 ~ /unitTest/"' \
 		--test-arguments --quickcheck-max-size=10
 
 # Use `ACCEPT=1 make golden-test` to accept the changes

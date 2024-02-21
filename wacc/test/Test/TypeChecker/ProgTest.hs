@@ -49,7 +49,7 @@ funcType = FnType [BInt] BInt
 test :: TestTree
 test =
   testGroup
-    "unitTests"
+    "unitTest"
     [ testGroup
         "checkFunc"
         [ testProperty "records correct parameter and return types" $

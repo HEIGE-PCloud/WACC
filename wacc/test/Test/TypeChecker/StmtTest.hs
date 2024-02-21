@@ -57,7 +57,7 @@ wIntPair = WKnownPair WInt WInt
 test :: TestTree
 test =
   testGroup
-    "unitTests"
+    "unitTest"
     [ testGroup
         "checkStmt"
         [ testCase "ignores skip" $ checkStmt' (Skip undefined) @?= pure BAny

@@ -338,7 +338,7 @@ check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
 
 test =
   testGroup
-    "unitTests"
+    "unitTest"
     [ testProperty "intLiter" $ check' intLiter genIntLiter
     , testProperty "boolLiter" $ check' boolLiter genBoolLiter
     , testProperty "charLiter" $ check' charLiter genCharLiter

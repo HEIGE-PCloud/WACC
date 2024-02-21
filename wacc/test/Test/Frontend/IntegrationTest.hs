@@ -1,8 +1,5 @@
-{- AUTOCOLLECT.TEST -}
-
 module Test.Frontend.IntegrationTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+  ( integrationTestGroup
   )
 where
 
@@ -12,7 +9,7 @@ import Test.Common (allTests, takeBaseName)
 import Test.Lib.Program
 import Test.Tasty
 
-test = testGroup "integrationTests" allIntegrationTests
+integrationTestGroup = testGroup "integrationTest" allintegrationTest
 
 data IntegrationTestKind = Valid | SyntaxError | SemanticError
 
@@ -51,5 +48,5 @@ mkIntegrationTestCase :: IntegrationTest -> TestTree
 mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKind = kind} =
   testProgram name "./compile" [path] (Just "..") (expectedExitCode kind)
 
-allIntegrationTests :: [TestTree]
-allIntegrationTests = map (mkIntegrationTestCase . mkIntegrationTest) allTests
+allintegrationTest :: [TestTree]
+allintegrationTest = map (mkIntegrationTestCase . mkIntegrationTest) allTests

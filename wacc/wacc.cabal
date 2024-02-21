@@ -88,6 +88,7 @@ test-suite wacc-test
       Test
       Test.Common
       Test.Frontend.IntegrationTest
+      Test.Frontend.Test
       Test.Lib.AntXML
       Test.Lib.Ingredients
       Test.Lib.Program

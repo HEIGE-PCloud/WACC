@@ -19,7 +19,7 @@ import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
 
 test =
-  testGroup "unitTests" [testGroup "scope" [naming_fail_tests]]
+  testGroup "unitTest" [testGroup "scope" [naming_fail_tests]]
 
 hasErrored :: String -> Bool
 hasErrored code = isFailure (scopeAnalysis t)
