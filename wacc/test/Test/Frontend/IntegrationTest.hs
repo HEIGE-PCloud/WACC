@@ -9,6 +9,7 @@ import Test.Common (allTests, takeBaseName)
 import Test.Lib.Program
 import Test.Tasty
 
+integrationTestGroup :: TestTree
 integrationTestGroup = testGroup "integrationTest" allintegrationTest
 
 data IntegrationTestKind = Valid | SyntaxError | SemanticError
@@ -46,7 +47,7 @@ expectedExitCode SemanticError = ExitFailure 200
 
 mkIntegrationTestCase :: IntegrationTest -> TestTree
 mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKind = kind} =
-  testProgram name "./compile" [path] (Just "..") (expectedExitCode kind)
+  testProgram name "./compile" [path, "--parseOnly"] (Just "..") (expectedExitCode kind)
 
 allintegrationTest :: [TestTree]
 allintegrationTest = map (mkIntegrationTestCase . mkIntegrationTest) allTests

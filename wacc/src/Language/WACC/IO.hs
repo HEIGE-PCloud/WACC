@@ -9,21 +9,36 @@ import Control.Exception (handle)
 import Data.List.Extra (replace)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
-import Language.WACC.AST (Prog, WType)
+import Language.WACC.AST.Prog (Prog)
+import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error, printError, semanticError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (Fnident, VarST, Vident, scopeAnalysis)
 import Language.WACC.TypeChecking (checkTypes)
-import System.Environment (getArgs)
+import System.Console.CmdArgs
+  ( Data
+  , Typeable
+  , argPos
+  , cmdArgs
+  , def
+  , help
+  , name
+  , summary
+  , typ
+  , (&=)
+  )
 import System.Exit
   ( ExitCode (ExitFailure)
-  , exitFailure
   , exitSuccess
   , exitWith
   )
 import System.FilePath.Posix (takeBaseName)
 import System.IO.Error
+  ( isDoesNotExistError
+  , isFullError
+  , isPermissionError
+  )
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 
@@ -59,22 +74,33 @@ readProgramFile = fmap (replace "\t" "  ") . readFile
 
 type Result' = Result ([Error], ExitCode) (Prog WType Fnident Vident Pos, VarST)
 
+data Compile = Compile {file :: FilePath, parseOnly :: Bool}
+  deriving (Show, Data, Typeable)
+
+compileArgs :: Compile
+compileArgs =
+  Compile
+    { file = def &= argPos 0 &= typ "FILE"
+    , parseOnly = def &= help "Run in parse-only mode" &= name "parseOnly"
+    }
+    &= summary "WACC Compiler - Group 19"
+
 {- |
 The entrypoint.
 -}
 main :: IO ()
 main = handleIOExceptions $ do
-  args <- getArgs
-  case args of
-    [filename] -> do
-      sourceCode <- readProgramFile filename
-      let
-        printError' = printError filename (lines sourceCode)
-      case runParse sourceCode of
-        Success ast -> runCodeGen filename ast
-        Failure (errs, exitCode) ->
-          mapM_ (putStrLn . printError' semanticError) errs >> exitWith exitCode
-    _ -> usageAndExit
+  args <- cmdArgs compileArgs
+  let
+    filename = file args
+  let codeGen = not $ parseOnly args
+  sourceCode <- readProgramFile filename
+  let
+    printError' = printError filename (lines sourceCode)
+  case runParse sourceCode of
+    Success ast -> if codeGen then runCodeGen filename ast else exitSuccess
+    Failure (errs, exitCode) ->
+      mapM_ (putStrLn . printError' semanticError) errs >> exitWith exitCode
 
 runParse
   :: String -> Result'
@@ -95,10 +121,6 @@ runTypeCheck ast = case uncurry checkTypes ast of
   errs -> Failure (errs, semanticErrorCode)
 
 runCodeGen :: String -> (Prog WType Fnident Vident Pos, VarST) -> IO ()
--- runCodeGen path _ = writeFile filename "TODO" >>= const exitSuccess
-runCodeGen path _ = exitSuccess
+runCodeGen path _ = writeFile filename "TODO" >>= const exitSuccess
   where
     filename = takeBaseName path ++ ".s"
-
-usageAndExit :: IO ()
-usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure
