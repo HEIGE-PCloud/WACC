@@ -47,7 +47,12 @@ expectedExitCode SemanticError = ExitFailure 200
 
 mkIntegrationTestCase :: IntegrationTest -> TestTree
 mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKind = kind} =
-  testProgram name "./compile" [path, "--parseOnly"] (Just "..") (expectedExitCode kind)
+  testProgram
+    name
+    "./compile"
+    [path, "--parseOnly"]
+    (Just "..")
+    (expectedExitCode kind)
 
 allintegrationTest :: [TestTree]
 allintegrationTest = map (mkIntegrationTestCase . mkIntegrationTest) allTests

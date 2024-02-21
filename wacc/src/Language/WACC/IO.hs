@@ -93,7 +93,8 @@ main = handleIOExceptions $ do
   args <- cmdArgs compileArgs
   let
     filename = file args
-  let codeGen = not $ parseOnly args
+  let
+    codeGen = not $ parseOnly args
   sourceCode <- readProgramFile filename
   let
     printError' = printError filename (lines sourceCode)
