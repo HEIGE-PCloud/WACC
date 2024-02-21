@@ -19,6 +19,7 @@ import Language.WACC.TAC.Class
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking (BType)
+import Prelude hiding (GT, LT)
 
 {- |
 Three-address code generated for expressions.
@@ -49,20 +50,26 @@ instance Semigroup (ExprTACs ident lident) where
 loadCI :: (Enum ident) => Int -> TACM ident lident (ExprTACs ident lident)
 loadCI x = [[LoadCI t x] t | t <- freshTemp]
 
-unInstr
-  :: (Enum ident)
+unExpr
+  :: (Enum ident, Enum lident)
   => UnOp
-  -> Var ident
+  -> Expr ident BType
   -> TACM ident lident (ExprTACs ident lident)
-unInstr op v = [[UnInstr t op v] t | t <- freshTemp]
+unExpr op x =
+  [xts <> [UnInstr t op (exprV xts)] t | xts <- toTAC x, t <- freshTemp]
 
-binInstr
-  :: (Enum ident)
-  => Var ident
+binExpr
+  :: (Enum ident, Enum lident)
+  => Expr ident BType
   -> BinOp
-  -> Var ident
+  -> Expr ident BType
   -> TACM ident lident (ExprTACs ident lident)
-binInstr v1 op v2 = [[BinInstr t v1 op v2] t | t <- freshTemp]
+binExpr x op y =
+  [ xts <> yts <> [BinInstr t (exprV xts) op (exprV yts)] t
+  | xts <- toTAC x
+  , yts <- toTAC y
+  , t <- freshTemp
+  ]
 
 type instance TACIdent (Expr ident a) = ident
 
@@ -75,7 +82,21 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (Null _) _) = loadCI 0
   toTAC (WAtom (Ident v _) _) = pure $ [] (Var v)
   toTAC (WAtom (ArrayElem (ArrayIndex _ _ _) _) _) = undefined
-  toTAC (AST.Not x _) =
-    [xts <> ts | xts <- toTAC x, ts <- unInstr Not (exprV xts)]
-  toTAC (AST.Negate x _) =
-    [xts <> ts | xts <- toTAC x, ts <- unInstr Neg (exprV xts)]
+  toTAC (AST.Not x _) = unExpr Not x
+  toTAC (AST.Negate x _) = unExpr Negate x
+  toTAC (AST.Len x _) = undefined
+  toTAC (AST.Ord x _) = undefined
+  toTAC (AST.Chr x _) = undefined
+  toTAC (AST.Mul x y _) = binExpr x Mul y
+  toTAC (AST.Div x y _) = binExpr x Div y
+  toTAC (AST.Mod x y _) = binExpr x Mod y
+  toTAC (AST.Add x y _) = binExpr x Add y
+  toTAC (AST.Sub x y _) = binExpr x Sub y
+  toTAC (AST.GT x y _) = binExpr x GT y
+  toTAC (AST.GTE x y _) = binExpr x GTE y
+  toTAC (AST.LT x y _) = binExpr x LT y
+  toTAC (AST.LTE x y _) = binExpr x LTE y
+  toTAC (AST.Eq x y _) = undefined
+  toTAC (AST.Ineq x y _) = undefined
+  toTAC (AST.And x y _) = binExpr x And y
+  toTAC (AST.Or x y _) = binExpr x Or y
