@@ -171,6 +171,52 @@ printb =
   ]
 
 {-
+.section .rodata
+# length of .L._printc_str0
+	.int 2
+.L._printc_str0:
+	.asciz "%c"
+.text
+_printc:
+	pushq %rbp
+	movq %rsp, %rbp
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	movb %dil, %sil
+	leaq .L._printc_str0(%rip), %rdi
+	# on x86, al represents the number of SIMD registers used as variadic arguments
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+printc :: Prog
+printc =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 2
+  , Lab (S ".L._printc_str0")
+  , Dir $ DirAsciz "%c"
+  , Dir DirText
+  , Lab (R PrintC)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Movb (Reg Dil) (Reg Sil)
+  , Leaq (Mem (MRegL (S ".L._printc_str0") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call (S "printf@plt")
+  , Movq (Imm 0) (Reg Rdi)
+  , Call (S "fflush@plt")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
+{-
 .section
 .rodata
 .int 0
@@ -258,5 +304,6 @@ malloc =
   , Ret
   ]
 
-pprog :: Prog -> IO ()
-pprog prog = putStrLn $ formatA prog
+-- | Print a program, useful for debugging in GHCi
+printProg :: Prog -> IO ()
+printProg prog = putStrLn $ formatA prog
