@@ -36,6 +36,7 @@ library
       Language.WACC.Parser.Type
       Language.WACC.Semantic.Scope
       Language.WACC.TAC.Class
+      Language.WACC.TAC.State
       Language.WACC.TAC.TAC
       Language.WACC.TypeChecking
       Language.WACC.TypeChecking.BType
