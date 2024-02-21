@@ -2,7 +2,7 @@
 
 {- AUTOCOLLECT.TEST -}
 
-module Language.WACC.TypeChecking.ProgTest
+module Test.TypeChecker.ProgTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )
@@ -14,6 +14,7 @@ import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.Prog ()
 import Language.WACC.TypeChecking.State
+import Test.TypeChecker.Arbitrary ()
 import Test
 
 mkParam :: WType -> (WType, BType)

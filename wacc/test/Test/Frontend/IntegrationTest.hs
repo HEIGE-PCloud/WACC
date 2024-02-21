@@ -1,6 +1,6 @@
 {- AUTOCOLLECT.TEST -}
 
-module Test.Integration
+module Test.Frontend.IntegrationTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )
@@ -9,7 +9,7 @@ where
 import Data.List (isPrefixOf)
 import System.Exit
 import Test.Common (allTests, takeBaseName)
-import Test.Program
+import Test.Lib.Program
 import Test.Tasty
 
 test = testGroup "integrationTests" allIntegrationTests

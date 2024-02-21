@@ -56,7 +56,7 @@ you can test whether GHC can compile it:
 
 Program's output and error streams are ignored.
 -}
-module Test.Program
+module Test.Lib.Program
   ( testProgram
   , CatchStderr (..)
   , CatchStdout (..)

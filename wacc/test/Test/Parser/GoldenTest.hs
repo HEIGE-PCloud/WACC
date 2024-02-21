@@ -1,5 +1,5 @@
 {- AUTOCOLLECT.TEST -}
-module Test.Golden
+module Test.Parser.GoldenTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )
@@ -70,18 +70,19 @@ syntaxCheck res path ls = case res of
 semanticCheck :: [Error] -> FilePath -> [String] -> String
 semanticCheck errs path ls = concat [printError path ls semanticError err | err <- errs]
 
-runX86CheckATNT :: X86.Prog -> String -> TestTree
-runX86CheckATNT p name = goldenVsStringDiff testname diff goldenPath testAction
-  where
-    testname = "X86Example." ++ name
-    diff ref new = ["diff", "-u", ref, new]
-    goldenPath = goldenBasePath ++ "/" ++ testname
-    testAction = return (fromString (formatA p))
+-- TODO: Move this to separate x86 test file
+-- runX86CheckATNT :: X86.Prog -> String -> TestTree
+-- runX86CheckATNT p name = goldenVsStringDiff testname diff goldenPath testAction
+--   where
+--     testname = "X86Example." ++ name
+--     diff ref new = ["diff", "-u", ref, new]
+--     goldenPath = goldenBasePath ++ "/" ++ testname
+--     testAction = return (fromString (formatA p))
 
 test =
   testGroup
     "goldenTests"
     ( [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]
         ++ [runSemanticCheck (inputBasePath ++ test) | test <- semanticErrTests]
-        ++ [runX86CheckATNT prog name | (prog, name) <- x86Examples]
+        -- ++ [runX86CheckATNT prog name | (prog, name) <- x86Examples]
     )

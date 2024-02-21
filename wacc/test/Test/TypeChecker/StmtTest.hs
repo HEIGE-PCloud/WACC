@@ -2,7 +2,7 @@
 
 {- AUTOCOLLECT.TEST -}
 
-module Language.WACC.TypeChecking.StmtTest
+module Test.TypeChecker.StmtTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )
@@ -14,6 +14,7 @@ import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
 import Language.WACC.TypeChecking.Stmt ()
+import Test.TypeChecker.Arbitrary ()
 import Test
 
 testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)

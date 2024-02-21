@@ -1,6 +1,6 @@
 {- AUTOCOLLECT.TEST -}
 
-module Language.WACC.TypeChecking.ExprTest
+module Test.TypeChecker.ExprTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )

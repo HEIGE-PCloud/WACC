@@ -1,6 +1,6 @@
 {- AUTOCOLLECT.TEST -}
 
-module Test.Parser.QuickCheck
+module Test.Parser.UnitTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )

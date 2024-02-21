@@ -1,12 +1,13 @@
 {- AUTOCOLLECT.TEST -}
 
-module Language.WACC.TypeChecking.BTypeTest
+module Test.TypeChecker.BTypeTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )
 where
 
 import Language.WACC.TypeChecking.BType
+import Test.TypeChecker.Arbitrary ()
 import Test
 
 unifyNoCast :: BType -> BType -> Maybe BType

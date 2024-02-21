@@ -35,7 +35,7 @@ in the same schema that would be produced by Apache Ant's JUnit test runner.
 This schema can be intepreted by the Jenkins continuous integration server,
 amongst other tools.
 -}
-module Test.AntXML (antXMLRunner, AntXMLPath (..)) where
+module Test.Lib.AntXML (antXMLRunner, AntXMLPath (..)) where
 
 import Control.Applicative (Const (Const))
 import Control.Arrow (first)

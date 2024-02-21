@@ -85,21 +85,20 @@ test-suite wacc-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Language.WACC.TypeChecking.BTypeTest
-      Language.WACC.TypeChecking.ExprTest
-      Language.WACC.TypeChecking.ProgTest
-      Language.WACC.TypeChecking.StmtTest
       Test
-      Test.AntXML
-      Test.Arbitrary
       Test.Common
-      Test.Golden
-      Test.Ingredients
-      Test.Integration
-      Test.Parser.QuickCheck
-      Test.Program
-      Test.Semantic.QuickCheck
-      Test.Semantic.ScopeUnitTest
+      Test.Frontend.IntegrationTest
+      Test.Lib.AntXML
+      Test.Lib.Ingredients
+      Test.Lib.Program
+      Test.Parser.GoldenTest
+      Test.Parser.UnitTest
+      Test.Scope.UnitTest
+      Test.TypeChecker.Arbitrary
+      Test.TypeChecker.BTypeTest
+      Test.TypeChecker.ExprTest
+      Test.TypeChecker.ProgTest
+      Test.TypeChecker.StmtTest
       Paths_wacc
   hs-source-dirs:
       test

@@ -1,3 +1,3 @@
 {- AUTOCOLLECT.MAIN
-  ingredients = Test.Ingredients.testReporter
+  ingredients = Test.Lib.Ingredients.testReporter
 -}
