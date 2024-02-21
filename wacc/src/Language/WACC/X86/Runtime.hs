@@ -2,7 +2,51 @@ module Language.WACC.X86.Runtime where
 
 import Language.WACC.X86.X86
 
+x86Examples :: [(Prog, String)]
 x86Examples = [(println, "println"), (free, "free"), (malloc, "malloc")]
+
+{-
+.section .rodata
+	.int 2
+.L._printi_str0:
+	.asciz "%d"
+.text
+_printi:
+	pushq %rbp
+	movq %rsp, %rbp
+	andq $-16, %rsp
+	movl %edi, %esi
+	leaq .L._printi_str0(%rip), %rdi
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+printi :: Prog
+printi =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 2
+  , Lab (S ".L._printi_str0")
+  , Dir $ DirAsciz "%d"
+  , Dir DirText
+  , Lab (R PrintI)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Movl (Reg Edi) (Reg Esi)
+  , Leaq (Mem (MRegL (S ".L._printi_str0") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call (S "printf@plt")
+  , Movq (Imm 0) (Reg Rdi)
+  , Call (S "fflush@plt")
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
 
 {-
 .section

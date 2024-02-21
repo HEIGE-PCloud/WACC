@@ -24,6 +24,8 @@ data Instr
   | Pushq Operand
   | Popq Operand
   | Movq Operand Operand
+  | Movl Operand Operand
+  | Movb Operand Operand
   | Leaq Operand Operand
   | Subq Operand Operand
   | Addq Operand Operand
@@ -73,28 +75,75 @@ data Memory
 Each kind of register in x86-64 segregated below. Feel free to change in case a homogenous type is preferred
 -}
 data Register
-  = -- | stack pointer
-    Rsp
-  | -- | return value
-    Rax
-  | -- | callee saved starts here
-    Rbx
-  | Rbp
-  | R12
-  | R13
-  | R14
-  | R15
-  | -- | caller saved starts here
-    R10
-  | R11
-  | -- | arguments from caller starts here
-    Rdi
-  | Rsi
-  | Rdx
+  = Rax
+  | Eax
+  | Ax
+  | Ah
+  | Al
+  | Rbx
+  | Ebx
+  | Bx
+  | Bh
+  | Bl
   | Rcx
-  | Rip
+  | Ecx
+  | Cx
+  | Ch
+  | Cl
+  | Rdx
+  | Edx
+  | Dx
+  | Dh
+  | Dl
+  | Rsi
+  | Esi
+  | Si
+  | Sil
+  | Rdi
+  | Edi
+  | Di
+  | Dil
+  | Rbp
+  | Ebp
+  | Bp
+  | Bpl
+  | Rsp
+  | Esp
+  | Sp
+  | Spl
   | R8
+  | R8d
+  | R8w
+  | R8b
   | R9
+  | R9d
+  | R9w
+  | R9b
+  | R10
+  | R10d
+  | R10w
+  | R10b
+  | R11
+  | R11d
+  | R11w
+  | R11b
+  | R12
+  | R12d
+  | R12w
+  | R12b
+  | R13
+  | R13d
+  | R13w
+  | R13b
+  | R14
+  | R14d
+  | R14w
+  | R14b
+  | R15
+  | R15d
+  | R15w
+  | R15b
+  | Rip
   deriving (Show, Data)
 
 callee :: [Register]
@@ -113,7 +162,7 @@ instance ATNT Int where
   formatA = show
 
 instance ATNT Register where
-  formatA r = '%' : (map toLower (show r))
+  formatA r = '%' : map toLower (show r)
 
 paren :: String -> String
 paren x = "(" ++ x ++ ")"
@@ -138,10 +187,10 @@ use magic to get name of the constructor as a string and make it lower case
 So constr Mov becomes instr mov
 -}
 instrName :: Instr -> String
-instrName = (map toLower) . showConstr . toConstr
+instrName = map toLower . showConstr . toConstr
 
 dirName :: Directive -> String
-dirName = ifDirective . (map toLower) . showConstr . toConstr
+dirName = ifDirective . map toLower . showConstr . toConstr
   where
     ifDirective str = case str of
       'd' : 'i' : 'r' : cs -> '.' : cs -- dealing with directives
@@ -157,17 +206,25 @@ instance ATNT Instr where
   formatA Ret = "ret"
   formatA i@(Pushq op) = unwords [instrName i, formatA op]
   formatA i@(Popq op) = unwords [instrName i, formatA op]
-  formatA i@(Movq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Leaq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Subq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Addq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Andq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
-  formatA i@(Cmpq op1 op2) = unwords [instrName i, formatA op1, formatA op2]
+  formatA i@(Movq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Movl op1 op2) = formatBinOp i op1 op2
+  formatA i@(Movb op1 op2) = formatBinOp i op1 op2
+  formatA i@(Leaq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Subq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Addq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Andq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Cmpq op1 op2) = formatBinOp i op1 op2
   formatA i@(Call l) = unwords [instrName i, formatA l]
   formatA i@(Je l) = unwords [instrName i, formatA l]
   formatA i@(Jmp l) = unwords [instrName i, formatA l]
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
+
+formatUnOp :: Instr -> Operand -> String
+formatUnOp i op = unwords [instrName i, formatA op]
+
+formatBinOp :: Instr -> Operand -> Operand -> String
+formatBinOp i op1 op2 = instrName i ++ " " ++ formatA op1 ++ ", " ++ formatA op2
 
 instance ATNT Directive where
   formatA d@(DirInt x) = unwords [dirName d, formatA x]
