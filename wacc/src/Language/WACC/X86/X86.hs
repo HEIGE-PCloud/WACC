@@ -37,6 +37,7 @@ data Instr
   | Movl Operand Operand
   | Movb Operand Operand
   | Movslq Operand Operand
+  | Movsbq Operand Operand
   | Leaq Operand Operand
   | Subq Operand Operand
   | Addq Operand Operand
@@ -224,6 +225,7 @@ instance ATNT Instr where
   formatA i@(Movl op1 op2) = formatBinOp i op1 op2
   formatA i@(Movb op1 op2) = formatBinOp i op1 op2
   formatA i@(Movslq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Movsbq op1 op2) = formatBinOp i op1 op2
   formatA i@(Leaq op1 op2) = formatBinOp i op1 op2
   formatA i@(Subq op1 op2) = formatBinOp i op1 op2
   formatA i@(Addq op1 op2) = formatBinOp i op1 op2

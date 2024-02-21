@@ -467,6 +467,59 @@ readi =
   , Ret
   ]
 
+{-
+section .rodata
+ length of .L._readc_str0
+.int 3
+L._readc_str0:
+.asciz " %c"
+text
+readc:
+pushq %rbp
+movq %rsp, %rbp
+# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+andq $-16, %rsp
+# RDI contains the "original" value of the destination of the read
+# allocate space on the stack to store the read: preserve alignment!
+# the passed default argument should be stored in case of EOF
+subq $16, %rsp
+movb %dil, (%rsp)
+leaq (%rsp), %rsi
+leaq .L._readc_str0(%rip), %rdi
+# on x86, al represents the number of SIMD registers used as variadic arguments
+movb $0, %al
+call scanf@plt
+movsbq (%rsp), %rax
+addq $16, %rsp
+movq %rbp, %rsp
+popq %rbp
+ret
+-}
+
+readc :: Prog
+readc =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 3
+  , Lab (S ".L._readc_str0")
+  , Dir $ DirAsciz " %c"
+  , Dir DirText
+  , Lab (R ReadC)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Subq (Imm 16) (Reg Rsp)
+  , Movb (Reg Dil) (Mem (MRegI 0 Rsp))
+  , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
+  , Leaq (Mem (MRegL (S ".L._readc_str0") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call (S "scanf@plt")
+  , Movsbq (Mem (MRegI 0 Rsp)) (Reg Rax)
+  , Addq (Imm 16) (Reg Rsp)
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
 
 -- | Print a program, useful for debugging in GHCi
 printProg :: Prog -> IO ()
