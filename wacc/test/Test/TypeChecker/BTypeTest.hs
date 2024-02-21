@@ -7,8 +7,8 @@ module Test.TypeChecker.BTypeTest
 where
 
 import Language.WACC.TypeChecking.BType
-import Test.TypeChecker.Arbitrary ()
 import Test
+import Test.TypeChecker.Arbitrary ()
 
 unifyNoCast :: BType -> BType -> Maybe BType
 unifyNoCast (BArray _) BString = Nothing

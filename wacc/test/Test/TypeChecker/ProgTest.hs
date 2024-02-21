@@ -14,8 +14,8 @@ import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.Prog ()
 import Language.WACC.TypeChecking.State
-import Test.TypeChecker.Arbitrary ()
 import Test
+import Test.TypeChecker.Arbitrary ()
 
 mkParam :: WType -> (WType, BType)
 mkParam wt = (wt, fix wt)

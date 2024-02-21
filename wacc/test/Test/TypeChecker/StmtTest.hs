@@ -14,8 +14,8 @@ import Language.WACC.TypeChecking.BType
 import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
 import Language.WACC.TypeChecking.Stmt ()
-import Test.TypeChecker.Arbitrary ()
 import Test
+import Test.TypeChecker.Arbitrary ()
 
 testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
 testTypingM action = case runTypingM action id fnMap of
