@@ -15,6 +15,8 @@ dependencies:
   - recursion-schemes
   - transformers
   - extra
+  - filepath
+
 
 ghc-options:
   - -Wall
@@ -74,6 +76,5 @@ tests:
       - utf8-string
       - tagged
       - generic-deriving
-      - filepath
       - stm
       - xml

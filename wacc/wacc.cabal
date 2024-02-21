@@ -56,6 +56,7 @@ library
     , containers
     , dlist
     , extra
+    , filepath
     , gigaparsec
     , mtl
     , recursion-schemes
@@ -74,6 +75,7 @@ executable compile
     , containers
     , dlist
     , extra
+    , filepath
     , gigaparsec
     , mtl
     , recursion-schemes
@@ -86,6 +88,7 @@ test-suite wacc-test
   main-is: Main.hs
   other-modules:
       Test
+      Test.Backend.IntegrationTest
       Test.Backend.Test
       Test.Backend.X86.GoldenTest
       Test.Backend.X86.Test

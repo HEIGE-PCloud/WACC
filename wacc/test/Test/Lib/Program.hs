@@ -177,6 +177,30 @@ runProgram program args workingDir catchStderr catchStdout exitCode = do
     then return success
     else return $ exitFailure program args (rawExitCode ecode) stderr stdout
 
+runProgram'
+  :: String
+  -- ^ Program name
+  -> [String]
+  -- ^ Program options
+  -> Maybe FilePath
+  -- ^ Optional working directory
+  -> ExitCode
+  -- ^ Expected exit code
+  -> (String -> Bool)
+  -- ^ A function to check whether the stderr is correct
+  -> (String -> Bool)
+  -- ^ A function to check whether the stdout is correct
+  -> IO Result
+runProgram' program args workingDir exitCode checkStderr checkStdout = do
+  (_, stdoutH, stderrH, pid) <-
+    runInteractiveProcess program args workingDir Nothing
+  stderr <- hGetContents stderrH
+  stdout <- hGetContents stdoutH
+  ecode <- stderr `deepseq` waitForProcess pid
+  if ecode == exitCode && checkStderr stderr && checkStdout stdout
+    then return success
+    else return $ exitFailure program args (rawExitCode ecode) (Just stderr) (Just stdout)
+
 -- | Indicates successful test
 success :: Result
 success = testPassed ""
