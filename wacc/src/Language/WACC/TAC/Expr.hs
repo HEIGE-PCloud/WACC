@@ -13,12 +13,12 @@ import Data.Bool (bool)
 import Data.Char (ord)
 import Data.DList (DList)
 import GHC.IsList (IsList (..))
-import Language.WACC.AST (ArrayIndex (..), Expr (WAtom), WAtom (..))
+import Language.WACC.AST (ArrayIndex (..), Expr (WAtom), WAtom (..), getAnn)
 import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
-import Language.WACC.TypeChecking (BType)
+import Language.WACC.TypeChecking (BType, isHeapAllocated)
 import Prelude hiding (GT, LT)
 
 {- |
@@ -50,26 +50,34 @@ instance Semigroup (ExprTACs ident lident) where
 loadCI :: (Enum ident) => Int -> TACM ident lident (ExprTACs ident lident)
 loadCI x = [[LoadCI t x] t | t <- freshTemp]
 
-unExpr
+unOp
   :: (Enum ident, Enum lident)
   => UnOp
   -> Expr ident BType
   -> TACM ident lident (ExprTACs ident lident)
-unExpr op x =
+unOp op x =
   [xts <> [UnInstr t op (exprV xts)] t | xts <- toTAC x, t <- freshTemp]
 
-binExpr
+binInstr
+  :: (Enum ident, Enum lident)
+  => Expr ident BType
+  -> (Var ident -> Var ident -> Var ident -> TAC ident lident)
+  -> Expr ident BType
+  -> TACM ident lident (ExprTACs ident lident)
+binInstr x instr y =
+  [ xts <> yts <> [instr t (exprV xts) (exprV yts)] t
+  | xts <- toTAC x
+  , yts <- toTAC y
+  , t <- freshTemp
+  ]
+
+binOp
   :: (Enum ident, Enum lident)
   => Expr ident BType
   -> BinOp
   -> Expr ident BType
   -> TACM ident lident (ExprTACs ident lident)
-binExpr x op y =
-  [ xts <> yts <> [BinInstr t (exprV xts) op (exprV yts)] t
-  | xts <- toTAC x
-  , yts <- toTAC y
-  , t <- freshTemp
-  ]
+binOp x op y = binInstr x (\t xv yv -> BinInstr t xv op yv) y
 
 type instance TACIdent (Expr ident a) = ident
 
@@ -82,8 +90,8 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (Null _) _) = loadCI 0
   toTAC (WAtom (Ident v _) _) = pure $ [] (Var v)
   toTAC (WAtom (ArrayElem (ArrayIndex _ _ _) _) _) = undefined
-  toTAC (AST.Not x _) = unExpr Not x
-  toTAC (AST.Negate x _) = unExpr Negate x
+  toTAC (AST.Not x _) = unOp Not x
+  toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) = undefined
   toTAC (AST.Ord x _) = toTAC x
   toTAC (AST.Chr x _) =
@@ -92,16 +100,20 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
     , let
         xv = exprV xts
     ]
-  toTAC (AST.Mul x y _) = binExpr x Mul y
-  toTAC (AST.Div x y _) = binExpr x Div y
-  toTAC (AST.Mod x y _) = binExpr x Mod y
-  toTAC (AST.Add x y _) = binExpr x Add y
-  toTAC (AST.Sub x y _) = binExpr x Sub y
-  toTAC (AST.GT x y _) = binExpr x GT y
-  toTAC (AST.GTE x y _) = binExpr x GTE y
-  toTAC (AST.LT x y _) = binExpr x LT y
-  toTAC (AST.LTE x y _) = binExpr x LTE y
-  toTAC (AST.Eq x y _) = undefined
-  toTAC (AST.Ineq x y _) = undefined
-  toTAC (AST.And x y _) = binExpr x And y
-  toTAC (AST.Or x y _) = binExpr x Or y
+  toTAC (AST.Mul x y _) = binOp x Mul y
+  toTAC (AST.Div x y _) = binOp x Div y
+  toTAC (AST.Mod x y _) = binOp x Mod y
+  toTAC (AST.Add x y _) = binOp x Add y
+  toTAC (AST.Sub x y _) = binOp x Sub y
+  toTAC (AST.GT x y _) = binOp x GT y
+  toTAC (AST.GTE x y _) = binOp x GTE y
+  toTAC (AST.LT x y _) = binOp x LT y
+  toTAC (AST.LTE x y _) = binOp x LTE y
+  toTAC (AST.Eq x y _)
+    | isHeapAllocated (getAnn x) = binInstr x EqR y
+    | otherwise = binInstr x EqV y
+  toTAC (AST.Ineq x y _)
+    | isHeapAllocated (getAnn x) = binInstr x IneqR y
+    | otherwise = binInstr x IneqV y
+  toTAC (AST.And x y _) = binOp x And y
+  toTAC (AST.Or x y _) = binOp x Or y
