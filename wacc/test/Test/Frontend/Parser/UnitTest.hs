@@ -23,6 +23,7 @@ import Language.WACC.Parser.Type
   , pairType
   , wType
   )
+import Test (TestTree)
 import qualified Test.QuickCheck.Property as P
 import Test.Tasty (testGroup)
 import Test.Tasty.QuickCheck
@@ -333,6 +334,7 @@ check parser str = case parse' (fully parser) str of
 check' :: T.Parsec a -> Gen String -> Property
 check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
 
+unitTestGroup :: TestTree
 unitTestGroup =
   testGroup
     "unitTest"

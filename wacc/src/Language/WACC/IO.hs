@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 {- |
 The entrypoint for the compiler executable.
 -}
@@ -8,40 +10,36 @@ import Data.List.Extra (replace)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
 import Language.WACC.AST (Prog, WType)
-import Language.WACC.Error (Error, printError, semanticError, syntaxError)
+import Language.WACC.Error (Error, printError, semanticError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (Fnident, VarST, Vident, scopeAnalysis)
 import Language.WACC.TypeChecking (checkTypes)
 import System.Environment (getArgs)
-import System.Exit (ExitCode (ExitFailure), exitFailure, exitSuccess, exitWith)
+import System.Exit
+  ( ExitCode (ExitFailure)
+  , exitFailure
+  , exitSuccess
+  , exitWith
+  )
 import System.FilePath.Posix (takeBaseName)
 import System.IO.Error
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
 
-ioErrorCode :: Int
-ioErrorCode = 255
+ioErrorCode :: ExitCode
+ioErrorCode = ExitFailure 255
 
-exitWithIOErrorCode :: IO a
-exitWithIOErrorCode = exitWith (ExitFailure ioErrorCode)
+syntaxErrorCode :: ExitCode
+syntaxErrorCode = ExitFailure 100
 
-syntaxErrorCode :: Int
-syntaxErrorCode = 100
-
-exitWithSyntaxError :: IO a
-exitWithSyntaxError = exitWith (ExitFailure syntaxErrorCode)
-
-semanticErrorCode :: Int
-semanticErrorCode = 200
-
-exitWithSemanticError :: IO a
-exitWithSemanticError = exitWith (ExitFailure semanticErrorCode)
+semanticErrorCode :: ExitCode
+semanticErrorCode = ExitFailure 200
 
 handleIOExceptions :: IO a -> IO a
 handleIOExceptions =
   handle
-    ( (*> exitWithIOErrorCode)
+    ( (*> exitWith ioErrorCode)
         . hPutStrLn stderr
         . ("File I/O error: " ++)
         . getReason
@@ -59,6 +57,8 @@ Read a WACC source file, replacing each tab character with two spaces.
 readProgramFile :: FilePath -> IO String
 readProgramFile = fmap (replace "\t" "  ") . readFile
 
+type Result' = Result ([Error], ExitCode) (Prog WType Fnident Vident Pos, VarST)
+
 {- |
 The entrypoint.
 -}
@@ -66,43 +66,39 @@ main :: IO ()
 main = handleIOExceptions $ do
   args <- getArgs
   case args of
-    [filename] -> runParse filename
+    [filename] -> do
+      sourceCode <- readProgramFile filename
+      let
+        printError' = printError filename (lines sourceCode)
+      case runParse sourceCode of
+        Success ast -> runCodeGen filename ast
+        Failure (errs, exitCode) ->
+          mapM_ (putStrLn . printError' semanticError) errs >> exitWith exitCode
     _ -> usageAndExit
 
-runParse :: FilePath -> IO ()
-runParse filename = do
-  sourceCode <- readProgramFile filename
-  let
-    name = takeBaseName filename
-  let
-    res = parseWithError (fully program) sourceCode
-  let
-    printError' = printError filename (lines sourceCode)
-  case res of
-    Failure err -> putStrLn (printError' syntaxError err) >> exitWithSyntaxError
-    Success ast -> runScopeAnalysis name printError' ast
+runParse
+  :: String -> Result'
+runParse sourceCode = case parseWithError (fully program) sourceCode of
+  Failure err -> Failure ([err], syntaxErrorCode)
+  Success ast -> runScopeAnalysis ast
 
 runScopeAnalysis
-  :: String -> (String -> Error -> String) -> Prog WType String String Pos -> IO ()
-runScopeAnalysis filename printError' ast = case scopeAnalysis ast of
-  Failure errs -> do
-    mapM_ (putStrLn . printError' semanticError) errs
-    exitWithSemanticError
-  Success res -> runTypeCheck filename printError' res
+  :: Prog WType String String Pos -> Result'
+runScopeAnalysis ast = case scopeAnalysis ast of
+  Failure errs -> Failure (errs, semanticErrorCode)
+  Success res -> runTypeCheck res
 
 runTypeCheck
-  :: String
-  -> (String -> Error -> String)
-  -> (Prog WType Fnident Vident Pos, VarST)
-  -> IO ()
-runTypeCheck filename printError' ast = case uncurry checkTypes ast of
-  [] -> runCodeGen filename ast
-  errs -> do
-    mapM_ (putStrLn . printError' semanticError) errs
-    exitWithSemanticError
+  :: (Prog WType Fnident Vident Pos, VarST) -> Result'
+runTypeCheck ast = case uncurry checkTypes ast of
+  [] -> Success ast
+  errs -> Failure (errs, semanticErrorCode)
 
 runCodeGen :: String -> (Prog WType Fnident Vident Pos, VarST) -> IO ()
-runCodeGen name _ = writeFile (name ++ ".s") "TODO"
+-- runCodeGen path _ = writeFile filename "TODO" >>= const exitSuccess
+runCodeGen path _ = exitSuccess
+  where
+    filename = takeBaseName path ++ ".s"
 
 usageAndExit :: IO ()
 usageAndExit = hPutStrLn stderr "Usage: compile <filename>" >> exitFailure

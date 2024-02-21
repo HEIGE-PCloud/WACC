@@ -16,7 +16,7 @@ dependencies:
   - transformers
   - extra
   - filepath
-
+  - cmdargs
 
 ghc-options:
   - -Wall

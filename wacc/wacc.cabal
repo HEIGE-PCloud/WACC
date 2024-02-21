@@ -53,6 +53,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , dlist
     , extra
@@ -72,6 +73,7 @@ executable compile
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , dlist
     , extra
@@ -119,6 +121,7 @@ test-suite wacc-test
       QuickCheck
     , base >=4.7 && <5
     , bytestring
+    , cmdargs
     , containers
     , deepseq
     , directory

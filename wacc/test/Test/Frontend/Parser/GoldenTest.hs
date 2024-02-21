@@ -10,9 +10,6 @@ import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope (scopeAnalysis)
 import Language.WACC.TypeChecking (checkTypes)
-import Language.WACC.X86.Runtime (x86Examples)
-import Language.WACC.X86.X86 (formatA)
-import qualified Language.WACC.X86.X86 as X86
 import Test.Common (semanticErrTests, syntaxErrTests, takeBaseName)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
@@ -77,6 +74,7 @@ semanticCheck errs path ls = concat [printError path ls semanticError err | err 
 --     goldenPath = goldenBasePath ++ "/" ++ testname
 --     testAction = return (fromString (formatA p))
 
+goldenTestGroup :: TestTree
 goldenTestGroup =
   testGroup
     "goldenTest"
