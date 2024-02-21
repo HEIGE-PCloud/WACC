@@ -23,6 +23,8 @@ data Runtime
   | Malloc
   | ReadI
   | ReadC
+  | ErrOutOfMemory
+  | ErrOverflow
   deriving (Typeable, Data, Show)
 
 type Prog = [Instr]

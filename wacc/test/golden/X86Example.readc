@@ -1,0 +1,21 @@
+.section
+.rodata
+.int 3
+.L._readc_str0:
+.asciz " %c"
+.text
+_readc:
+pushq %rbp
+movq %rsp, %rbp
+andq $-16, %rsp
+subq $16, %rsp
+movb %dil, 0(%rsp)
+leaq 0(%rsp), %rsi
+leaq .L._readc_str0(%rip), %rdi
+movb $0, %al
+call scanf@plt
+movsbq 0(%rsp), %rax
+addq $16, %rsp
+movq %rbp, %rsp
+popq %rbp
+ret

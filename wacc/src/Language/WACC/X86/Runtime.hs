@@ -3,7 +3,41 @@ module Language.WACC.X86.Runtime where
 import Language.WACC.X86.X86
 
 x86Examples :: [(Prog, String)]
-x86Examples = [(println, "println"), (free, "free"), (malloc, "malloc")]
+x86Examples =
+  [ (println, "println")
+  , (free, "free")
+  , (malloc, "malloc")
+  , (errOverflow, "errOverflow")
+  , (errOutOfMemory, "errOutOfMemory")
+  , (readc, "readc")
+  , (readi, "readi")
+  , (printp, "printp")
+  , (printc, "printc")
+  , (printb, "printb")
+  , (prints, "prints")
+  , (printi, "printi")
+  ]
+
+cprintf :: Label
+cprintf = S "printf@plt"
+
+cfflush :: Label
+cfflush = S "fflush@plt"
+
+cputs :: Label
+cputs = S "puts@plt"
+
+cexit :: Label
+cexit = S "exit@plt"
+
+cmalloc :: Label
+cmalloc = S "malloc@plt"
+
+cfree :: Label
+cfree = S "free@plt"
+
+cscanf :: Label
+cscanf = S "scanf@plt"
 
 {-
 .section .rodata
@@ -40,9 +74,9 @@ printi =
   , Movl (Reg Edi) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._printi_str0") Rip)) (Reg Rdi)
   , Movb (Imm 0) (Reg Al)
-  , Call (S "printf@plt")
+  , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
-  , Call (S "fflush@plt")
+  , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -88,9 +122,9 @@ prints =
   , Movl (Mem (MRegI (-4) Rdi)) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._prints_str0") Rip)) (Reg Rdi)
   , Movb (Imm 0) (Reg Al)
-  , Call (S "printf@plt")
+  , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
-  , Call (S "fflush@plt")
+  , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -162,9 +196,9 @@ printb =
   , Movl (Mem (MRegI (-4) Rdx)) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._printb_str2") Rip)) (Reg Rdi)
   , Movb (Imm 0) (Reg Al)
-  , Call (S "printf@plt")
+  , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
-  , Call (S "fflush@plt")
+  , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -208,9 +242,9 @@ printc =
   , Movb (Reg Dil) (Reg Sil)
   , Leaq (Mem (MRegL (S ".L._printc_str0") Rip)) (Reg Rdi)
   , Movb (Imm 0) (Reg Al)
-  , Call (S "printf@plt")
+  , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
-  , Call (S "fflush@plt")
+  , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -255,9 +289,9 @@ printp =
   , Movq (Reg Rdi) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._printp_str0") Rip)) (Reg Rdi)
   , Movb (Imm 0) (Reg Al)
-  , Call (S "printf@plt")
+  , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
-  , Call (S "fflush@plt")
+  , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -295,9 +329,9 @@ println =
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._println_str0") Rip)) (Reg Rdi)
-  , Call (S "puts@plt")
+  , Call cputs
   , Movq (Imm 0) (Reg Rdi)
-  , Call (S "fflush@plt")
+  , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -319,7 +353,7 @@ free =
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
-  , Call (S "free@plt")
+  , Call cfree
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -343,9 +377,9 @@ malloc =
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
-  , Call (S "malloc@plt")
+  , Call cmalloc
   , Cmpq (Imm 0) (Reg Rax)
-  , Je (S "_errOutOfMemory")
+  , Je (R ErrOutOfMemory)
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -374,12 +408,12 @@ errOutOfMemory =
   , Lab (S ".L._errOutOfMemory_str0")
   , Dir $ DirAsciz "fatal error: out of memory\n"
   , Dir DirText
-  , Lab (S "_errOutOfMemory")
+  , Lab (R ErrOutOfMemory)
   , Andq (Imm (-16)) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfMemory_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
   , Movb (Imm (-1)) (Reg Dil)
-  , Call (S "exit@plt")
+  , Call cexit
   ]
 
 {-
@@ -405,12 +439,12 @@ errOverflow =
   , Lab (S ".L._errOverflow_str0")
   , Dir $ DirAsciz "fatal error: integer overflow or underflow occurred\n"
   , Dir DirText
-  , Lab (S "_errOverflow")
+  , Lab (R ErrOverflow)
   , Andq (Imm (-16)) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOverflow_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
   , Movb (Imm (-1)) (Reg Dil)
-  , Call (S "exit@plt")
+  , Call cexit
   ]
 
 {-
@@ -459,7 +493,7 @@ readi =
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readi_str0") Rip)) (Reg Rdi)
   , Movb (Imm 0) (Reg Al)
-  , Call (S "scanf@plt")
+  , Call cscanf
   , Movslq (Mem (MRegI 0 Rsp)) (Reg Rax)
   , Addq (Imm 16) (Reg Rsp)
   , Movq (Reg Rbp) (Reg Rsp)
@@ -513,7 +547,7 @@ readc =
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readc_str0") Rip)) (Reg Rdi)
   , Movb (Imm 0) (Reg Al)
-  , Call (S "scanf@plt")
+  , Call cscanf
   , Movsbq (Mem (MRegI 0 Rsp)) (Reg Rax)
   , Addq (Imm 16) (Reg Rsp)
   , Movq (Reg Rbp) (Reg Rsp)
