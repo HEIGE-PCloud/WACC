@@ -1,6 +1,7 @@
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_STRATEGY: fetch
+  GIT_CLEAN_FLAGS: none
 
 include:
   - template: Code-Quality.gitlab-ci.yml
