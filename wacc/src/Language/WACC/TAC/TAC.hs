@@ -72,6 +72,11 @@ data TAC ident lident
     Malloc (Var ident) (Offset ident)
   | -- | > free <var>
     Free (Var ident)
+  | -- |
+    -- > assert <low> <= <var> <= <high>
+    --
+    -- Throw a runtime error if the assertion fails.
+    CheckBounds Int (Var ident) Int
 
 -- | Binary operators in TAC
 data BinOp = Mul | Div | Mod | Add | Sub | GT | GTE | LT | LTE | And | Or

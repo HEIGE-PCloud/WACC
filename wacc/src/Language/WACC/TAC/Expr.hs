@@ -85,8 +85,13 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (AST.Not x _) = unExpr Not x
   toTAC (AST.Negate x _) = unExpr Negate x
   toTAC (AST.Len x _) = undefined
-  toTAC (AST.Ord x _) = undefined
-  toTAC (AST.Chr x _) = undefined
+  toTAC (AST.Ord x _) = toTAC x
+  toTAC (AST.Chr x _) =
+    [ xts <> [CheckBounds 0 xv 127] xv
+    | xts <- toTAC x
+    , let
+        xv = exprV xts
+    ]
   toTAC (AST.Mul x y _) = binExpr x Mul y
   toTAC (AST.Div x y _) = binExpr x Div y
   toTAC (AST.Mod x y _) = binExpr x Mod y
