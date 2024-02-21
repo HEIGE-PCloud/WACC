@@ -40,24 +40,11 @@ code_quality:
   variables:
     GIT_SUBMODULE_STRATEGY: none
 
-frontend-test:
+test:
   tags:
     - shell
   script:
-    - make frontend-test
-  stage: test
-  artifacts:
-    when: always
-    paths:
-      - rspec.xml
-    reports:
-      junit: rspec.xml
-
-backend-test:
-  tags:
-    - shell
-  script:
-    - make backend-test
+    - make test-all
   stage: test
   artifacts:
     when: always
