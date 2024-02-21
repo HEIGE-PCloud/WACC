@@ -199,7 +199,9 @@ runProgram' program args workingDir exitCode checkStderr checkStdout = do
   ecode <- stderr `deepseq` waitForProcess pid
   if ecode == exitCode && checkStderr stderr && checkStdout stdout
     then return success
-    else return $ exitFailure program args (rawExitCode ecode) (Just stderr) (Just stdout)
+    else
+      return $
+        exitFailure program args (rawExitCode ecode) (Just stderr) (Just stdout)
 
 -- | Indicates successful test
 success :: Result
