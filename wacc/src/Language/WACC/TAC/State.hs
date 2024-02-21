@@ -17,7 +17,7 @@ Run a TAC translation action.
 
 Basic block labels are allocated starting from the given @lident@.
 -}
-runTACM :: (Num ident, Num lident) => lident -> TACM ident lident a -> a
+runTACM :: (Num ident) => lident -> TACM ident lident a -> a
 runTACM l = flip evalState (0, l)
 
 {- |
