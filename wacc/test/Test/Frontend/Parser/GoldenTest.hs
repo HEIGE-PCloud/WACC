@@ -1,5 +1,5 @@
 module Test.Frontend.Parser.GoldenTest
-  (goldenTestGroup
+  ( goldenTestGroup
   )
 where
 
@@ -79,7 +79,7 @@ semanticCheck errs path ls = concat [printError path ls semanticError err | err 
 
 goldenTestGroup =
   testGroup
-    "goldenTests"
+    "goldenTest"
     ( [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]
         ++ [runSemanticCheck (inputBasePath ++ test) | test <- semanticErrTests]
         -- ++ [runX86CheckATNT prog name | (prog, name) <- x86Examples]

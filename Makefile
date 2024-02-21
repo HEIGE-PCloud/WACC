@@ -39,7 +39,7 @@ golden-test:
 		--test-arguments --num-threads=`nproc` \
 		--test-arguments --timeout=1s \
 		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 ~ /goldenTests/"' \
+		--test-arguments '--pattern "$$0 ~ /goldenTest/"' \
 		$(if $(ACCEPT), --test-arguments --accept)
 
 ghci-test:

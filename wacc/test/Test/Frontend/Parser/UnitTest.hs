@@ -1,5 +1,5 @@
 module Test.Frontend.Parser.UnitTest
-  (unitTestGroup
+  ( unitTestGroup
   )
 where
 
