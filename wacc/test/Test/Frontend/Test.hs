@@ -11,4 +11,7 @@ import Test.Frontend.Parser.Test (parserTestGroup)
 import Test.Frontend.Scope.Test (scopeTestGroup)
 import Test.Frontend.TypeChecker.Test (typeCheckerTestGroup)
 
-test = testGroup "frontend" [integrationTestGroup, parserTestGroup, scopeTestGroup, typeCheckerTestGroup]
+test =
+  testGroup
+    "frontend"
+    [integrationTestGroup, parserTestGroup, scopeTestGroup, typeCheckerTestGroup]

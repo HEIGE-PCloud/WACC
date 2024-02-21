@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedLists #-}
 
 module Test.Frontend.TypeChecker.ProgTest
-  (
-    progTestGroup
+  ( progTestGroup
   )
 where
 
@@ -44,8 +43,8 @@ func = Func WInt 0 [(WInt, BInt)] [Return intExpr undefined] undefined
 funcType :: FnType
 funcType = FnType [BInt] BInt
 
-progTestGroup:: TestTree
-progTestGroup=
+progTestGroup :: TestTree
+progTestGroup =
   testGroup
     "unitTest"
     [ testGroup

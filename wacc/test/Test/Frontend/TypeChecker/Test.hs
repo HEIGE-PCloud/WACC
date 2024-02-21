@@ -10,4 +10,7 @@ import Test.Frontend.TypeChecker.StmtTest (stmtTestGroup)
 import Test.Tasty (TestTree, testGroup)
 
 typeCheckerTestGroup :: TestTree
-typeCheckerTestGroup = testGroup "typeChecker" [bTypeTestGroup, exprTestGroup, progTestGroup, stmtTestGroup]
+typeCheckerTestGroup =
+  testGroup
+    "typeChecker"
+    [bTypeTestGroup, exprTestGroup, progTestGroup, stmtTestGroup]

@@ -4,43 +4,55 @@ compile:
 build-test:
 	stack build --test --no-run-tests
 
-test-all:
-	stack test \
-		--test-arguments --catch-stderr \
-		--test-arguments --catch-stdout \
-		--test-arguments --timeout=1m \
-		--test-arguments --num-threads=`nproc` \
-		--test-arguments --xml=../rspec.xml \
-		--test-arguments --quickcheck-max-size=10
-
-integration-test: compile
+test: 
 	stack test \
 		--test-arguments --hide-successes \
 		--test-arguments --catch-stderr \
 		--test-arguments --catch-stdout \
-		--test-arguments --timeout=10s \
-		--test-arguments --num-threads=`nproc` \
+		--test-arguments --timeout=1m \
 		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 ~ /integrationTest/"'
+		--test-arguments --quickcheck-max-size=10 \
+		--test-arguments '--pattern "$$$(PATTERN)"' \
+		$(if $(ACCEPT), --test-arguments --accept)
+
+test-all: compile
+	$(MAKE) test PATTERN="0 ~ /./"
 
 unit-test:
-	stack test \
-		--test-arguments --hide-successes \
-		--test-arguments --num-threads=`nproc` \
-		--test-arguments --timeout=1m \
-		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 ~ /unitTest/"' \
-		--test-arguments --quickcheck-max-size=10
+	$(MAKE) test PATTERN="0 ~ /unitTest/"
 
-# Use `ACCEPT=1 make golden-test` to accept the changes
 golden-test:
-	stack test \
-		--test-arguments --hide-successes \
-		--test-arguments --num-threads=`nproc` \
-		--test-arguments --timeout=1s \
-		--test-arguments --xml=../rspec.xml \
-		--test-arguments '--pattern "$$0 ~ /goldenTest/"' \
-		$(if $(ACCEPT), --test-arguments --accept)
+	$(MAKE) test PATTERN="0 ~ /goldenTest/"
+
+integration-test: compile
+	$(MAKE) test PATTERN="0 ~ /integrationTest/"
+
+frontend-test: compile
+	$(MAKE) test PATTERN="0 ~ /frontend/"
+
+frontend-integration-test: compile
+	$(MAKE) test PATTERN="0 ~ /frontend\.integrationTest/"
+
+parser-unit-test:
+	$(MAKE) test PATTERN="0 ~ /parser\.unitTest/"
+
+parser-golden-test:
+	$(MAKE) test PATTERN="0 ~ /parser\.goldenTest/"
+
+parser-test:
+	$(MAKE) test PATTERN="0 ~ /parser/"
+
+scope-unit-test:
+	$(MAKE) test PATTERN="0 ~ /scope\.unitTest/"
+
+scope-test:
+	$(MAKE) test PATTERN="0 ~ /scope/"
+
+typechecker-unit-test:
+	$(MAKE) test PATTERN="0 ~ /typechecker\.unitTest/"
+
+typechecker-test:
+	$(MAKE) test PATTERN="0 ~ /typechecker/"
 
 ghci-test:
 	stack ghci --ghci-options -isrc --ghci-options -itest wacc:wacc-test
@@ -48,4 +60,4 @@ ghci-test:
 clean:
 	$(RM) compile
 
-.PHONY: clean compile ghci-test golden-test integration-test test-all unit-test
+.PHONY: clean compile

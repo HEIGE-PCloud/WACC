@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedLists #-}
 
-
 module Test.Frontend.TypeChecker.StmtTest
-  (
-    stmtTestGroup
+  ( stmtTestGroup
   )
 where
 

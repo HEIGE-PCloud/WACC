@@ -1,6 +1,5 @@
 module Test.Frontend.TypeChecker.ExprTest
-  (
-  exprTestGroup
+  ( exprTestGroup
   )
 where
 
