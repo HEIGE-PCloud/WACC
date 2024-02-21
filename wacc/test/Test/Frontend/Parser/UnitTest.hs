@@ -1,8 +1,5 @@
-{- AUTOCOLLECT.TEST -}
-
-module Test.Parser.UnitTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.Parser.UnitTest
+  (unitTestGroup
   )
 where
 
@@ -336,7 +333,7 @@ check parser str = case parse' (fully parser) str of
 check' :: T.Parsec a -> Gen String -> Property
 check' parser gen = withMaxSuccess 10000 $ forAll gen $ check parser
 
-test =
+unitTestGroup =
   testGroup
     "unitTest"
     [ testProperty "intLiter" $ check' intLiter genIntLiter

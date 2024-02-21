@@ -2,7 +2,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-orphans -fconstraint-solver-iterations=100 #-}
 
-module Test.TypeChecker.Arbitrary where
+module Test.Frontend.TypeChecker.Arbitrary where
 
 import Language.WACC.AST.WType (WType, WTypeF (..))
 import Language.WACC.TypeChecking.BType (BType)

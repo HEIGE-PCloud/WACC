@@ -2,7 +2,7 @@
 
 {- AUTOCOLLECT.TEST -}
 
-module Test.TypeChecker.StmtTest
+module Test.Frontend.TypeChecker.StmtTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )
@@ -15,7 +15,7 @@ import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
 import Language.WACC.TypeChecking.Stmt ()
 import Test
-import Test.TypeChecker.Arbitrary ()
+import Test.Frontend.TypeChecker.Arbitrary ()
 
 testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
 testTypingM action = case runTypingM action id fnMap of

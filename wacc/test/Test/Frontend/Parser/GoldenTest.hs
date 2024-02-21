@@ -1,7 +1,5 @@
-{- AUTOCOLLECT.TEST -}
-module Test.Parser.GoldenTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.Parser.GoldenTest
+  (goldenTestGroup
   )
 where
 
@@ -79,7 +77,7 @@ semanticCheck errs path ls = concat [printError path ls semanticError err | err 
 --     goldenPath = goldenBasePath ++ "/" ++ testname
 --     testAction = return (fromString (formatA p))
 
-test =
+goldenTestGroup =
   testGroup
     "goldenTests"
     ( [runSyntaxCheck (inputBasePath ++ test) | test <- syntaxErrTests]

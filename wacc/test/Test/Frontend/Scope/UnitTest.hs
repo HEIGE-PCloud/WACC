@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module Test.Scope.UnitTest
+module Test.Frontend.Scope.UnitTest
   (
   {- AUTOCOLLECT.TEST.export -}
   )

@@ -86,20 +86,22 @@ test-suite wacc-test
   main-is: Main.hs
   other-modules:
       Test
+      Test.Backend.Test
       Test.Common
       Test.Frontend.IntegrationTest
+      Test.Frontend.Parser.GoldenTest
+      Test.Frontend.Parser.Test
+      Test.Frontend.Parser.UnitTest
+      Test.Frontend.Scope.UnitTest
       Test.Frontend.Test
+      Test.Frontend.TypeChecker.Arbitrary
+      Test.Frontend.TypeChecker.BTypeTest
+      Test.Frontend.TypeChecker.ExprTest
+      Test.Frontend.TypeChecker.ProgTest
+      Test.Frontend.TypeChecker.StmtTest
       Test.Lib.AntXML
       Test.Lib.Ingredients
       Test.Lib.Program
-      Test.Parser.GoldenTest
-      Test.Parser.UnitTest
-      Test.Scope.UnitTest
-      Test.TypeChecker.Arbitrary
-      Test.TypeChecker.BTypeTest
-      Test.TypeChecker.ExprTest
-      Test.TypeChecker.ProgTest
-      Test.TypeChecker.StmtTest
       Paths_wacc
   hs-source-dirs:
       test
