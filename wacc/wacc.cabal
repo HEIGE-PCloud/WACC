@@ -87,6 +87,8 @@ test-suite wacc-test
   other-modules:
       Test
       Test.Backend.Test
+      Test.Backend.X86.GoldenTest
+      Test.Backend.X86.Test
       Test.Common
       Test.Frontend.IntegrationTest
       Test.Frontend.Parser.GoldenTest

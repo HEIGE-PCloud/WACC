@@ -27,6 +27,8 @@ golden-test:
 integration-test: compile
 	$(MAKE) test PATTERN="0 ~ /integrationTest/"
 
+# Frontend Tests
+
 frontend-test: compile
 	$(MAKE) test PATTERN="0 ~ /frontend/"
 
@@ -53,6 +55,18 @@ typechecker-unit-test:
 
 typechecker-test:
 	$(MAKE) test PATTERN="0 ~ /typechecker/"
+
+# Backend Tests
+
+backend-test: compile
+	$(MAKE) test PATTERN="0 ~ /backend/"
+
+x86-golden-test:
+	$(MAKE) test PATTERN="0 ~ /x86\.goldenTest/"
+
+x86-test:
+	$(MAKE) test PATTERN="0 ~ /x86/"
+
 
 ghci-test:
 	stack ghci --ghci-options -isrc --ghci-options -itest wacc:wacc-test

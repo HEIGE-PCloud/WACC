@@ -52,3 +52,16 @@ frontend-test:
       - rspec.xml
     reports:
       junit: rspec.xml
+
+backend-test:
+  tags:
+    - shell
+  script:
+    - make backend-test
+  stage: test
+  artifacts:
+    when: always
+    paths:
+      - rspec.xml
+    reports:
+      junit: rspec.xml
