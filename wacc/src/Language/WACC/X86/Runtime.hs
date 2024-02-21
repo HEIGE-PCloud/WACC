@@ -335,6 +335,37 @@ errOutOfMemory =
   , Call (S "exit@plt")
   ]
 
+{-
+.section .rodata
+# length of .L._errOverflow_str0
+	.int 52
+.L._errOverflow_str0:
+	.asciz "fatal error: integer overflow or underflow occurred\n"
+.text
+_errOverflow:
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	leaq .L._errOverflow_str0(%rip), %rdi
+	call _prints
+	movb $-1, %dil
+	call exit@plt
+-}
+errOverflow :: Prog
+errOverflow =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 52
+  , Lab (S ".L._errOverflow_str0")
+  , Dir $ DirAsciz "fatal error: integer overflow or underflow occurred\n"
+  , Dir DirText
+  , Lab (S "_errOverflow")
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Leaq (Mem (MRegL (S ".L._errOverflow_str0") Rip)) (Reg Rdi)
+  , Call (R PrintS)
+  , Movb (Imm (-1)) (Reg Dil)
+  , Call (S "exit@plt")
+  ]
+
 -- | Print a program, useful for debugging in GHCi
 printProg :: Prog -> IO ()
 printProg prog = putStrLn $ formatA prog
