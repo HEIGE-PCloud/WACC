@@ -1,9 +1,7 @@
 compile:
-	stack update
 	stack install --local-bin-path . wacc:exe:compile
 
 build-test:
-	stack update
 	stack build --test --no-run-tests
 
 test-all:
