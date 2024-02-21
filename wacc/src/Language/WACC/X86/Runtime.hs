@@ -304,6 +304,37 @@ malloc =
   , Ret
   ]
 
+{-
+.section .rodata
+# length of .L._errOutOfMemory_str0
+	.int 27
+.L._errOutOfMemory_str0:
+	.asciz "fatal error: out of memory\n"
+.text
+_errOutOfMemory:
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	leaq .L._errOutOfMemory_str0(%rip), %rdi
+	call _prints
+	movb $-1, %dil
+	call exit@plt
+-}
+errOutOfMemory :: Prog
+errOutOfMemory =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 27
+  , Lab (S ".L._errOutOfMemory_str0")
+  , Dir $ DirAsciz "fatal error: out of memory\n"
+  , Dir DirText
+  , Lab (S "_errOutOfMemory")
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Leaq (Mem (MRegL (S ".L._errOutOfMemory_str0") Rip)) (Reg Rdi)
+  , Call (R PrintS)
+  , Movb (Imm (-1)) (Reg Dil)
+  , Call (S "exit@plt")
+  ]
+
 -- | Print a program, useful for debugging in GHCi
 printProg :: Prog -> IO ()
 printProg prog = putStrLn $ formatA prog
