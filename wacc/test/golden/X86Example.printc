@@ -1,0 +1,19 @@
+.section
+.rodata
+.int 2
+.L._printc_str0:
+.asciz "%c"
+.text
+_printc:
+pushq %rbp
+movq %rsp, %rbp
+andq $-16, %rsp
+movb %dil, %sil
+leaq .L._printc_str0(%rip), %rdi
+movb $0, %al
+call printf@plt
+movq $0, %rdi
+call fflush@plt
+movq %rbp, %rsp
+popq %rbp
+ret

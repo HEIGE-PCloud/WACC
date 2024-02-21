@@ -1,0 +1,13 @@
+.section
+.rodata
+.int 52
+.L._errOverflow_str0:
+.asciz "fatal error: integer overflow or underflow occurred
+"
+.text
+_erroverflow:
+andq $-16, %rsp
+leaq .L._errOverflow_str0(%rip), %rdi
+call _prints
+movb $-1, %dil
+call exit@plt
