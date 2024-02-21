@@ -1,10 +1,7 @@
 {-# LANGUAGE OverloadedLists #-}
 
-{- AUTOCOLLECT.TEST -}
-
-module Language.WACC.TypeChecking.ProgTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.TypeChecker.ProgTest
+  ( progTestGroup
   )
 where
 
@@ -15,6 +12,7 @@ import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.Prog ()
 import Language.WACC.TypeChecking.State
 import Test
+import Test.Frontend.TypeChecker.Arbitrary ()
 
 mkParam :: WType -> (WType, BType)
 mkParam wt = (wt, fix wt)
@@ -45,10 +43,10 @@ func = Func WInt 0 [(WInt, BInt)] [Return intExpr undefined] undefined
 funcType :: FnType
 funcType = FnType [BInt] BInt
 
-test :: TestTree
-test =
+progTestGroup :: TestTree
+progTestGroup =
   testGroup
-    "unitTests"
+    "unitTest"
     [ testGroup
         "checkFunc"
         [ testProperty "records correct parameter and return types" $

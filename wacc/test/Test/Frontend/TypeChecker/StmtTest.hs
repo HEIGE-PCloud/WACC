@@ -1,10 +1,7 @@
 {-# LANGUAGE OverloadedLists #-}
 
-{- AUTOCOLLECT.TEST -}
-
-module Language.WACC.TypeChecking.StmtTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.TypeChecker.StmtTest
+  ( stmtTestGroup
   )
 where
 
@@ -15,6 +12,7 @@ import Language.WACC.TypeChecking.Class
 import Language.WACC.TypeChecking.State
 import Language.WACC.TypeChecking.Stmt ()
 import Test
+import Test.Frontend.TypeChecker.Arbitrary ()
 
 testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
 testTypingM action = case runTypingM action id fnMap of
@@ -53,10 +51,10 @@ bIntPair = BKnownPair BInt BInt
 wIntPair :: WType
 wIntPair = WKnownPair WInt WInt
 
-test :: TestTree
-test =
+stmtTestGroup :: TestTree
+stmtTestGroup =
   testGroup
-    "unitTests"
+    "unitTest"
     [ testGroup
         "checkStmt"
         [ testCase "ignores skip" $ checkStmt' (Skip undefined) @?= pure BAny

@@ -40,37 +40,11 @@ code_quality:
   variables:
     GIT_SUBMODULE_STRATEGY: none
 
-integration-test:
+test:
   tags:
     - shell
   script:
-    - make integration-test
-  stage: test
-  artifacts:
-    when: always
-    paths:
-      - rspec.xml
-    reports:
-      junit: rspec.xml
-
-unit-test:
-  tags:
-    - shell
-  script:
-    - make unit-test
-  stage: test
-  artifacts:
-    when: always
-    paths:
-      - rspec.xml
-    reports:
-      junit: rspec.xml
-
-golden-test:
-  tags:
-    - shell
-  script:
-    - make golden-test
+    - make test-all
   stage: test
   artifacts:
     when: always

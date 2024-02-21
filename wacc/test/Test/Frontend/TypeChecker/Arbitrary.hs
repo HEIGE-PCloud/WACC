@@ -2,11 +2,11 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-orphans -fconstraint-solver-iterations=100 #-}
 
-module Test.Arbitrary where
+module Test.Frontend.TypeChecker.Arbitrary where
 
 import Language.WACC.AST.WType (WType, WTypeF (..))
 import Language.WACC.TypeChecking.BType (BType)
-import Test.QuickCheck
+import Test.QuickCheck (Arbitrary (arbitrary), elements, oneof)
 import Test.QuickCheck.Arbitrary.Generic (GenericArbitrary (..))
 
 deriving via GenericArbitrary BType instance Arbitrary BType
