@@ -1,8 +1,5 @@
-{- AUTOCOLLECT.TEST -}
-
 module Test.Frontend.TypeChecker.BTypeTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+  ( bTypeTestGroup
   )
 where
 
@@ -14,7 +11,7 @@ unifyNoCast :: BType -> BType -> Maybe BType
 unifyNoCast (BArray _) BString = Nothing
 unifyNoCast bt1 bt2 = unify bt1 bt2
 
-test =
+bTypeTestGroup =
   testGroup
     "unitTest"
     [ testGroup

@@ -1,8 +1,6 @@
-{- AUTOCOLLECT.TEST -}
-
 module Test.Frontend.TypeChecker.ExprTest
   (
-  {- AUTOCOLLECT.TEST.export -}
+  exprTestGroup
   )
 where
 
@@ -139,8 +137,8 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
         bad1 = mkBad t1
         bad2 = mkBad t2
 
-test :: TestTree
-test =
+exprTestGroup :: TestTree
+exprTestGroup =
   testGroup
     "unitTest"
     [ testGroup

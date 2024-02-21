@@ -1,10 +1,8 @@
 {-# LANGUAGE OverloadedLists #-}
 
-{- AUTOCOLLECT.TEST -}
-
 module Test.Frontend.TypeChecker.ProgTest
   (
-  {- AUTOCOLLECT.TEST.export -}
+    progTestGroup
   )
 where
 
@@ -46,8 +44,8 @@ func = Func WInt 0 [(WInt, BInt)] [Return intExpr undefined] undefined
 funcType :: FnType
 funcType = FnType [BInt] BInt
 
-test :: TestTree
-test =
+progTestGroup:: TestTree
+progTestGroup=
   testGroup
     "unitTest"
     [ testGroup

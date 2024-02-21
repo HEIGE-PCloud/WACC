@@ -92,6 +92,7 @@ test-suite wacc-test
       Test.Frontend.Parser.GoldenTest
       Test.Frontend.Parser.Test
       Test.Frontend.Parser.UnitTest
+      Test.Frontend.Scope.Test
       Test.Frontend.Scope.UnitTest
       Test.Frontend.Test
       Test.Frontend.TypeChecker.Arbitrary
@@ -99,6 +100,7 @@ test-suite wacc-test
       Test.Frontend.TypeChecker.ExprTest
       Test.Frontend.TypeChecker.ProgTest
       Test.Frontend.TypeChecker.StmtTest
+      Test.Frontend.TypeChecker.Test
       Test.Lib.AntXML
       Test.Lib.Ingredients
       Test.Lib.Program

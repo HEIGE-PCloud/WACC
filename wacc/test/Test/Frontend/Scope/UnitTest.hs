@@ -1,12 +1,10 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE TypeApplications #-}
 {-# HLINT ignore "Use camelCase" #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Test.Frontend.Scope.UnitTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+  ( unitTestGroup
   )
 where
 
@@ -18,7 +16,8 @@ import Test.Tasty
 import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
 
-test =
+unitTestGroup :: TestTree
+unitTestGroup =
   testGroup "unitTest" [testGroup "scope" [naming_fail_tests]]
 
 hasErrored :: String -> Bool

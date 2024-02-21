@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedLists #-}
 
-{- AUTOCOLLECT.TEST -}
 
 module Test.Frontend.TypeChecker.StmtTest
   (
-  {- AUTOCOLLECT.TEST.export -}
+    stmtTestGroup
   )
 where
 
@@ -54,8 +53,8 @@ bIntPair = BKnownPair BInt BInt
 wIntPair :: WType
 wIntPair = WKnownPair WInt WInt
 
-test :: TestTree
-test =
+stmtTestGroup :: TestTree
+stmtTestGroup =
   testGroup
     "unitTest"
     [ testGroup
