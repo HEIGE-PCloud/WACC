@@ -45,6 +45,7 @@ library
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
       Language.WACC.X86.Runtime
+      Language.WACC.X86.Translate
       Language.WACC.X86.X86
   other-modules:
       Paths_wacc
