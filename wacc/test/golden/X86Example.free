@@ -1,8 +1,8 @@
 _free:
 pushq %rbp
-movq %rsp %rbp
-andq $-16 %rsp
+movq %rsp, %rbp
+andq $-16, %rsp
 call free@plt
-movq %rbp %rsp
+movq %rbp, %rsp
 popq %rbp
 ret
