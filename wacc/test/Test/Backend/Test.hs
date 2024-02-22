@@ -6,6 +6,7 @@ module Test.Backend.Test
 where
 
 import Test (testGroup)
+import Test.Backend.IntegrationTest (integrationTestGroup)
 import Test.Backend.X86.Test (x86TestGroup)
 
-test = testGroup "backend" [x86TestGroup]
+test = testGroup "backend" [x86TestGroup, integrationTestGroup]

@@ -1,3 +1,5 @@
+export PATH := $(PWD):$(PATH)
+
 compile:
 	stack install --local-bin-path . wacc:exe:compile
 
@@ -7,8 +9,6 @@ build-test:
 test: 
 	stack test \
 		--test-arguments --hide-successes \
-		--test-arguments --catch-stderr \
-		--test-arguments --catch-stdout \
 		--test-arguments --timeout=1m \
 		--test-arguments --xml=../rspec.xml \
 		--test-arguments --quickcheck-max-size=10 \
@@ -61,6 +61,9 @@ typechecker-test:
 backend-test: compile
 	$(MAKE) test PATTERN="0 ~ /backend/"
 
+backend-integration-test: compile
+	$(MAKE) test PATTERN="0 ~ /backend\.integrationTest/"
+
 x86-golden-test:
 	$(MAKE) test PATTERN="0 ~ /x86\.goldenTest/"
 
@@ -73,5 +76,9 @@ ghci-test:
 
 clean:
 	$(RM) compile
+	$(RM) *.s
+	$(RM) test
+	$(RM) rspec.xml
+	$(RM) a.out
 
-.PHONY: clean compile
+.PHONY: clean compile test

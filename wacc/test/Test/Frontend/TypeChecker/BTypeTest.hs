@@ -11,6 +11,7 @@ unifyNoCast :: BType -> BType -> Maybe BType
 unifyNoCast (BArray _) BString = Nothing
 unifyNoCast bt1 bt2 = unify bt1 bt2
 
+bTypeTestGroup :: TestTree
 bTypeTestGroup =
   testGroup
     "unitTest"

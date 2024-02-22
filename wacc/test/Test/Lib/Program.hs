@@ -58,25 +58,19 @@ Program's output and error streams are ignored.
 -}
 module Test.Lib.Program
   ( testProgram
-  , CatchStderr (..)
-  , CatchStdout (..)
+  , ignoreOutput
+  , TestProgram (..)
+  , runTestProgram
   )
 where
 
 import Control.DeepSeq (deepseq)
-import Data.Proxy (Proxy (..))
+import Data.Foldable (for_)
 import Data.Typeable (Typeable)
 import System.Directory (findExecutable)
 import System.Exit (ExitCode (..))
-import System.IO (hGetContents)
+import System.IO (hGetContents, hPutStr)
 import System.Process (runInteractiveProcess, waitForProcess)
-import Test.Tasty.Options
-  ( IsOption (..)
-  , OptionDescription (..)
-  , flagCLParser
-  , lookupOption
-  , safeRead
-  )
 import Test.Tasty.Providers
   ( IsTest (..)
   , Result
@@ -87,8 +81,21 @@ import Test.Tasty.Providers
   , testPassed
   )
 
-data TestProgram = TestProgram String [String] (Maybe FilePath) ExitCode
+data TestProgram
+  = TestProgram
+      String
+      [String]
+      (Maybe FilePath)
+      (Maybe String)
+      ExitCode
+      CheckOutput
+      CheckOutput
   deriving (Typeable)
+
+type CheckOutput = String -> (Bool, String)
+
+ignoreOutput :: String -> (Bool, String)
+ignoreOutput _ = (True, "")
 
 {- | Create test that runs a program with given options. Test succeeds
 if program terminates successfully.
@@ -102,54 +109,41 @@ testProgram
   -- ^ Program options
   -> Maybe FilePath
   -- ^ Optional working directory
+  -> Maybe String
+  -- ^ Input
   -> ExitCode
   -- ^ Expected exit code
+  -> CheckOutput
+  -- ^ A function to check whether the stderr is correct
+  -> CheckOutput
+  -- ^ A function to check whether the stdout is correct
   -> TestTree
-testProgram testName program opts workingDir exitCode =
-  singleTest testName (TestProgram program opts workingDir exitCode)
+testProgram testName program opts workingDir input exitCode checkStderr checkStdout =
+  singleTest
+    testName
+    (TestProgram program opts workingDir input exitCode checkStderr checkStdout)
+
+runTestProgram :: TestProgram -> IO Result
+runTestProgram (TestProgram program args workingDir input exitCode checkStderr checkStdout) = do
+  execFound <- findExecutable program
+
+  case execFound of
+    Nothing -> return $ execNotFoundFailure program
+    Just progPath ->
+      runProgram
+        progPath
+        args
+        workingDir
+        input
+        exitCode
+        checkStderr
+        checkStdout
 
 instance IsTest TestProgram where
-  run opts (TestProgram program args workingDir exitCode) _ = do
-    execFound <- findExecutable program
+  run _ p _ = runTestProgram p
 
-    let
-      CatchStderr catchStderr = lookupOption opts
-    let
-      CatchStdout catchStdout = lookupOption opts
+  testOptions = return []
 
-    case execFound of
-      Nothing -> return $ execNotFoundFailure program
-      Just progPath -> runProgram progPath args workingDir catchStderr catchStdout exitCode
-
-  testOptions =
-    return
-      [Option (Proxy :: Proxy CatchStderr), Option (Proxy :: Proxy CatchStdout)]
-
-newtype CatchStderr = CatchStderr Bool deriving (Show, Typeable)
-
-instance IsOption CatchStderr where
-  defaultValue = CatchStderr False
-  parseValue = fmap CatchStderr . safeRead
-  optionName = return "catch-stderr"
-  optionHelp = return "Catch standart error of programs"
-  optionCLParser = flagCLParser (Just 'e') (CatchStderr True)
-
-newtype CatchStdout = CatchStdout Bool deriving (Show, Typeable)
-
-instance IsOption CatchStdout where
-  defaultValue = CatchStdout False
-  parseValue = fmap CatchStdout . safeRead
-  optionName = return "catch-stdout"
-  optionHelp = return "Catch standart outor of programs"
-  optionCLParser = flagCLParser (Just 'o') (CatchStdout True)
-
-rawExitCode :: ExitCode -> Int
-rawExitCode ExitSuccess = 0
-rawExitCode (ExitFailure code) = code
-
-{- | Run a program with given options and optional working directory.
-Return success if program exits with success code.
--}
 runProgram
   :: String
   -- ^ Program name
@@ -157,25 +151,37 @@ runProgram
   -- ^ Program options
   -> Maybe FilePath
   -- ^ Optional working directory
-  -> Bool
-  -- ^ Whether to print stderr on error
-  -> Bool
-  -- ^ Whether to print stdout on error
+  -> Maybe String
+  -- ^ Input
   -> ExitCode
   -- ^ Expected exit code
+  -> CheckOutput
+  -- ^ A function to check whether the stderr is correct
+  -> CheckOutput
+  -- ^ A function to check whether the stdout is correct
   -> IO Result
-runProgram program args workingDir catchStderr catchStdout exitCode = do
-  (_, stdoutH, stderrH, pid) <-
+runProgram program args workingDir input exitCode checkStderr checkStdout = do
+  (stdinH, stdoutH, stderrH, pid) <-
     runInteractiveProcess program args workingDir Nothing
-
-  stderr <-
-    if catchStderr then fmap Just (hGetContents stderrH) else return Nothing
-  stdout <-
-    if catchStdout then fmap Just (hGetContents stdoutH) else return Nothing
-  ecode <- stderr `deepseq` waitForProcess pid
-  if ecode == exitCode
-    then return success
-    else return $ exitFailure program args (rawExitCode ecode) stderr stdout
+  for_ ((++ "\n") <$> input) (hPutStr stdinH)
+  stderr <- hGetContents stderrH
+  stdout <- hGetContents stdoutH
+  ecode <- stderr `deepseq` stdout `deepseq` waitForProcess pid
+  let
+    exitFailure' = exitFailure program args ecode stderr stdout
+  let
+    (stderrCorrect, stderrReason) = checkStderr stderr
+  let
+    (stdoutCorrect, stdoutReason) = checkStdout stdout
+  let
+    res
+      | ecode /= exitCode =
+          exitFailure'
+            ("unexpected exit code " ++ show ecode ++ " expected " ++ show exitCode)
+      | not stderrCorrect = exitFailure' ("stderr is incorrect\n" ++ stderrReason)
+      | not stdoutCorrect = exitFailure' ("stdout is incorrect\n" ++ stdoutReason)
+      | otherwise = success
+  return res
 
 -- | Indicates successful test
 success :: Result
@@ -188,16 +194,16 @@ execNotFoundFailure file =
 
 -- | Indicates that program failed with an error code
 exitFailure
-  :: String -> [String] -> Int -> Maybe String -> Maybe String -> Result
-exitFailure file args code stderr stdout =
+  :: String -> [String] -> ExitCode -> String -> String -> String -> Result
+exitFailure file args code stderr stdout reason =
   testFailed $
-    "Program "
+    "program "
       ++ unwords (file : args)
       ++ " failed with code "
       ++ show code
-      ++ case stderr of
-        Nothing -> ""
-        Just s -> "\n Stderr was: \n" ++ s
-      ++ case stdout of
-        Nothing -> ""
-        Just s -> "\n Stdout was: \n" ++ s
+      ++ "\nstderr was:\n"
+      ++ stderr
+      ++ "\nstdout was:\n"
+      ++ stdout
+      ++ "\nreason:\n"
+      ++ reason
