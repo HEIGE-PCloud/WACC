@@ -5,7 +5,7 @@ where
 
 import Data.List (isPrefixOf)
 import System.Exit
-import Test.Common (allTests, takeBaseName)
+import Test.Common (allTests, takeTestName)
 import Test.Lib.Program
 import Test.Tasty
 
@@ -38,7 +38,7 @@ mkIntegrationTest rawPath =
       | isSemanticError = SemanticError
       | isSyntaxError = SyntaxError
       | otherwise = error $ "Unknown test kind for " ++ rawPath
-    name = takeBaseName rawPath
+    name = takeTestName rawPath
 
 expectedExitCode :: IntegrationTestKind -> ExitCode
 expectedExitCode Valid = ExitSuccess
@@ -52,6 +52,7 @@ mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKin
     "./compile"
     [path, "--parseOnly"]
     (Just "..")
+    Nothing
     (expectedExitCode kind)
     ignoreOutput
     ignoreOutput

@@ -65,11 +65,11 @@ module Test.Lib.Program
 where
 
 import Control.DeepSeq (deepseq)
+import Data.Foldable (for_)
 import Data.Typeable (Typeable)
-import Debug.Trace (trace)
 import System.Directory (findExecutable)
 import System.Exit (ExitCode (..))
-import System.IO (hGetContents)
+import System.IO (hGetContents, hPutStr)
 import System.Process (runInteractiveProcess, waitForProcess)
 import Test.Tasty.Providers
   ( IsTest (..)
@@ -80,13 +80,13 @@ import Test.Tasty.Providers
   , testFailed
   , testPassed
   )
-import Test.Tasty.Runners (resultSuccessful)
 
 data TestProgram
   = TestProgram
       String
       [String]
       (Maybe FilePath)
+      (Maybe String)
       ExitCode
       CheckOutput
       CheckOutput
@@ -109,6 +109,8 @@ testProgram
   -- ^ Program options
   -> Maybe FilePath
   -- ^ Optional working directory
+  -> Maybe String
+  -- ^ Input
   -> ExitCode
   -- ^ Expected exit code
   -> CheckOutput
@@ -116,13 +118,13 @@ testProgram
   -> CheckOutput
   -- ^ A function to check whether the stdout is correct
   -> TestTree
-testProgram testName program opts workingDir exitCode checkStderr checkStdout =
+testProgram testName program opts workingDir input exitCode checkStderr checkStdout =
   singleTest
     testName
-    (TestProgram program opts workingDir exitCode checkStderr checkStdout)
+    (TestProgram program opts workingDir input exitCode checkStderr checkStdout)
 
 runTestProgram :: TestProgram -> IO Result
-runTestProgram (TestProgram program args workingDir exitCode checkStderr checkStdout) = do
+runTestProgram (TestProgram program args workingDir input exitCode checkStderr checkStdout) = do
   execFound <- findExecutable program
 
   case execFound of
@@ -132,6 +134,7 @@ runTestProgram (TestProgram program args workingDir exitCode checkStderr checkSt
         progPath
         args
         workingDir
+        input
         exitCode
         checkStderr
         checkStdout
@@ -148,6 +151,8 @@ runProgram
   -- ^ Program options
   -> Maybe FilePath
   -- ^ Optional working directory
+  -> Maybe String
+  -- ^ Input
   -> ExitCode
   -- ^ Expected exit code
   -> CheckOutput
@@ -155,9 +160,10 @@ runProgram
   -> CheckOutput
   -- ^ A function to check whether the stdout is correct
   -> IO Result
-runProgram program args workingDir exitCode checkStderr checkStdout = do
-  (_, stdoutH, stderrH, pid) <-
+runProgram program args workingDir input exitCode checkStderr checkStdout = do
+  (stdinH, stdoutH, stderrH, pid) <-
     runInteractiveProcess program args workingDir Nothing
+  for_ ((++ "\n") <$> input) (hPutStr stdinH)
   stderr <- hGetContents stderrH
   stdout <- hGetContents stdoutH
   ecode <- stderr `deepseq` stdout `deepseq` waitForProcess pid
@@ -171,9 +177,9 @@ runProgram program args workingDir exitCode checkStderr checkStdout = do
     res
       | ecode /= exitCode =
           exitFailure'
-            ("Unexpected exit code " ++ show ecode ++ " expected " ++ show exitCode)
-      | not stderrCorrect = exitFailure' ("Stderr is incorrect " ++ stderrReason)
-      | not stdoutCorrect = exitFailure' ("Stdout is incorrect " ++ stdoutReason)
+            ("unexpected exit code " ++ show ecode ++ " expected " ++ show exitCode)
+      | not stderrCorrect = exitFailure' ("stderr is incorrect\n" ++ stderrReason)
+      | not stdoutCorrect = exitFailure' ("stdout is incorrect\n" ++ stdoutReason)
       | otherwise = success
   return res
 
@@ -191,13 +197,13 @@ exitFailure
   :: String -> [String] -> ExitCode -> String -> String -> String -> Result
 exitFailure file args code stderr stdout reason =
   testFailed $
-    "Program "
+    "program "
       ++ unwords (file : args)
       ++ " failed with code "
       ++ show code
-      ++ "\n Stderr was: \n"
+      ++ "\nstderr was:\n"
       ++ stderr
-      ++ "\n Stdout was: \n"
+      ++ "\nstdout was:\n"
       ++ stdout
-      ++ "\n Reason: \n"
+      ++ "\nreason:\n"
       ++ reason

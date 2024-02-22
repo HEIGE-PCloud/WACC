@@ -60,6 +60,7 @@ library
     , filepath
     , gigaparsec
     , mtl
+    , raw-strings-qq
     , recursion-schemes
     , transformers
   default-language: Haskell2010
@@ -80,6 +81,7 @@ executable compile
     , filepath
     , gigaparsec
     , mtl
+    , raw-strings-qq
     , recursion-schemes
     , transformers
     , wacc
@@ -133,6 +135,7 @@ test-suite wacc-test
     , gigaparsec
     , mtl
     , process
+    , raw-strings-qq
     , recursion-schemes
     , stm
     , tagged

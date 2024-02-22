@@ -17,6 +17,7 @@ dependencies:
   - extra
   - filepath
   - cmdargs
+  - raw-strings-qq
 
 ghc-options:
   - -Wall

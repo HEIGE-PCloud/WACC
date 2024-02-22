@@ -1,11 +1,11 @@
 module Test.Backend.IntegrationTest (integrationTestGroup) where
 
-import Data.List (isInfixOf, (\\))
+import Data.List (intercalate, isInfixOf, (\\))
 import Data.Maybe (fromMaybe)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.FilePath (takeBaseName)
 import Test (TestName, TestTree, testGroup)
-import Test.Common (validTests)
+import Test.Common (takeTestName, validTests)
 import Test.Lib.Program (TestProgram (..), ignoreOutput, runTestProgram)
 import Test.Tasty.ExpectedFailure (ignoreTest)
 import Test.Tasty.Providers (IsTest (run, testOptions), singleTest)
@@ -15,7 +15,6 @@ import Text.Gigaparsec
   , Result (Failure, Success)
   , atomic
   , many
-  , parse
   , parseFromFile
   , some
   , ($>)
@@ -28,7 +27,7 @@ import Text.Gigaparsec.Token.Descriptions (plain)
 import Text.Gigaparsec.Token.Lexer
   ( IntegerParsers (decimal)
   , Lexeme (integer)
-  , Lexer (fully, nonlexeme)
+  , Lexer (nonlexeme)
   , mkLexer
   , sym
   )
@@ -64,7 +63,7 @@ parseOutput :: Parsec [Char]
 parseOutput =
   atomic (hash *> s "Output:")
     *> newline
-    *> (unlines <$> many parseLine)
+    *> (intercalate "\n" <$> many parseLine)
     <* newline
 
 parseExit :: Parsec Integer
@@ -124,6 +123,7 @@ compile (TestProgramMetadata path _ _ _ _ _ _) =
     "./compile"
     [path]
     (Just "..")
+    Nothing
     ExitSuccess
     ignoreOutput
     ignoreOutput
@@ -135,19 +135,25 @@ assemble (TestProgramMetadata _ path exe _ _ _ _) =
     "gcc"
     ["-o", exe, "-z", "noexecstack", path]
     (Just "..")
+    Nothing
     ExitSuccess
     ignoreOutput
     ignoreOutput
 
 executable :: TestProgramMetadata -> TestProgram
-executable (TestProgramMetadata _ _ exe _ _ _ ecode) =
+executable (TestProgramMetadata _ _ exe _ i o ecode) =
   TestProgram
     exe
     []
     (Just "..")
+    (Just i)
     ecode
     ignoreOutput
-    ignoreOutput
+    ( \o' ->
+        ( o == o'
+        , "unexpected stdout:\n\"" ++ o' ++ "\"\nexpected stdout:\n\"" ++ o ++ "\""
+        )
+    )
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
@@ -156,7 +162,7 @@ ignoredTests :: [FilePath]
 ignoredTests = allTests \\ enabledTests
 
 enabledTests :: [FilePath]
-enabledTests = ["valid/basic/exit/exit-1.wacc"]
+enabledTests = ["valid/IO/read/echoInt.wacc"]
 
 mkIntegrationTestCase :: FilePath -> TestTree
 mkIntegrationTestCase rawPath =
@@ -171,7 +177,7 @@ mkIntegrationTestCase rawPath =
   where
     basePath = "wacc/test/wacc_examples"
     path = basePath ++ "/" ++ rawPath
-    name = takeBaseName rawPath
+    name = takeTestName rawPath
     iometa = do
       res <- parseFromFile (parseTestProgramMetadata path) ("../" ++ path)
       return $ case res of
