@@ -67,6 +67,7 @@ tests:
       - tasty-quickcheck
       - tasty-hunit
       - tasty-golden
+      - tasty-expected-failure
       - wacc
       - deepseq
       - directory

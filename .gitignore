@@ -5,3 +5,4 @@ test.wacc
 rspec.xml
 *.s
 test
+a.out

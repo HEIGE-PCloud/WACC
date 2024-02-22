@@ -1,17 +1,22 @@
-module Test.Backend.IntegrationTest where
+module Test.Backend.IntegrationTest (integrationTestGroup) where
 
-import Data.List (isInfixOf)
+import Data.List (isInfixOf, (\\))
 import Data.Maybe (fromMaybe)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
-import Test (testGroup)
+import System.FilePath (takeBaseName)
+import Test (TestName, TestTree, testGroup)
 import Test.Common (validTests)
-import Test.Lib.Program (TestProgram (..), ignoreOutput, testCompiler)
+import Test.Lib.Program (TestProgram (..), ignoreOutput, runTestProgram)
+import Test.Tasty.ExpectedFailure (ignoreTest)
+import Test.Tasty.Providers (IsTest (run, testOptions), singleTest)
+import Test.Tasty.Runners (resultSuccessful)
 import Text.Gigaparsec
   ( Parsec
   , Result (Failure, Success)
   , atomic
   , many
   , parse
+  , parseFromFile
   , some
   , ($>)
   , (<|>)
@@ -23,7 +28,7 @@ import Text.Gigaparsec.Token.Descriptions (plain)
 import Text.Gigaparsec.Token.Lexer
   ( IntegerParsers (decimal)
   , Lexeme (integer)
-  , Lexer (nonlexeme)
+  , Lexer (fully, nonlexeme)
   , mkLexer
   , sym
   )
@@ -68,9 +73,9 @@ parseExit = atomic (hash *> s "Exit:") *> newline *> hash *> decimal' <* many ne
 parseProgram :: Parsec ()
 parseProgram = atomic (option (hash *> string "Program:") $> ()) *> many item $> ()
 
-parseTestProgramMeta :: FilePath -> Parsec TestProgramMeta
-parseTestProgramMeta path =
-  mkTestProgramMeta path
+parseTestProgramMetadata :: FilePath -> Parsec TestProgramMetadata
+parseTestProgramMetadata path =
+  mkTestProgramMetadata path
     <$> ( parseDescription
             <~> option parseInput
             <~> option parseOutput
@@ -78,40 +83,33 @@ parseTestProgramMeta path =
             <* parseProgram
         )
 
-mkTestProgramMeta
+fromInt :: Integer -> ExitCode
+fromInt 0 = ExitSuccess
+fromInt n = ExitFailure (fromIntegral n)
+
+mkTestProgramMetadata
   :: FilePath
   -> ((([Char], Maybe String), Maybe [Char]), Maybe Integer)
-  -> TestProgramMeta
-mkTestProgramMeta path (((d, i), o), e) =
-  TestProgramMeta
-    { filePath = path
+  -> TestProgramMetadata
+mkTestProgramMetadata path (((d, i), o), e) =
+  TestProgramMetadata
+    { sourceCodeFilePath = path
+    , assemblyFilePath = takeBaseName path ++ ".s"
+    , executableFilePath = "a.out"
     , description = d
     , input = fromMaybe "" i
     , output = fromMaybe "" o
-    , exit = fromMaybe 0 e
+    , exit = maybe ExitSuccess fromInt e
     }
 
--- test :: IO ()
--- test = go [t | t <- validTests, not $ "advanced" `isInfixOf` t]
-
-go :: [FilePath] -> IO ()
-go [] = return ()
-go (p : ps) = do
-  let
-    path = "/Users/pcloud/Code/WACC_19/wacc/test/wacc_examples/" ++ p
-  code <- readFile path
-  let
-    res = parse (parseTestProgramMeta path) code
-  case res of
-    Failure e -> putStrLn p >> putStrLn e
-    Success s' -> putStrLn p >> print s' >> putStrLn "" >> go ps
-
-data TestProgramMeta = TestProgramMeta
-  { filePath :: FilePath
+data TestProgramMetadata = TestProgramMetadata
+  { sourceCodeFilePath :: FilePath
+  , assemblyFilePath :: FilePath
+  , executableFilePath :: FilePath
   , description :: String
   , input :: String
   , output :: String
-  , exit :: Integer
+  , exit :: ExitCode
   }
   deriving (Show)
 
@@ -120,8 +118,8 @@ data TestProgramMeta = TestProgramMeta
 -- 3. Run GCC on the generated assembly and check its exit code is zero
 -- 4. Run the generate executable and check its exit code and output
 
-compile :: FilePath -> TestProgram
-compile path =
+compile :: TestProgramMetadata -> TestProgram
+compile (TestProgramMetadata path _ _ _ _ _ _) =
   TestProgram
     "./compile"
     [path]
@@ -131,33 +129,87 @@ compile path =
     ignoreOutput
 
 -- gcc -o test -z noexecstack out.s
-assemble :: FilePath -> TestProgram
-assemble filename =
+assemble :: TestProgramMetadata -> TestProgram
+assemble (TestProgramMetadata _ path exe _ _ _ _) =
   TestProgram
     "gcc"
-    ["-o", "test", "-z", "noexecstack", filename]
+    ["-o", exe, "-z", "noexecstack", path]
     (Just "..")
     ExitSuccess
     ignoreOutput
     ignoreOutput
 
-executable :: FilePath -> TestProgram
-executable path =
+executable :: TestProgramMetadata -> TestProgram
+executable (TestProgramMetadata _ _ exe _ _ _ ecode) =
   TestProgram
-    path
+    exe
     []
     (Just "..")
-    (ExitFailure 1)
+    ecode
     ignoreOutput
     ignoreOutput
 
-test1 =
+allTests :: [FilePath]
+allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
+
+ignoredTests :: [FilePath]
+ignoredTests = allTests \\ enabledTests
+
+enabledTests :: [FilePath]
+enabledTests = ["valid/basic/exit/exit-1.wacc"]
+
+mkIntegrationTestCase :: FilePath -> TestTree
+mkIntegrationTestCase rawPath =
   testCompiler
-    "test name"
-    ( compile
-        "/Users/pcloud/Code/WACC_19/wacc/test/wacc_examples/valid/basic/exit/exit-1.wacc"
-    )
-    (assemble "exit-1.s")
-    (executable "./test")
+    name
+    TestCompiler
+      { metadata = iometa
+      , testCompile = compile
+      , testAssemble = assemble
+      , testExecutable = executable
+      }
+  where
+    basePath = "wacc/test/wacc_examples"
+    path = basePath ++ "/" ++ rawPath
+    name = takeBaseName rawPath
+    iometa = do
+      res <- parseFromFile (parseTestProgramMetadata path) ("../" ++ path)
+      return $ case res of
+        Success meta -> meta
+        Failure err -> error ("Failed to parse test program metadata\n" ++ err)
 
-integrationTestGroup = testGroup "integrationTest" [test1]
+integrationTestGroup :: TestTree
+integrationTestGroup =
+  testGroup
+    "integrationTest"
+    ( (mkIntegrationTestCase <$> enabledTests)
+        ++ (ignoreTest . mkIntegrationTestCase <$> ignoredTests)
+    )
+
+data TestCompiler = TestCompiler
+  { metadata :: IO TestProgramMetadata
+  , testCompile :: TestProgramMetadata -> TestProgram
+  , testAssemble :: TestProgramMetadata -> TestProgram
+  , testExecutable :: TestProgramMetadata -> TestProgram
+  }
+
+testCompiler
+  :: TestName -> TestCompiler -> TestTree
+testCompiler = singleTest
+
+instance IsTest TestCompiler where
+  run _ (TestCompiler iometa compiler assembler exe) _ = do
+    meta <- iometa
+    resCompile <- runTestProgram (compiler meta)
+    ( if resultSuccessful resCompile
+        then
+          ( do
+              resAssemble <- runTestProgram (assembler meta)
+              if resultSuccessful resAssemble
+                then runTestProgram (exe meta)
+                else return resAssemble
+          )
+        else return resCompile
+      )
+
+  testOptions = return []

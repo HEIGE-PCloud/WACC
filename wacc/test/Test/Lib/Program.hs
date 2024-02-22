@@ -58,15 +58,15 @@ Program's output and error streams are ignored.
 -}
 module Test.Lib.Program
   ( testProgram
-  , testCompiler
   , ignoreOutput
   , TestProgram (..)
-  , TestCompiler (..)
+  , runTestProgram
   )
 where
 
 import Control.DeepSeq (deepseq)
 import Data.Typeable (Typeable)
+import Debug.Trace (trace)
 import System.Directory (findExecutable)
 import System.Exit (ExitCode (..))
 import System.IO (hGetContents)
@@ -141,32 +141,6 @@ instance IsTest TestProgram where
 
   testOptions = return []
 
-data TestCompiler = TestCompiler
-  { testCompile :: TestProgram
-  , testAssemble :: TestProgram
-  , testExecutable :: TestProgram
-  }
-
-testCompiler
-  :: TestName -> TestProgram -> TestProgram -> TestProgram -> TestTree
-testCompiler testName compiler assembler executable = singleTest testName (TestCompiler compiler assembler executable)
-
-instance IsTest TestCompiler where
-  run _ (TestCompiler compiler assembler executable) _ = do
-    resCompile <- runTestProgram compiler
-    ( if resultSuccessful resCompile
-        then
-          ( do
-              resAssemble <- runTestProgram assembler
-              if resultSuccessful resAssemble
-                then runTestProgram executable
-                else return resAssemble
-          )
-        else return resCompile
-      )
-
-  testOptions = return []
-
 runProgram
   :: String
   -- ^ Program name
@@ -186,7 +160,7 @@ runProgram program args workingDir exitCode checkStderr checkStdout = do
     runInteractiveProcess program args workingDir Nothing
   stderr <- hGetContents stderrH
   stdout <- hGetContents stdoutH
-  ecode <- stderr `deepseq` waitForProcess pid
+  ecode <- stderr `deepseq` stdout `deepseq` waitForProcess pid
   let
     exitFailure' = exitFailure program args ecode stderr stdout
   let

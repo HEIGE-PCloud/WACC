@@ -138,6 +138,7 @@ test-suite wacc-test
     , tagged
     , tasty
     , tasty-autocollect
+    , tasty-expected-failure
     , tasty-golden
     , tasty-hspec
     , tasty-hunit

@@ -1,3 +1,5 @@
+export PATH := $(PWD):$(PATH)
+
 compile:
 	stack install --local-bin-path . wacc:exe:compile
 
@@ -77,5 +79,6 @@ clean:
 	$(RM) *.s
 	$(RM) test
 	$(RM) rspec.xml
+	$(RM) a.out
 
-.PHONY: clean compile
+.PHONY: clean compile test
