@@ -131,145 +131,133 @@ runCodeGen path _ = writeFile filename testCode >>= const exitSuccess
 testCode :: String
 testCode =
   [r|
-.globl main
-.section .rodata
-# length of .L.str0
-    .int 24
-.L.str0:
-    .asciz "enter an integer to echo"
-.text
-main:
-    pushq %rbp
-    # pushq {%rbx, %r12}
-    subq $16, %rsp
-    movq %rbx, (%rsp)
-    movq %r12, 8(%rsp)
-    movq %rsp, %rbp
-    # Stack pointer unchanged, no stack allocated variables
-    movq $1, %rax
-    movq %rax, %r12
-    # Stack pointer unchanged, no stack allocated arguments
-    leaq .L.str0(%rip), %rax
-    pushq %rax
-    popq %rax
-    movq %rax, %rax
-    movq %rax, %rdi
-    # statement primitives do not return results (but will clobber r0/rax)
-    call _prints
-    call _println
-    # Stack pointer unchanged, no stack allocated arguments
-    # load the current value in the destination of the read so it supports defaults
-    movq %r12, %rax
-    movq %rax, %rdi
-    call _readi
-    movq %rax, %r11
-    movq %r11, %rax
-    movq %rax, %r12
-    # Stack pointer unchanged, no stack allocated arguments
-    movq %r12, %rax
-    movq %rax, %rdi
-    # statement primitives do not return results (but will clobber r0/rax)
-    call _printi
-    call _println
-    # Stack pointer unchanged, no stack allocated variables
-    movq $0, %rax
-    # popq {%rbx, %r12}
-    movq (%rsp), %rbx
-    movq 8(%rsp), %r12
-    addq $16, %rsp
-    popq %rbp
-    ret
-
-.section .rodata
-# length of .L._prints_str0
-    .int 4
-.L._prints_str0:
-    .asciz "%.*s"
-.text
-_prints:
-    pushq %rbp
-    movq %rsp, %rbp
-    # external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
-    andq $-16, %rsp
-    movq %rdi, %rdx
-    movl -4(%rdi), %esi
-    leaq .L._prints_str0(%rip), %rdi
-    # on x86, al represents the number of SIMD registers used as variadic arguments
-    movb $0, %al
-    call printf@plt
-    movq $0, %rdi
-    call fflush@plt
-    movq %rbp, %rsp
-    popq %rbp
-    ret
-
-.section .rodata
-# length of .L._readi_str0
-    .int 2
-.L._readi_str0:
-    .asciz "%d"
-.text
-_readi:
-    pushq %rbp
-    movq %rsp, %rbp
-    # external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
-    andq $-16, %rsp
-    # RDI contains the "original" value of the destination of the read
-    # allocate space on the stack to store the read: preserve alignment!
-    # the passed default argument should be stored in case of EOF
-    subq $16, %rsp
-    movl %edi, (%rsp)
-    leaq (%rsp), %rsi
-    leaq .L._readi_str0(%rip), %rdi
-    # on x86, al represents the number of SIMD registers used as variadic arguments
-    movb $0, %al
-    call scanf@plt
-    movslq (%rsp), %rax
-    addq $16, %rsp
-    movq %rbp, %rsp
-    popq %rbp
-    ret
-
-.section .rodata
-# length of .L._printi_str0
-    .int 2
-.L._printi_str0:
-    .asciz "%d"
-.text
-_printi:
-    pushq %rbp
-    movq %rsp, %rbp
-    # external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
-    andq $-16, %rsp
-    movl %edi, %esi
-    leaq .L._printi_str0(%rip), %rdi
-    # on x86, al represents the number of SIMD registers used as variadic arguments
-    movb $0, %al
-    call printf@plt
-    movq $0, %rdi
-    call fflush@plt
-    movq %rbp, %rsp
-    popq %rbp
-    ret
-
-.section .rodata
-# length of .L._println_str0
-    .int 0
-.L._println_str0:
-    .asciz ""
-.text
-_println:
-    pushq %rbp
-    movq %rsp, %rbp
-    # external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
-    andq $-16, %rsp
-    leaq .L._println_str0(%rip), %rdi
-    call puts@plt
-    movq $0, %rdi
-    call fflush@plt
-    movq %rbp, %rsp
-    popq %rbp
-    ret
-
-
+	.globl main
+	.section .rodata
+	.text
+	main:
+		pushq %rbp
+		# pushq {%rbx, %r12}
+		subq $16, %rsp
+		movq %rbx, (%rsp)
+		movq %r12, 8(%rsp)
+		movq %rsp, %rbp
+		# Stack pointer unchanged, no stack allocated variables
+		movq $2000000000, %rax
+		movq %rax, %r12
+		# Stack pointer unchanged, no stack allocated arguments
+		movq %r12, %rax
+		movq %rax, %rdi
+		# statement primitives do not return results (but will clobber r0/rax)
+		call _printi
+		call _println
+		movl %r12d, %eax
+		addl $2000000000, %eax
+		jo _errOverflow
+		movslq %eax, %rax
+		pushq %rax
+		popq %rax
+		movq %rax, %rax
+		movq %rax, %r12
+		# Stack pointer unchanged, no stack allocated arguments
+		movq %r12, %rax
+		movq %rax, %rdi
+		# statement primitives do not return results (but will clobber r0/rax)
+		call _printi
+		call _println
+		# Stack pointer unchanged, no stack allocated variables
+		movq $0, %rax
+		# popq {%rbx, %r12}
+		movq (%rsp), %rbx
+		movq 8(%rsp), %r12
+		addq $16, %rsp
+		popq %rbp
+		ret
+	
+	.section .rodata
+	# length of .L._prints_str0
+		.int 4
+	.L._prints_str0:
+		.asciz "%.*s"
+	.text
+	_prints:
+		pushq %rbp
+		movq %rsp, %rbp
+		# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+		andq $-16, %rsp
+		movq %rdi, %rdx
+		movl -4(%rdi), %esi
+		leaq .L._prints_str0(%rip), %rdi
+		# on x86, al represents the number of SIMD registers used as variadic arguments
+		movb $0, %al
+		call printf@plt
+		movq $0, %rdi
+		call fflush@plt
+		movq %rbp, %rsp
+		popq %rbp
+		ret
+	
+	.section .rodata
+	# length of .L._printi_str0
+		.int 2
+	.L._printi_str0:
+		.asciz "%d"
+	.text
+	_printi:
+		pushq %rbp
+		movq %rsp, %rbp
+		# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+		andq $-16, %rsp
+		movl %edi, %esi
+		leaq .L._printi_str0(%rip), %rdi
+		# on x86, al represents the number of SIMD registers used as variadic arguments
+		movb $0, %al
+		call printf@plt
+		movq $0, %rdi
+		call fflush@plt
+		movq %rbp, %rsp
+		popq %rbp
+		ret
+	
+	.section .rodata
+	# length of .L._println_str0
+		.int 0
+	.L._println_str0:
+		.asciz ""
+	.text
+	_println:
+		pushq %rbp
+		movq %rsp, %rbp
+		# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+		andq $-16, %rsp
+		leaq .L._println_str0(%rip), %rdi
+		call puts@plt
+		movq $0, %rdi
+		call fflush@plt
+		movq %rbp, %rsp
+		popq %rbp
+		ret
+	
+	_exit:
+		pushq %rbp
+		movq %rsp, %rbp
+		# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+		andq $-16, %rsp
+		call exit@plt
+		movq %rbp, %rsp
+		popq %rbp
+		ret
+	
+	.section .rodata
+	# length of .L._errOverflow_str0
+		.int 52
+	.L._errOverflow_str0:
+		.asciz "fatal error: integer overflow or underflow occurred\n"
+	.text
+	_errOverflow:
+		# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+		andq $-16, %rsp
+		leaq .L._errOverflow_str0(%rip), %rdi
+		call _prints
+		movb $-1, %dil
+		call exit@plt
 |]

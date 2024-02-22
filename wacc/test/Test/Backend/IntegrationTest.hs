@@ -1,4 +1,6 @@
-module Test.Backend.IntegrationTest (integrationTestGroup) where
+{-# LANGUAGE TypeApplications #-}
+
+module Test.Backend.IntegrationTest where
 
 import Data.List (intercalate, isInfixOf, (\\))
 import Data.Maybe (fromMaybe)
@@ -15,6 +17,7 @@ import Text.Gigaparsec
   , Result (Failure, Success)
   , atomic
   , many
+  , parse
   , parseFromFile
   , some
   , ($>)
@@ -22,24 +25,30 @@ import Text.Gigaparsec
   , (<~>)
   )
 import Text.Gigaparsec.Char (char, item, satisfy, string)
-import Text.Gigaparsec.Combinator (option)
+import Text.Gigaparsec.Combinator (manyN, option)
 import Text.Gigaparsec.Token.Descriptions (plain)
 import Text.Gigaparsec.Token.Lexer
   ( IntegerParsers (decimal)
   , Lexeme (integer)
-  , Lexer (nonlexeme)
+  , Lexer (fully, nonlexeme)
   , mkLexer
   , sym
   )
 
+lexer :: Lexer
+lexer = mkLexer plain
+
 lexeme' :: Lexeme
-lexeme' = nonlexeme $ mkLexer plain
+lexeme' = nonlexeme lexer
 
 decimal' :: Parsec Integer
 decimal' = decimal (integer lexeme')
 
 s :: String -> Parsec ()
 s = sym lexeme'
+
+fully' :: Parsec a -> Parsec a
+fully' = fully lexer
 
 item' :: Parsec Char
 item' = satisfy (`notElem` "\n\r")
@@ -112,29 +121,26 @@ data TestProgramMetadata = TestProgramMetadata
   }
   deriving (Show)
 
--- 1. Read source file and collect metadata
--- 2. Run the compiler on the source file and check its exit code is zero
--- 3. Run GCC on the generated assembly and check its exit code is zero
--- 4. Run the generate executable and check its exit code and output
+workingDirectory :: Maybe String
+workingDirectory = Just ".."
 
 compile :: TestProgramMetadata -> TestProgram
 compile (TestProgramMetadata path _ _ _ _ _ _) =
   TestProgram
     "./compile"
     [path]
-    (Just "..")
+    workingDirectory
     Nothing
     ExitSuccess
     ignoreOutput
     ignoreOutput
 
--- gcc -o test -z noexecstack out.s
 assemble :: TestProgramMetadata -> TestProgram
 assemble (TestProgramMetadata _ path exe _ _ _ _) =
   TestProgram
     "gcc"
     ["-o", exe, "-z", "noexecstack", path]
-    (Just "..")
+    workingDirectory
     Nothing
     ExitSuccess
     ignoreOutput
@@ -145,15 +151,24 @@ executable (TestProgramMetadata _ _ exe _ i o ecode) =
   TestProgram
     exe
     []
-    (Just "..")
+    workingDirectory
     (Just i)
     ecode
     ignoreOutput
-    ( \o' ->
-        ( o == o'
-        , "unexpected stdout:\n\"" ++ o' ++ "\"\nexpected stdout:\n\"" ++ o ++ "\""
-        )
-    )
+    (outputChecker o)
+
+outputChecker :: String -> String -> (Bool, String)
+outputChecker rawOutput realOutput = case res of
+  Success p' -> case parse @String p' realOutput of
+    Success _ -> (True, "")
+    Failure err -> (False, "incorrect output from the compiled binary\n" ++ err)
+  Failure err ->
+    error
+      ( "failed to parse expected output, check the backend integration test suite or the test WACC file\n"
+          ++ err
+      )
+  where
+    res = parse @String genOutputParser rawOutput
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
@@ -162,7 +177,7 @@ ignoredTests :: [FilePath]
 ignoredTests = allTests \\ enabledTests
 
 enabledTests :: [FilePath]
-enabledTests = ["valid/IO/read/echoInt.wacc"]
+enabledTests = ["valid/runtimeErr/integerOverflow/intWayOverflow.wacc"]
 
 mkIntegrationTestCase :: FilePath -> TestTree
 mkIntegrationTestCase rawPath =
@@ -219,3 +234,21 @@ instance IsTest TestCompiler where
       )
 
   testOptions = return []
+
+hexDigit :: Parsec Char
+hexDigit = satisfy (`elem` (['0' .. '9'] ++ ['a' .. 'f']))
+
+address :: Parsec ()
+address = string "0x" *> (manyN 12 hexDigit $> ())
+
+parseAddress :: Parsec (Parsec ())
+parseAddress = string "#addrs#" $> address
+
+runtimeError :: Parsec (Parsec ())
+runtimeError = string "#runtime_error#" $> (string "fatal error: " *> many item $> ())
+
+item'' :: Parsec (Parsec ())
+item'' = (\c -> char c $> ()) <$> item
+
+genOutputParser :: Parsec (Parsec [()])
+genOutputParser = sequence <$> many (atomic parseAddress <|> atomic runtimeError <|> item'')
