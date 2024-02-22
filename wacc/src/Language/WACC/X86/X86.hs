@@ -9,7 +9,7 @@ import Data.List (intercalate)
 import Data.Typeable ()
 import Language.WACC.Error (quote)
 
-data Label = I Int | R Runtime | S String
+data Label = I Integer | R Runtime | S String
   deriving (Data)
 
 data Runtime = PrintI | PrintLn | Free | Malloc
@@ -37,7 +37,7 @@ data Instr
   deriving (Typeable, Data)
 
 data Directive
-  = DirInt Int
+  = DirInt Integer
   | -- | String directives (insert ascii binary at location)
     DirAsciz String
   | DirText
@@ -46,24 +46,24 @@ data Directive
   | DirGlobl Label
   deriving (Typeable, Data)
 
-data Operand = Imm Int | Reg Register | Mem Memory
+data Operand = Imm Integer | Reg Register | Mem Memory
   deriving (Data)
 
 data Memory
   = -- | (53) :- immediate memory access
-    MI Int
+    MI Integer
   | -- | (%rax) :- single register memory access
     MReg Register
   | -- | (%rsp, %rax) = M[R[rsp] + R[rax]] :- register sum memory access
     MTwoReg Register Register
   | -- | (%rsp, %rax, 4) = M[R[rsp] + R[rax]*4] :- register scaled (by 1,2,4 or 8) memory access
-    MScale Register Register Int
+    MScale Register Register Integer
   | -- | 7(%rax) = M[7 + R[rax]] :- offset single register memory access
-    MRegI Int Register
+    MRegI Integer Register
   | -- | 7(%rsp, %rax) = M[7 + R[rsp] + R[rax]] :- offset register sum memory access
-    MTwoRegI Int Register Register
+    MTwoRegI Integer Register Register
   | -- | 7(%rsp, %rax, 4) = M[7 + R[rsp] + R[rax]*4] :- offset register scaled (by 1,2,4 or 8) memory access
-    MScaleI Int Register Register Int
+    MScaleI Integer Register Register Integer
   | -- | f4(%rax) :- offset to label, single register memory access
     MRegL Label Register
   deriving (Data)
@@ -109,7 +109,7 @@ args = [Rdi, Rsi, Rdx, Rcx, R8, R9]
 class ATNT a where
   formatA :: a -> String
 
-instance ATNT Int where
+instance ATNT Integer where
   formatA = show
 
 instance ATNT Register where

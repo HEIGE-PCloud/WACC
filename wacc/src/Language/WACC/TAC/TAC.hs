@@ -81,6 +81,7 @@ data UnOp = Neg | Not
 
 -- | Variables in TAC, either temporary or named in the source code.
 data Var ident = Temp ident | Var ident
+  deriving (Eq, Ord)
 
 -- | Offsets in TAC, either temporary or named in the source code.
 type Offset = Var
