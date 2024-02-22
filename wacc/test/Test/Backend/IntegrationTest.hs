@@ -2,7 +2,8 @@ module Test.Backend.IntegrationTest where
 
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
-import System.Exit (ExitCode (ExitSuccess, ExitFailure))
+import System.Exit (ExitCode (ExitFailure, ExitSuccess))
+import Test (testGroup)
 import Test.Common (validTests)
 import Test.Lib.Program (TestProgram (..), ignoreOutput, testCompiler)
 import Text.Gigaparsec
@@ -26,7 +27,6 @@ import Text.Gigaparsec.Token.Lexer
   , mkLexer
   , sym
   )
-import Test (testGroup)
 
 lexeme' :: Lexeme
 lexeme' = nonlexeme $ mkLexer plain
@@ -154,7 +154,9 @@ executable path =
 test1 =
   testCompiler
     "test name"
-    (compile "/Users/pcloud/Code/WACC_19/wacc/test/wacc_examples/valid/basic/exit/exit-1.wacc")
+    ( compile
+        "/Users/pcloud/Code/WACC_19/wacc/test/wacc_examples/valid/basic/exit/exit-1.wacc"
+    )
     (assemble "exit-1.s")
     (executable "./test")
 
