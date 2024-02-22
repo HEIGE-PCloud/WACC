@@ -111,3 +111,8 @@ data TestProgram = TestProgram
   , exit :: Integer
   }
   deriving (Show)
+
+-- 1. Read source file and collect metadata
+-- 2. Run the compiler on the source file and check its exit code is zero
+-- 3. Run GCC on the generated assembly and check its exit code is zero
+-- 4. Run the generate executable and check its exit code and output

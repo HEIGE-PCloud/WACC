@@ -58,25 +58,15 @@ Program's output and error streams are ignored.
 -}
 module Test.Lib.Program
   ( testProgram
-  , CatchStderr (..)
-  , CatchStdout (..)
   )
 where
 
 import Control.DeepSeq (deepseq)
-import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
 import System.Directory (findExecutable)
 import System.Exit (ExitCode (..))
 import System.IO (hGetContents)
 import System.Process (runInteractiveProcess, waitForProcess)
-import Test.Tasty.Options
-  ( IsOption (..)
-  , OptionDescription (..)
-  , flagCLParser
-  , lookupOption
-  , safeRead
-  )
 import Test.Tasty.Providers
   ( IsTest (..)
   , Result
@@ -109,39 +99,18 @@ testProgram testName program opts workingDir exitCode =
   singleTest testName (TestProgram program opts workingDir exitCode)
 
 instance IsTest TestProgram where
-  run opts (TestProgram program args workingDir exitCode) _ = do
+  run _ (TestProgram program args workingDir exitCode) _ = do
     execFound <- findExecutable program
-
-    let
-      CatchStderr catchStderr = lookupOption opts
-    let
-      CatchStdout catchStdout = lookupOption opts
 
     case execFound of
       Nothing -> return $ execNotFoundFailure program
-      Just progPath -> runProgram progPath args workingDir catchStderr catchStdout exitCode
+      Just progPath -> runProgram progPath args workingDir exitCode
 
-  testOptions =
-    return
-      [Option (Proxy :: Proxy CatchStderr), Option (Proxy :: Proxy CatchStdout)]
+  testOptions = return []
 
-newtype CatchStderr = CatchStderr Bool deriving (Show, Typeable)
-
-instance IsOption CatchStderr where
-  defaultValue = CatchStderr False
-  parseValue = fmap CatchStderr . safeRead
-  optionName = return "catch-stderr"
-  optionHelp = return "Catch standart error of programs"
-  optionCLParser = flagCLParser (Just 'e') (CatchStderr True)
-
-newtype CatchStdout = CatchStdout Bool deriving (Show, Typeable)
-
-instance IsOption CatchStdout where
-  defaultValue = CatchStdout False
-  parseValue = fmap CatchStdout . safeRead
-  optionName = return "catch-stdout"
-  optionHelp = return "Catch standart outor of programs"
-  optionCLParser = flagCLParser (Just 'o') (CatchStdout True)
+data TestCompiler = TestCompiler
+  {
+  }
 
 rawExitCode :: ExitCode -> Int
 rawExitCode ExitSuccess = 0
@@ -157,21 +126,15 @@ runProgram
   -- ^ Program options
   -> Maybe FilePath
   -- ^ Optional working directory
-  -> Bool
-  -- ^ Whether to print stderr on error
-  -> Bool
-  -- ^ Whether to print stdout on error
   -> ExitCode
   -- ^ Expected exit code
   -> IO Result
-runProgram program args workingDir catchStderr catchStdout exitCode = do
+runProgram program args workingDir exitCode = do
   (_, stdoutH, stderrH, pid) <-
     runInteractiveProcess program args workingDir Nothing
 
-  stderr <-
-    if catchStderr then fmap Just (hGetContents stderrH) else return Nothing
-  stdout <-
-    if catchStdout then fmap Just (hGetContents stdoutH) else return Nothing
+  stderr <- hGetContents stderrH
+  stdout <- hGetContents stdoutH
   ecode <- stderr `deepseq` waitForProcess pid
   if ecode == exitCode
     then return success
@@ -201,7 +164,7 @@ runProgram' program args workingDir exitCode checkStderr checkStdout = do
     then return success
     else
       return $
-        exitFailure program args (rawExitCode ecode) (Just stderr) (Just stdout)
+        exitFailure program args (rawExitCode ecode) stderr stdout
 
 -- | Indicates successful test
 success :: Result
@@ -214,16 +177,14 @@ execNotFoundFailure file =
 
 -- | Indicates that program failed with an error code
 exitFailure
-  :: String -> [String] -> Int -> Maybe String -> Maybe String -> Result
+  :: String -> [String] -> Int -> String -> String -> Result
 exitFailure file args code stderr stdout =
   testFailed $
     "Program "
       ++ unwords (file : args)
       ++ " failed with code "
       ++ show code
-      ++ case stderr of
-        Nothing -> ""
-        Just s -> "\n Stderr was: \n" ++ s
-      ++ case stdout of
-        Nothing -> ""
-        Just s -> "\n Stdout was: \n" ++ s
+      ++ "\n Stderr was: \n"
+      ++ stderr
+      ++ "\n Stdout was: \n"
+      ++ stdout

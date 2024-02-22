@@ -7,8 +7,6 @@ build-test:
 test: 
 	stack test \
 		--test-arguments --hide-successes \
-		--test-arguments --catch-stderr \
-		--test-arguments --catch-stdout \
 		--test-arguments --timeout=1m \
 		--test-arguments --xml=../rspec.xml \
 		--test-arguments --quickcheck-max-size=10 \
