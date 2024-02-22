@@ -58,6 +58,7 @@ Program's output and error streams are ignored.
 -}
 module Test.Lib.Program
   ( testProgram
+  , ignoreOutput
   )
 where
 
@@ -77,8 +78,20 @@ import Test.Tasty.Providers
   , testPassed
   )
 
-data TestProgram = TestProgram String [String] (Maybe FilePath) ExitCode
+data TestProgram
+  = TestProgram
+      String
+      [String]
+      (Maybe FilePath)
+      ExitCode
+      CheckOutput
+      CheckOutput
   deriving (Typeable)
+
+type CheckOutput = String -> (Bool, String)
+
+ignoreOutput :: String -> (Bool, String)
+ignoreOutput _ = (True, "")
 
 {- | Create test that runs a program with given options. Test succeeds
 if program terminates successfully.
@@ -94,12 +107,18 @@ testProgram
   -- ^ Optional working directory
   -> ExitCode
   -- ^ Expected exit code
+  -> CheckOutput
+  -- ^ A function to check whether the stderr is correct
+  -> CheckOutput
+  -- ^ A function to check whether the stdout is correct
   -> TestTree
-testProgram testName program opts workingDir exitCode =
-  singleTest testName (TestProgram program opts workingDir exitCode)
+testProgram testName program opts workingDir exitCode checkStderr checkStdout =
+  singleTest
+    testName
+    (TestProgram program opts workingDir exitCode checkStderr checkStdout)
 
 instance IsTest TestProgram where
-  run _ (TestProgram program args workingDir exitCode) _ = do
+  run _ (TestProgram program args workingDir exitCode checkStderr checkStdout) _ = do
     execFound <- findExecutable program
 
     case execFound of
@@ -110,8 +129,8 @@ instance IsTest TestProgram where
           args
           workingDir
           exitCode
-          (const (True, ""))
-          (const (True, ""))
+          checkStderr
+          checkStdout
 
   testOptions = return []
 
@@ -124,9 +143,9 @@ runProgram
   -- ^ Optional working directory
   -> ExitCode
   -- ^ Expected exit code
-  -> (String -> (Bool, String))
+  -> CheckOutput
   -- ^ A function to check whether the stderr is correct
-  -> (String -> (Bool, String))
+  -> CheckOutput
   -- ^ A function to check whether the stdout is correct
   -> IO Result
 runProgram program args workingDir exitCode checkStderr checkStdout = do

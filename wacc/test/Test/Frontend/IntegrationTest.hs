@@ -53,6 +53,8 @@ mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKin
     [path, "--parseOnly"]
     (Just "..")
     (expectedExitCode kind)
+    ignoreOutput
+    ignoreOutput
 
 allintegrationTest :: [TestTree]
 allintegrationTest = map (mkIntegrationTestCase . mkIntegrationTest) allTests
