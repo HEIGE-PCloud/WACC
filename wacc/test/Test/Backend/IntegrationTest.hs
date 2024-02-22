@@ -2,7 +2,9 @@ module Test.Backend.IntegrationTest where
 
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
+import System.Exit (ExitCode (ExitSuccess, ExitFailure))
 import Test.Common (validTests)
+import Test.Lib.Program (TestProgram (..), ignoreOutput, testCompiler)
 import Text.Gigaparsec
   ( Parsec
   , Result (Failure, Success)
@@ -24,6 +26,7 @@ import Text.Gigaparsec.Token.Lexer
   , mkLexer
   , sym
   )
+import Test (testGroup)
 
 lexeme' :: Lexeme
 lexeme' = nonlexeme $ mkLexer plain
@@ -65,9 +68,9 @@ parseExit = atomic (hash *> s "Exit:") *> newline *> hash *> decimal' <* many ne
 parseProgram :: Parsec ()
 parseProgram = atomic (option (hash *> string "Program:") $> ()) *> many item $> ()
 
-parseTestProgram :: FilePath -> Parsec TestProgram
-parseTestProgram path =
-  mkTestProgram path
+parseTestProgramMeta :: FilePath -> Parsec TestProgramMeta
+parseTestProgramMeta path =
+  mkTestProgramMeta path
     <$> ( parseDescription
             <~> option parseInput
             <~> option parseOutput
@@ -75,12 +78,12 @@ parseTestProgram path =
             <* parseProgram
         )
 
-mkTestProgram
+mkTestProgramMeta
   :: FilePath
   -> ((([Char], Maybe String), Maybe [Char]), Maybe Integer)
-  -> TestProgram
-mkTestProgram path (((d, i), o), e) =
-  TestProgram
+  -> TestProgramMeta
+mkTestProgramMeta path (((d, i), o), e) =
+  TestProgramMeta
     { filePath = path
     , description = d
     , input = fromMaybe "" i
@@ -88,8 +91,8 @@ mkTestProgram path (((d, i), o), e) =
     , exit = fromMaybe 0 e
     }
 
-test :: IO ()
-test = go [t | t <- validTests, not $ "advanced" `isInfixOf` t]
+-- test :: IO ()
+-- test = go [t | t <- validTests, not $ "advanced" `isInfixOf` t]
 
 go :: [FilePath] -> IO ()
 go [] = return ()
@@ -98,12 +101,12 @@ go (p : ps) = do
     path = "/Users/pcloud/Code/WACC_19/wacc/test/wacc_examples/" ++ p
   code <- readFile path
   let
-    res = parse (parseTestProgram path) code
+    res = parse (parseTestProgramMeta path) code
   case res of
     Failure e -> putStrLn p >> putStrLn e
     Success s' -> putStrLn p >> print s' >> putStrLn "" >> go ps
 
-data TestProgram = TestProgram
+data TestProgramMeta = TestProgramMeta
   { filePath :: FilePath
   , description :: String
   , input :: String
@@ -116,3 +119,43 @@ data TestProgram = TestProgram
 -- 2. Run the compiler on the source file and check its exit code is zero
 -- 3. Run GCC on the generated assembly and check its exit code is zero
 -- 4. Run the generate executable and check its exit code and output
+
+compile :: FilePath -> TestProgram
+compile path =
+  TestProgram
+    "./compile"
+    [path]
+    (Just "..")
+    ExitSuccess
+    ignoreOutput
+    ignoreOutput
+
+-- gcc -o test -z noexecstack out.s
+assemble :: FilePath -> TestProgram
+assemble filename =
+  TestProgram
+    "gcc"
+    ["-o", "test", "-z", "noexecstack", filename]
+    (Just "..")
+    ExitSuccess
+    ignoreOutput
+    ignoreOutput
+
+executable :: FilePath -> TestProgram
+executable path =
+  TestProgram
+    path
+    []
+    (Just "..")
+    (ExitFailure 1)
+    ignoreOutput
+    ignoreOutput
+
+test1 =
+  testCompiler
+    "test name"
+    (compile "/Users/pcloud/Code/WACC_19/wacc/test/wacc_examples/valid/basic/exit/exit-1.wacc")
+    (assemble "exit-1.s")
+    (executable "./test")
+
+integrationTestGroup = testGroup "integrationTest" [test1]

@@ -3,3 +3,5 @@
 compile
 test.wacc
 rspec.xml
+*.s
+test

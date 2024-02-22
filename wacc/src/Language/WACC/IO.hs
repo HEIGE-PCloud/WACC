@@ -122,6 +122,10 @@ runTypeCheck ast = case uncurry checkTypes ast of
   errs -> Failure (errs, semanticErrorCode)
 
 runCodeGen :: String -> (Prog WType Fnident Vident Pos, VarST) -> IO ()
-runCodeGen path _ = writeFile filename "TODO" >>= const exitSuccess
+runCodeGen path _ = writeFile filename testCode >>= const exitSuccess
   where
     filename = takeBaseName path ++ ".s"
+
+
+testCode :: String
+testCode = ".globl main\n.section .rodata\n.text\nmain:\npushq %rbp\npushq %rbx\nmovq %rsp, %rbp\nmovq $-1, %rax\nmovq %rax, %rdi\ncall _exit\nmovq $0, %rax\npopq %rbx\npopq %rbp\nret\n_exit:\npushq %rbp\nmovq %rsp, %rbp\nandq $-16, %rsp\ncall exit@plt\nmovq %rbp, %rsp\npopq %rbp\nret"

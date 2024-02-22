@@ -58,7 +58,10 @@ Program's output and error streams are ignored.
 -}
 module Test.Lib.Program
   ( testProgram
+  , testCompiler
   , ignoreOutput
+  , TestProgram (..)
+  , TestCompiler (..)
   )
 where
 
@@ -77,6 +80,7 @@ import Test.Tasty.Providers
   , testFailed
   , testPassed
   )
+import Test.Tasty.Runners (resultSuccessful)
 
 data TestProgram
   = TestProgram
@@ -117,20 +121,49 @@ testProgram testName program opts workingDir exitCode checkStderr checkStdout =
     testName
     (TestProgram program opts workingDir exitCode checkStderr checkStdout)
 
-instance IsTest TestProgram where
-  run _ (TestProgram program args workingDir exitCode checkStderr checkStdout) _ = do
-    execFound <- findExecutable program
+runTestProgram :: TestProgram -> IO Result
+runTestProgram (TestProgram program args workingDir exitCode checkStderr checkStdout) = do
+  execFound <- findExecutable program
 
-    case execFound of
-      Nothing -> return $ execNotFoundFailure program
-      Just progPath ->
-        runProgram
-          progPath
-          args
-          workingDir
-          exitCode
-          checkStderr
-          checkStdout
+  case execFound of
+    Nothing -> return $ execNotFoundFailure program
+    Just progPath ->
+      runProgram
+        progPath
+        args
+        workingDir
+        exitCode
+        checkStderr
+        checkStdout
+
+instance IsTest TestProgram where
+  run _ p _ = runTestProgram p
+
+  testOptions = return []
+
+data TestCompiler = TestCompiler
+  { testCompile :: TestProgram
+  , testAssemble :: TestProgram
+  , testExecutable :: TestProgram
+  }
+
+testCompiler
+  :: TestName -> TestProgram -> TestProgram -> TestProgram -> TestTree
+testCompiler testName compiler assembler executable = singleTest testName (TestCompiler compiler assembler executable)
+
+instance IsTest TestCompiler where
+  run _ (TestCompiler compiler assembler executable) _ = do
+    resCompile <- runTestProgram compiler
+    ( if resultSuccessful resCompile
+        then
+          ( do
+              resAssemble <- runTestProgram assembler
+              if resultSuccessful resAssemble
+                then runTestProgram executable
+                else return resAssemble
+          )
+        else return resCompile
+      )
 
   testOptions = return []
 

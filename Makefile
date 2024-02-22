@@ -59,6 +59,9 @@ typechecker-test:
 backend-test: compile
 	$(MAKE) test PATTERN="0 ~ /backend/"
 
+backend-integration-test: compile
+	$(MAKE) test PATTERN="0 ~ /backend\.integrationTest/"
+
 x86-golden-test:
 	$(MAKE) test PATTERN="0 ~ /x86\.goldenTest/"
 
@@ -71,5 +74,8 @@ ghci-test:
 
 clean:
 	$(RM) compile
+	$(RM) *.s
+	$(RM) test
+	$(RM) rspec.xml
 
 .PHONY: clean compile
