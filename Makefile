@@ -1,6 +1,7 @@
 export PATH := $(PWD):$(PATH)
 
 compile:
+	git submodule update --init --recursive
 	stack install --local-bin-path . wacc:exe:compile
 
 build-test:
