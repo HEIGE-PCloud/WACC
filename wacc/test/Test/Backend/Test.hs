@@ -7,6 +7,8 @@ where
 
 import Test (testGroup)
 import Test.Backend.IntegrationTest (integrationTestGroup)
+import Test.Backend.TAC.ExprTest (tacExprTestGroup)
 import Test.Backend.X86.Test (x86TestGroup)
 
-test = testGroup "backend" [x86TestGroup, integrationTestGroup]
+test =
+  testGroup "backend" [integrationTestGroup, tacExprTestGroup, x86TestGroup]
