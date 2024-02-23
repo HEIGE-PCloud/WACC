@@ -79,6 +79,6 @@ clean:
 	$(RM) *.s
 	$(RM) test
 	$(RM) rspec.xml
-	$(RM) a.out
+	$(RM) *.out
 
 .PHONY: clean compile test
