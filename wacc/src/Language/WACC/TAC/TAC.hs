@@ -77,21 +77,23 @@ data TAC ident lident
     --
     -- Throw a runtime error if the assertion fails.
     CheckBounds Int (Var ident) Int
+  deriving (Eq, Show)
 
 -- | Binary operators in TAC
 data BinOp = Mul | Div | Mod | Add | Sub | GT | GTE | LT | LTE | And | Or
+  deriving (Eq, Show)
 
 -- | Unary operators in TAC
-data UnOp = Not | Negate
+data UnOp = Not | Negate deriving (Eq, Show)
 
 -- | Variables in TAC, either temporary or named in the source code.
-data Var ident = Temp ident | Var ident
+data Var ident = Temp ident | Var ident deriving (Eq, Show)
 
 -- | Offsets in TAC, either temporary or named in the source code.
 type Offset = Var
 
 -- | Labels in TAC for jumps and function calls to other basic blocks.
-newtype Label lident = Label lident
+newtype Label lident = Label lident deriving (Eq, Show)
 
 -- | Jump instructions in TAC Basic Blocks for control flow.
 data Jump ident lident
@@ -108,9 +110,10 @@ data Jump ident lident
     --
     -- Return @var@ to the caller block and continue execution there.
     Ret (Var ident)
+  deriving (Eq, Show)
 
 -- | Block labels in TAC for basic blocks.
-newtype BlockLabel ident = BlockLabel ident
+newtype BlockLabel ident = BlockLabel ident deriving (Eq, Show)
 
 -- | Function representation in TAC.
 data Func ident lident
@@ -121,12 +124,14 @@ data Func ident lident
       -- ^ parameters of the functions
       (Map lident (BasicBlock ident lident))
       -- ^ Map of the related sub basic blocks in function body
+  deriving (Eq, Show)
 
 -- | A basic block consisting a sequence of TAC instructions and a jump to the next block
 data BasicBlock ident lident = BasicBlock
   { block :: [TAC ident lident]
   , nextBlock :: Jump ident lident
   }
+  deriving (Eq, Show)
 
 -- | The top-level mapping of function identifiers to their corresponding blocks.
 type TACProgram ident lident = Map lident (Func ident lident)

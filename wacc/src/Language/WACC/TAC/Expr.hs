@@ -40,6 +40,7 @@ data ExprTACs ident lident = ExprTACs
   , exprTACs :: DList (TAC ident lident)
   -- ^ The generated instructions.
   }
+  deriving (Eq, Show)
 
 {- |
 This instance enables a concise syntax for 'ExprTACs':
