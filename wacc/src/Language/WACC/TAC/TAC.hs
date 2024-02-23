@@ -88,6 +88,7 @@ type Offset = Var
 
 -- | Labels in TAC for jumps and function calls to other basic blocks.
 newtype Label lident = Label lident
+  deriving (Eq, Ord)
 
 -- | Jump instructions in TAC Basic Blocks for control flow.
 data Jump ident lident

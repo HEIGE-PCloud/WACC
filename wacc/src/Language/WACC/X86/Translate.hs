@@ -1,18 +1,24 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Language.WACC.X86.Translate where
 
 import Control.Monad.RWS
   ( RWS
   , asks
   , evalRWS
+  , get
   , gets
   , local
   , modify
+  , put
   , tell
   )
 import Data.DList (DList)
 import qualified Data.DList as D
 import Data.Map (Map, findMin, (!))
 import qualified Data.Map as M
+import Data.Set (Set)
+import qualified Data.Set as S
 import Language.WACC.TAC.TAC
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.X86
@@ -34,7 +40,7 @@ swapReg = R10
 data Allocation = Allocation
   { swapVar :: Maybe (Var Integer)
   , getAlloc :: Map (Var Integer) Operand
-  , translated :: Set TAC.Label
+  , translated :: Set (TAC.Label Integer)
   }
 
 type Analysis =
@@ -50,33 +56,46 @@ translateProg = D.toList . foldr (D.append . translateFunc) D.empty . M.elems
 translateFunc :: Func Integer Integer -> DList Instr
 translateFunc (Func l v bs) = is
   where
-    ((), is) = evalRWS (translateBlocks startBlock) bs (Allocation Nothing M.empty)
-    startBlock = snd (findMin bs)
+    ((), is) =
+      evalRWS
+        (translateBlocks (TAC.Label n) startBlock)
+        bs
+        (Allocation Nothing M.empty S.empty)
+    (n, startBlock) = findMin bs
 
 translateBlocks
   :: TAC.Label Integer
   -> BasicBlock Integer Integer
   -> Analysis ()
 translateBlocks l (BasicBlock is next) = do
-  translateBlock l
+  translateBlock l is
   translateNext next
+
+puts :: (Monoid w) => (s -> s) -> RWS r w s ()
+puts f = do
+  s <- get
+  put (f s)
+
+setTranslated :: (TAC.Label Integer) -> Allocation -> Allocation
+setTranslated l x@(Allocation {translated}) = x {translated = (S.insert l) translated}
 
 translateBlock
   :: TAC.Label Integer
   -> [TAC Integer Integer]
   -> Analysis ()
-translateBlock l is = do
-  puts (S.insert l . translated) -- include label in translated set
+translateBlock l@(TAC.Label n) is = do
+  puts (setTranslated l) -- include label in translated set
   tellInstr (Lab (mapLab l))
   mapM translateTAC is
+  return ()
 
 mapLab :: (TAC.Label Integer) -> X86.Label
 mapLab (Label x) = I x
 
 tellInstr = tell . D.singleton
 
-isTranslated :: Label Integer -> Analaysis Boolean
-isTranslated l = gets ((member l) . translated)
+isTranslated :: TAC.Label Integer -> Analysis Bool
+isTranslated l = gets ((S.member l) . translated)
 
 translateNext :: Jump Integer Integer -> Analysis ()
 translateNext (Jump l1@(Label n)) = do
@@ -84,7 +103,7 @@ translateNext (Jump l1@(Label n)) = do
   t <- isTranslated l1
   case t of
     False -> translateBlocks l1 nextBlock
-    True -> tellInstr (Jmp l1)
+    True -> tellInstr (Jmp (mapLab l1))
 translateNext (CJump v l1@(TAC.Label n1) l2) = do
   operand <- gets ((! v) . getAlloc)
   tellInstr (Cmpq operand (Imm 0))
