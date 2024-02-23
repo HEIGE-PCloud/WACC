@@ -13,7 +13,13 @@ import Data.Bool (bool)
 import Data.Char (ord)
 import Data.DList (DList)
 import GHC.IsList (IsList (..))
-import Language.WACC.AST (ArrayIndex (..), Expr (WAtom), WAtom (..), getAnn)
+import Language.WACC.AST
+  ( ArrayIndex (..)
+  , Expr (WAtom)
+  , WAtom (..)
+  , WType (..)
+  , getAnn
+  )
 import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.State
@@ -92,7 +98,12 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (ArrayElem (ArrayIndex _ _ _) _) _) = undefined
   toTAC (AST.Not x _) = unOp Not x
   toTAC (AST.Negate x _) = unOp Negate x
-  toTAC (AST.Len x _) = undefined
+  toTAC (AST.Len x _) =
+    [ cts <> [LoadM t (exprV xts) (exprV cts) WInt] t
+    | xts <- toTAC x
+    , cts <- loadCI 0
+    , t <- freshTemp
+    ]
   toTAC (AST.Ord x _) = toTAC x
   toTAC (AST.Chr x _) =
     [ xts <> [CheckBounds 0 xv 127] xv
