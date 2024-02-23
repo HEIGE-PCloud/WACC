@@ -1,8 +1,5 @@
-{- AUTOCOLLECT.TEST -}
-
-module Language.WACC.TypeChecking.ExprTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.TypeChecker.ExprTest
+  ( exprTestGroup
   )
 where
 
@@ -139,10 +136,10 @@ testBinOp name op ts = testGroup name $ ts >>= mkCases
         bad1 = mkBad t1
         bad2 = mkBad t2
 
-test :: TestTree
-test =
+exprTestGroup :: TestTree
+exprTestGroup =
   testGroup
-    "unitTests"
+    "unitTest"
     [ testGroup
         "checkAtom"
         [ testGroup

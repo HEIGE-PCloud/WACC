@@ -1,16 +1,13 @@
-{- AUTOCOLLECT.TEST -}
 {-# LANGUAGE TypeApplications #-}
 {-# HLINT ignore "Use camelCase" #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module Test.Semantic.ScopeUnitTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.Scope.UnitTest
+  ( unitTestGroup
   )
 where
 
-import Language.WACC.AST.Prog (Prog)
 import Language.WACC.Error
 import Language.WACC.Parser.Stmt
 import Language.WACC.Parser.Token
@@ -19,8 +16,9 @@ import Test.Tasty
 import qualified Test.Tasty.HUnit as T
 import Text.Gigaparsec
 
-test =
-  testGroup "unitTests" [testGroup "scopeTests" [naming_fail_tests]]
+unitTestGroup :: TestTree
+unitTestGroup =
+  testGroup "unitTest" [testGroup "scope" [naming_fail_tests]]
 
 hasErrored :: String -> Bool
 hasErrored code = isFailure (scopeAnalysis t)
@@ -28,10 +26,24 @@ hasErrored code = isFailure (scopeAnalysis t)
     (Success t) = parse @String (fully program) code
 
 badPairElemFst :: String
-badPairElemFst = "begin\nint x = 5;\nbegin\nfst y = null\nend\nend\n"
+badPairElemFst =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \fst y = null \
+  \end \
+  \end \
+  \"
 
 badPairElemSnd :: String
-badPairElemSnd = "begin\nint x = 5;\nbegin\nsnd y = null\nend\nend\n"
+badPairElemSnd =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \snd y = null \
+  \end \
+  \end \
+  \"
 
 pair_naming_fail_tests :: TestTree
 pair_naming_fail_tests =
@@ -44,19 +56,54 @@ pair_naming_fail_tests =
     ]
 
 badRvalueExpr :: String
-badRvalueExpr = "begin\nint x = 5;\nbegin\nx = 5 + y\nend\nend\n"
+badRvalueExpr =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \x = 5 + y \
+  \end \
+  \end \
+  \"
 
 badRvalueArrayLit :: String
-badRvalueArrayLit = "begin\nint x = 5;\nbegin\nx = [1, 2, y]\nend\nend\n"
+badRvalueArrayLit =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \x = [1, 2, y] \
+  \end \
+  \end \
+  \"
 
 badRValueNewPair :: String
-badRValueNewPair = "begin\nint x = 5;\nbegin\nx = newpair(1, y)\nend\nend\n"
+badRValueNewPair =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \x = newpair(1, y) \
+  \end \
+  \end \
+  \"
 
 badRValuePairElem :: String
-badRValuePairElem = "begin\nint x = 5;\nbegin\nx = fst y\nend\nend\n"
+badRValuePairElem =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \x = fst y \
+  \end \
+  \end \
+  \"
 
 badRValueCall :: String
-badRValueCall = "begin\nint x = 5;\nbegin\nx = call f(y)\nend\nend\n"
+badRValueCall =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \x = call f(y) \
+  \end \
+  \end \
+  \"
 
 rValue_naming_fail_tests :: TestTree
 rValue_naming_fail_tests =
@@ -75,13 +122,34 @@ rValue_naming_fail_tests =
     ]
 
 badLValueIdent :: String
-badLValueIdent = "begin\nint x = 5;\nbegin\ny = 5\nend\nend\n"
+badLValueIdent =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \y = 5 \
+  \end \
+  \end \
+  \"
 
 badLValueArrayElem :: String
-badLValueArrayElem = "begin\nint x = 5;\nbegin\ny[5] = 5\nend\nend\n"
+badLValueArrayElem =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \y[5] = 5 \
+  \end \
+  \end \
+  \"
 
 badLValuePairElem :: String
-badLValuePairElem = "begin\nint x = 5;\nbegin\nfst y = 5\nend\nend\n"
+badLValuePairElem =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \fst y = 5 \
+  \end \
+  \end \
+  \"
 
 lValue_naming_fail_tests :: TestTree
 lValue_naming_fail_tests =
@@ -96,7 +164,14 @@ lValue_naming_fail_tests =
     ]
 
 badRenameArrayIndex :: String
-badRenameArrayIndex = "begin\nint[] x = [1, 2];\nbegin\nx[y + 1] = 5\nend\nend\n"
+badRenameArrayIndex =
+  "begin \
+  \int[] x = [1, 2]; \
+  \begin \
+  \x[y + 1] = 5 \
+  \end \
+  \end \
+  \"
 
 renameArrayIndex_fail_tests :: TestTree
 renameArrayIndex_fail_tests =
@@ -107,22 +182,46 @@ renameArrayIndex_fail_tests =
     ]
 
 badIdentAtom :: String
-badIdentAtom = "begin\nx = 5\nend\n"
+badIdentAtom =
+  "begin \
+  \x = 5 \
+  \end \
+  \"
 
 badArrayElemAtom :: String
-badArrayElemAtom = "begin\nx[5] = 5\nend\n"
+badArrayElemAtom =
+  "begin \
+  \x[5] = 5 \
+  \end \
+  \"
 
 intLitAtom :: String
-intLitAtom = "begin\nint x = 5\nend\n"
+intLitAtom =
+  "begin \
+  \int x = 5 \
+  \end \
+  \"
 
 boolLitAtom :: String
-boolLitAtom = "begin\nbool x = true\nend\n"
+boolLitAtom =
+  "begin \
+  \bool x = true \
+  \end \
+  \"
 
 charLitAtom :: String
-charLitAtom = "begin\nchar x = 'a'\nend\n"
+charLitAtom =
+  "begin \
+  \char x = 'a' \
+  \end \
+  \"
 
 stringLitAtom :: String
-stringLitAtom = "begin\nstring x = \"hello\"\nend\n"
+stringLitAtom =
+  "begin \
+  \string x = \"hello\" \
+  \end \
+  \"
 
 naming_fail_atom_tests :: TestTree
 naming_fail_atom_tests =
@@ -143,61 +242,194 @@ naming_fail_atom_tests =
     ]
 
 badAtomExpr :: String
-badAtomExpr = "begin\nint x = 5;\nbegin\nx = y\nend\nend\n"
+badAtomExpr =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \x = y \
+  \end \
+  \end \
+  \"
 
 badNotExpr :: String
-badNotExpr = "begin\nbool x = false;\nbegin\nx = !y\nend\nend\n"
+badNotExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = !y \
+  \end \
+  \end \
+  \"
 
 badNegateExpr :: String
-badNegateExpr = "begin\nint x = 5;\nbegin\nx = -y\nend\nend\n"
+badNegateExpr =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \x = -y \
+  \end \
+  \end \
+  \"
 
 badLenExpr :: String
-badLenExpr = "begin\nint x = 2;\nbegin\nx = len y\nend\nend\n"
+badLenExpr =
+  "begin \
+  \int x = 2; \
+  \begin \
+  \x = len y \
+  \end \
+  \end \
+  \"
 
 badOrdExpr :: String
-badOrdExpr = "begin\nint x = 2;\nbegin\nx = ord y\nend\nend\n"
+badOrdExpr =
+  "begin \
+  \int x = 2; \
+  \begin \
+  \x = ord y \
+  \end \
+  \end \
+  \"
 
 badChrExpr :: String
-badChrExpr = "begin\nchar x = 'a';\nbegin\nx = chr y\nend\nend\n"
+badChrExpr =
+  "begin \
+  \char x = 'a'; \
+  \begin \
+  \x = chr y \
+  \end \
+  \end \
+  \"
 
 badMulExpr :: String
-badMulExpr = "begin\nint x = 2;\nbegin\nx = y * z\nend\nend\n"
+badMulExpr =
+  "begin \
+  \int x = 2; \
+  \begin \
+  \x = y * z \
+  \end \
+  \end \
+  \"
 
 badDivExpr :: String
-badDivExpr = "begin\nint x = 2;\nbegin\nx = y / z\nend\nend\n"
+badDivExpr =
+  "begin \
+  \int x = 2; \
+  \begin \
+  \x = y / z \
+  \end \
+  \end \
+  \"
 
 badModExpr :: String
-badModExpr = "begin\nint x = 2;\nbegin\nx = y % z\nend\nend\n"
+badModExpr =
+  "begin \
+  \int x = 2; \
+  \begin \
+  \x = y % z \
+  \end \
+  \end \
+  \"
 
 badAddExpr :: String
-badAddExpr = "begin\nint x = 2;\nbegin\nx = y + z\nend\nend\n"
+badAddExpr =
+  "begin \
+  \int x = 2; \
+  \begin \
+  \x = y + z \
+  \end \
+  \end \
+  \"
 
 badSubExpr :: String
-badSubExpr = "begin\nint x = 2;\nbegin\nx = y - z\nend\nend\n"
+badSubExpr =
+  "begin \
+  \int x = 2; \
+  \begin \
+  \x = y - z \
+  \end \
+  \end \
+  \"
 
 badGTExpr :: String
-badGTExpr = "begin\nbool x = false;\nbegin\nx = y > z\nend\nend\n"
+badGTExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y > z \
+  \end \
+  \end \
+  \"
 
 badGTEExpr :: String
-badGTEExpr = "begin\nbool x = false;\nbegin\nx = y >= z\nend\nend\n"
+badGTEExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y >= z \
+  \end \
+  \end \
+  \"
 
 badLTExpr :: String
-badLTExpr = "begin\nbool x = false;\nbegin\nx = y < z\nend\nend\n"
+badLTExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y < z \
+  \end \
+  \end \
+  \"
 
 badLTEExpr :: String
-badLTEExpr = "begin\nbool x = false;\nbegin\nx = y <= z\nend\nend\n"
+badLTEExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y <= z \
+  \end \
+  \end \
+  \"
 
 badEqExpr :: String
-badEqExpr = "begin\nbool x = false;\nbegin\nx = y == z\nend\nend\n"
+badEqExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y == z \
+  \end \
+  \end \
+  \"
 
 badIneqExpr :: String
-badIneqExpr = "begin\nbool x = false;\nbegin\nx = y != z\nend\nend\n"
+badIneqExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y != z \
+  \end \
+  \end \
+  \"
 
 badAndExpr :: String
-badAndExpr = "begin\nbool x = false;\nbegin\nx = y && z\nend\nend\n"
+badAndExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y && z \
+  \end \
+  \end \
+  \"
 
 badOrExpr :: String
-badOrExpr = "begin\nbool x = false;\nbegin\nx = y || z\nend\nend\n"
+badOrExpr =
+  "begin \
+  \bool x = false; \
+  \begin \
+  \x = y || z \
+  \end \
+  \end \
+  \"
 
 naming_fail_expr_tests :: TestTree
 naming_fail_expr_tests =
@@ -229,46 +461,138 @@ naming_fail_expr_tests =
     ]
 
 skipStatement :: String
-skipStatement = "begin\nskip\nend\n"
+skipStatement =
+  "begin \
+  \skip \
+  \end \
+  \"
 
 declareStatement :: String
-declareStatement = "begin\nint x = 5\nend\n"
+declareStatement =
+  "begin \
+  \int x = 5 \
+  \end \
+  \"
 
 badAsgnStatement :: String
-badAsgnStatement = "begin\nint x = 5;\nbegin\ny = x\nend\nend\n"
+badAsgnStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \y = x \
+  \end \
+  \end \
+  \"
 
 badReadStatement :: String
-badReadStatement = "begin\nint x = 5;\nbegin\nread y\nend\nend\n"
+badReadStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \read y \
+  \end \
+  \end \
+  \"
 
 badFreeStatement :: String
-badFreeStatement = "begin\nint x = 5;\nbegin\nfree y\nend\nend\n"
+badFreeStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \free y \
+  \end \
+  \end \
+  \"
 
 badReturnStatement :: String
-badReturnStatement = "begin\nint x = 5;\nbegin\nreturn y\nend\nend\n"
+badReturnStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \return y \
+  \end \
+  \end \
+  \"
 
 badExitStatement :: String
-badExitStatement = "begin\nint x = 5;\nbegin\nexit y\nend\nend\n"
+badExitStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \exit y \
+  \end \
+  \end \
+  \"
 
 badPrintStatement :: String
-badPrintStatement = "begin\nint x = 5;\nbegin\nprint y\nend\nend\n"
+badPrintStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \print y \
+  \end \
+  \end \
+  \"
 
 badPrintLnStatement :: String
-badPrintLnStatement = "begin\nint x = 5;\nbegin\nprintln y\nend\nend\n"
+badPrintLnStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \println y \
+  \end \
+  \end \
+  \"
 
 badIfElseExprstatement :: String
-badIfElseExprstatement = "begin\nint x = 5;\nbegin\nif y then x = 5 else x = 6 fi\nend\nend\n"
+badIfElseExprstatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \if y then x = 5 else x = 6 fi \
+  \end \
+  \end \
+  \"
 
 badIfElseStatementOneStatement :: String
-badIfElseStatementOneStatement = "begin\nint x = 5;\nbegin\nif true then y = 5 else skip fi\nend\nend\n"
+badIfElseStatementOneStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \if true then y = 5 else skip fi \
+  \end \
+  \end \
+  \"
 
 badIfElseStatementTwoStatement :: String
-badIfElseStatementTwoStatement = "begin\nint x = 5;\nbegin\nif true then x = 5 else y = 6 fi\nend\nend\n"
+badIfElseStatementTwoStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \if true then x = 5 else y = 6 fi \
+  \end \
+  \end \
+  \"
 
 badWhileExprStatement :: String
-badWhileExprStatement = "begin\nint x = 5;\nbegin\nwhile y do x = 5 done\nend\nend\n"
+badWhileExprStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \while y do x = 5 done \
+  \end \
+  \end \
+  \"
 
 badWhileStatementOneStatement :: String
-badWhileStatementOneStatement = "begin\nint x = 5;\nbegin\nwhile true do y = 5 done\nend\nend\n"
+badWhileStatementOneStatement =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \while true do y = 5 done \
+  \end \
+  \end \
+  \"
 
 rename_fail_statement_tests :: TestTree
 rename_fail_statement_tests =
@@ -311,7 +635,15 @@ rename_fail_statement_tests =
     ]
 
 badStatements :: String
-badStatements = "begin\nint x = 5;\nbegin\nint y = 5;\nz = 5\nend\nend\n"
+badStatements =
+  "begin \
+  \int x = 5; \
+  \begin \
+  \int y = 5; \
+  \z = 5 \
+  \end \
+  \end \
+  \"
 
 rename_fail_statements_tests :: TestTree
 rename_fail_statements_tests =

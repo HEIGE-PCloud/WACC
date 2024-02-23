@@ -1,10 +1,10 @@
 _malloc:
 pushq %rbp
-movq %rsp %rbp
-andq $-16 %rsp
+movq %rsp, %rbp
+andq $-16, %rsp
 call malloc@plt
-cmpq $0 %rax
-je _errOutOfMemory
-movq %rbp %rsp
+cmpq $0, %rax
+je _erroutofmemory
+movq %rbp, %rsp
 popq %rbp
 ret

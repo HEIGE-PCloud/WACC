@@ -1,6 +1,7 @@
 variables:
-  BUILD_CACHE_POLICY: 'pull'
   GIT_SUBMODULE_STRATEGY: recursive
+  GIT_STRATEGY: fetch
+  GIT_CLEAN_FLAGS: -ffdx -e .stack-work/ -e wacc/.stack-work/
 
 include:
   - template: Code-Quality.gitlab-ci.yml
@@ -15,58 +16,35 @@ stages:
   - build
   - test
 
-default:
-  image: haskell:9.6.3
-
-.stack-cache:
-  variables:
-    STACK_ROOT: $CI_PROJECT_DIR/.stack
-  before_script:
-    - mkdir -p .stack
-  cache:
-    - key:
-        files:
-          - stack.yml
-          - stack.yml.lock
-      paths:
-        - .stack-work/
-        - .stack/
-      policy: $BUILD_CACHE_POLICY
-    - key:
-        files:
-          - wacc/package.yaml
-          - wacc/wacc.cabal
-      paths:
-        - wacc/.stack-work/
-      policy: $BUILD_CACHE_POLICY
-
 lint:
-  image:
-    entrypoint: [""]
-    name: ghcr.io/danieljtrowbridge/docker-fourmolu:9.6.4
+  tags:
+    - shell
   script:
     - fourmolu --mode check wacc
   stage: lint
 
 build:
+  tags:
+    - shell
   script:
     - make build-test
   stage: build
-  variables:
-    BUILD_CACHE_POLICY: 'pull-push'
-  extends: .stack-cache
 
 code_quality:
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  tags:
+    - docker
   services:            # Shut off Docker-in-Docker
   variables:
     GIT_SUBMODULE_STRATEGY: none
 
-integration-test:
+test:
+  tags:
+    - shell
   script:
-    - make integration-test
+    - make test-all
   stage: test
   artifacts:
     when: always
@@ -74,28 +52,3 @@ integration-test:
       - rspec.xml
     reports:
       junit: rspec.xml
-  extends: .stack-cache
-
-unit-test:
-  script:
-    - make unit-test
-  stage: test
-  artifacts:
-    when: always
-    paths:
-      - rspec.xml
-    reports:
-      junit: rspec.xml
-  extends: .stack-cache
-
-golden-test:
-  script:
-    - make golden-test
-  stage: test
-  artifacts:
-    when: always
-    paths:
-      - rspec.xml
-    reports:
-      junit: rspec.xml
-  extends: .stack-cache

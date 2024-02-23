@@ -1,21 +1,20 @@
-{- AUTOCOLLECT.TEST -}
-
-module Language.WACC.TypeChecking.BTypeTest
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.TypeChecker.BTypeTest
+  ( bTypeTestGroup
   )
 where
 
 import Language.WACC.TypeChecking.BType
 import Test
+import Test.Frontend.TypeChecker.Arbitrary ()
 
 unifyNoCast :: BType -> BType -> Maybe BType
 unifyNoCast (BArray _) BString = Nothing
 unifyNoCast bt1 bt2 = unify bt1 bt2
 
-test =
+bTypeTestGroup :: TestTree
+bTypeTestGroup =
   testGroup
-    "unitTests"
+    "unitTest"
     [ testGroup
         "unify"
         [ testProperty "is reflexive" $ \t -> unify t t == Just t
