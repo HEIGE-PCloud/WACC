@@ -1,9 +1,9 @@
-module Test.Ingredients
+module Test.Lib.Ingredients
   ( testReporter
   )
 where
 
-import Test.AntXML (antXMLRunner)
+import Test.Lib.AntXML (antXMLRunner)
 import Test.Tasty.Ingredients (Ingredient, composeReporters)
 import Test.Tasty.Ingredients.Basic (consoleTestReporter)
 

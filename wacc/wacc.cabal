@@ -47,6 +47,7 @@ library
       Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
+      Language.WACC.X86.Runtime
       Language.WACC.X86.X86
   other-modules:
       Paths_wacc
@@ -55,11 +56,14 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , dlist
     , extra
+    , filepath
     , gigaparsec
     , mtl
+    , raw-strings-qq
     , recursion-schemes
     , transformers
   default-language: Haskell2010
@@ -73,11 +77,14 @@ executable compile
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , dlist
     , extra
+    , filepath
     , gigaparsec
     , mtl
+    , raw-strings-qq
     , recursion-schemes
     , transformers
     , wacc
@@ -87,22 +94,28 @@ test-suite wacc-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Language.WACC.TypeChecking.BTypeTest
-      Language.WACC.TypeChecking.ExprTest
-      Language.WACC.TypeChecking.ProgTest
-      Language.WACC.TypeChecking.StmtTest
       Test
-      Test.AntXML
-      Test.Arbitrary
+      Test.Backend.IntegrationTest
+      Test.Backend.Test
+      Test.Backend.X86.GoldenTest
+      Test.Backend.X86.Test
       Test.Common
-      Test.Golden
-      Test.Ingredients
-      Test.Integration
-      Test.Parser.QuickCheck
-      Test.Program
-      Test.Semantic.QuickCheck
-      Test.Semantic.ScopeUnitTest
-      Test.X86Examples
+      Test.Frontend.IntegrationTest
+      Test.Frontend.Parser.GoldenTest
+      Test.Frontend.Parser.Test
+      Test.Frontend.Parser.UnitTest
+      Test.Frontend.Scope.Test
+      Test.Frontend.Scope.UnitTest
+      Test.Frontend.Test
+      Test.Frontend.TypeChecker.Arbitrary
+      Test.Frontend.TypeChecker.BTypeTest
+      Test.Frontend.TypeChecker.ExprTest
+      Test.Frontend.TypeChecker.ProgTest
+      Test.Frontend.TypeChecker.StmtTest
+      Test.Frontend.TypeChecker.Test
+      Test.Lib.AntXML
+      Test.Lib.Ingredients
+      Test.Lib.Program
       Paths_wacc
   hs-source-dirs:
       test
@@ -113,6 +126,7 @@ test-suite wacc-test
       QuickCheck
     , base >=4.7 && <5
     , bytestring
+    , cmdargs
     , containers
     , deepseq
     , directory
@@ -124,11 +138,13 @@ test-suite wacc-test
     , gigaparsec
     , mtl
     , process
+    , raw-strings-qq
     , recursion-schemes
     , stm
     , tagged
     , tasty
     , tasty-autocollect
+    , tasty-expected-failure
     , tasty-golden
     , tasty-hspec
     , tasty-hunit

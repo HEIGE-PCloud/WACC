@@ -1,0 +1,21 @@
+.section
+.rodata
+.int 2
+.L._readi_str0:
+.asciz "%d"
+.text
+_readi:
+pushq %rbp
+movq %rsp, %rbp
+andq $-16, %rsp
+subq $16, %rsp
+movl %edi, 0(%rsp)
+leaq 0(%rsp), %rsi
+leaq .L._readi_str0(%rip), %rdi
+movb $0, %al
+call scanf@plt
+movslq 0(%rsp), %rax
+addq $16, %rsp
+movq %rbp, %rsp
+popq %rbp
+ret

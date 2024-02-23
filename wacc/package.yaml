@@ -15,6 +15,9 @@ dependencies:
   - recursion-schemes
   - transformers
   - extra
+  - filepath
+  - cmdargs
+  - raw-strings-qq
 
 ghc-options:
   - -Wall
@@ -65,6 +68,7 @@ tests:
       - tasty-quickcheck
       - tasty-hunit
       - tasty-golden
+      - tasty-expected-failure
       - wacc
       - deepseq
       - directory
@@ -74,6 +78,5 @@ tests:
       - utf8-string
       - tagged
       - generic-deriving
-      - filepath
       - stm
       - xml

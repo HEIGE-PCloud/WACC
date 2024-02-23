@@ -1,7 +1,7 @@
 module Test.Common where
 
-takeBaseName :: FilePath -> String
-takeBaseName path = map (\c -> if c == '/' then '.' else c) $ take (length path - 5) path
+takeTestName :: FilePath -> String
+takeTestName path = map (\c -> if c == '/' then '.' else c) $ take (length path - 5) path
 
 validTests :: [FilePath]
 validTests =

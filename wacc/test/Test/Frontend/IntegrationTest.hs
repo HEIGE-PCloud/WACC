@@ -1,18 +1,16 @@
-{- AUTOCOLLECT.TEST -}
-
-module Test.Integration
-  (
-  {- AUTOCOLLECT.TEST.export -}
+module Test.Frontend.IntegrationTest
+  ( integrationTestGroup
   )
 where
 
 import Data.List (isPrefixOf)
 import System.Exit
-import Test.Common (allTests, takeBaseName)
-import Test.Program
+import Test.Common (allTests, takeTestName)
+import Test.Lib.Program
 import Test.Tasty
 
-test = testGroup "integrationTests" allIntegrationTests
+integrationTestGroup :: TestTree
+integrationTestGroup = testGroup "integrationTest" allintegrationTest
 
 data IntegrationTestKind = Valid | SyntaxError | SemanticError
 
@@ -40,7 +38,7 @@ mkIntegrationTest rawPath =
       | isSemanticError = SemanticError
       | isSyntaxError = SyntaxError
       | otherwise = error $ "Unknown test kind for " ++ rawPath
-    name = takeBaseName rawPath
+    name = takeTestName rawPath
 
 expectedExitCode :: IntegrationTestKind -> ExitCode
 expectedExitCode Valid = ExitSuccess
@@ -49,7 +47,15 @@ expectedExitCode SemanticError = ExitFailure 200
 
 mkIntegrationTestCase :: IntegrationTest -> TestTree
 mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKind = kind} =
-  testProgram name "./compile" [path] (Just "..") (expectedExitCode kind)
+  testProgram
+    name
+    "./compile"
+    [path, "--parseOnly"]
+    (Just "..")
+    Nothing
+    (expectedExitCode kind)
+    ignoreOutput
+    ignoreOutput
 
-allIntegrationTests :: [TestTree]
-allIntegrationTests = map (mkIntegrationTestCase . mkIntegrationTest) allTests
+allintegrationTest :: [TestTree]
+allintegrationTest = map (mkIntegrationTestCase . mkIntegrationTest) allTests
