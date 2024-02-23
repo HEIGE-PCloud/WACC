@@ -32,7 +32,10 @@ swapReg :: Register
 swapReg = R10
 
 data Allocation = Allocation
-  {swapVar :: Maybe (Var Integer), getAlloc :: Map (Var Integer) Operand}
+  { swapVar :: Maybe (Var Integer)
+  , getAlloc :: Map (Var Integer) Operand
+  , translated :: Set TAC.Label
+  }
 
 type Analysis =
   RWS
@@ -51,24 +54,46 @@ translateFunc (Func l v bs) = is
     startBlock = snd (findMin bs)
 
 translateBlocks
-  :: BasicBlock Integer Integer
+  :: TAC.Label Integer
+  -> BasicBlock Integer Integer
   -> Analysis ()
-translateBlocks (BasicBlock is next) = do
-  mapM translateTAC is
+translateBlocks l (BasicBlock is next) = do
+  translateBlock l
   translateNext next
+
+translateBlock
+  :: TAC.Label Integer
+  -> [TAC Integer Integer]
+  -> Analysis ()
+translateBlock l is = do
+  puts (S.insert l . translated) -- include label in translated set
+  tellInstr (Lab (mapLab l))
+  mapM translateTAC is
 
 mapLab :: (TAC.Label Integer) -> X86.Label
 mapLab (Label x) = I x
 
 tellInstr = tell . D.singleton
 
+isTranslated :: Label Integer -> Analaysis Boolean
+isTranslated l = gets ((member l) . translated)
+
 translateNext :: Jump Integer Integer -> Analysis ()
-translateNext (Jump (Label l)) = asks (! l) >>= translateBlocks
-translateNext (CJump v l1 l2) = do
+translateNext (Jump l1@(Label n)) = do
+  nextBlock <- asks (! n)
+  t <- isTranslated l1
+  case t of
+    False -> translateBlocks l1 nextBlock
+    True -> tellInstr (Jmp l1)
+translateNext (CJump v l1@(TAC.Label n1) l2) = do
   operand <- gets ((! v) . getAlloc)
   tellInstr (Cmpq operand (Imm 0))
   tellInstr (Je (mapLab l2)) -- jump to l2 if v == 0. Otherwise keep going
   translateNext (Jump l1)
+  t <- isTranslated l2
+  case t of
+    False -> translateNext (Jump l2)
+    True -> pure ()
 translateNext (TAC.Ret var) = tellInstr X86.Ret -- TODO deal with arguments
 
 -- getVar :: Var Integer -> Analysis Register
