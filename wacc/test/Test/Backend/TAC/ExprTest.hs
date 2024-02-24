@@ -3,13 +3,15 @@
 module Test.Backend.TAC.ExprTest (exprTestGroup) where
 
 import Data.Char (ord)
-import Language.WACC.AST
+import Language.WACC.AST (Expr (WAtom), WAtom (..))
+import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.Expr
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking
 import Test
+import Prelude hiding (GT, LT)
 
 testTACM :: TACM Int Int a -> a
 testTACM = runTACM 0
@@ -17,8 +19,24 @@ testTACM = runTACM 0
 toTAC' :: Expr Int BType -> ExprTACs Int Int
 toTAC' = testTACM . toTAC
 
+varExpr :: Int -> BType -> Expr Int BType
+varExpr v t = WAtom (Ident v t) t
+
 temp0 :: Var Int
 temp0 = Temp 0
+
+testBinOp
+  :: String
+  -> (Expr Int BType -> Expr Int BType -> BType -> Expr Int BType)
+  -> BinOp
+  -> BType
+  -> BType
+  -> BType
+  -> TestTree
+testBinOp name astOp tacOp t1 t2 t3 =
+  testProperty (unwords [name, "generates", show tacOp]) $ \v1 v2 ->
+    toTAC' (astOp (varExpr v1 t1) (varExpr v2 t2) t3)
+      == [BinInstr temp0 (Var v1) tacOp (Var v2)] temp0
 
 exprTestGroup :: TestTree
 exprTestGroup =
@@ -47,7 +65,30 @@ exprTestGroup =
                 toTAC' (WAtom (Null BErasedPair) BErasedPair)
                   @?= [LoadCI temp0 0] temp0
             ]
-        , testProperty "identifiers generate no instructions" $ \i ->
-            toTAC' (WAtom (Ident i BInt) BInt) == [] (Var i)
+        , testProperty "identifiers generate no instructions" $ \v ->
+            toTAC' (varExpr v BInt) == [] (Var v)
+        ]
+    , testGroup
+        "unary expressions"
+        [ testProperty "!_ generates Not" $ \v ->
+            toTAC' (AST.Not (varExpr v BBool) BBool)
+              == [UnInstr temp0 Not (Var v)] temp0
+        , testProperty "-_ generates Negate" $ \v ->
+            toTAC' (AST.Negate (varExpr v BInt) BInt)
+              == [UnInstr temp0 Negate (Var v)] temp0
+        ]
+    , testGroup
+        "binary expressions"
+        [ testBinOp "_*_" AST.Mul Mul BInt BInt BInt
+        , testBinOp "_/_" AST.Div Div BInt BInt BInt
+        , testBinOp "_%_" AST.Mod Mod BInt BInt BInt
+        , testBinOp "_+_" AST.Add Add BInt BInt BInt
+        , testBinOp "_-_" AST.Sub Sub BInt BInt BInt
+        , testBinOp "_>_" AST.GT GT BInt BInt BBool
+        , testBinOp "_>=_" AST.GTE GTE BInt BInt BBool
+        , testBinOp "_<_" AST.LT LT BInt BInt BBool
+        , testBinOp "_<=_" AST.LTE LTE BInt BInt BBool
+        , testBinOp "_&&_" AST.And And BBool BBool BBool
+        , testBinOp "_||_" AST.Or Or BBool BBool BBool
         ]
     ]
