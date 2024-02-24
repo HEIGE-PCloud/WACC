@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedLists #-}
 
-module Test.Backend.TAC.ExprTest (tacExprTestGroup) where
+module Test.Backend.TAC.ExprTest (exprTestGroup) where
 
 import Data.Char (ord)
 import Language.WACC.AST
@@ -20,10 +20,10 @@ toTAC' = testTACM . toTAC
 temp0 :: Var Int
 temp0 = Temp 0
 
-tacExprTestGroup :: TestTree
-tacExprTestGroup =
+exprTestGroup :: TestTree
+exprTestGroup =
   testGroup
-    "unitTest"
+    "expressions"
     [ testGroup
         "atomic expressions"
         [ testGroup

@@ -64,6 +64,9 @@ backend-test: compile
 backend-integration-test: compile
 	$(MAKE) test PATTERN="0 ~ /backend\.integrationTest/"
 
+tac-test:
+	$(MAKE) test PATTERN="0 ~ /TAC/"
+
 x86-golden-test:
 	$(MAKE) test PATTERN="0 ~ /x86\.goldenTest/"
 
