@@ -6,9 +6,9 @@ compile:
 build-test:
 	stack build --test --no-run-tests
 
-test: 
+test:
 	stack test \
-		--test-arguments --hide-successes \
+		$(if $(SHOW_ALL),, --test-arguments --hide-successes) \
 		--test-arguments --timeout=1m \
 		--test-arguments --xml=../rspec.xml \
 		--test-arguments --quickcheck-max-size=10 \
