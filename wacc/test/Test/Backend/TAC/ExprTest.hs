@@ -3,7 +3,7 @@
 module Test.Backend.TAC.ExprTest (exprTestGroup) where
 
 import Data.Char (ord)
-import Language.WACC.AST (Expr (WAtom), WAtom (..))
+import Language.WACC.AST (Expr (WAtom), WAtom (..), WType (..))
 import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.Expr
@@ -24,6 +24,9 @@ varExpr v t = WAtom (Ident v t) t
 
 temp0 :: Var Int
 temp0 = Temp 0
+
+temp1 :: Var Int
+temp1 = Temp 1
 
 testBinOp
   :: String
@@ -76,6 +79,14 @@ exprTestGroup =
         , testProperty "-_ generates Negate" $ \v ->
             toTAC' (AST.Negate (varExpr v BInt) BInt)
               == [UnInstr temp0 Negate (Var v)] temp0
+        , testProperty "len loads length stored at base address" $ \v ->
+            toTAC' (AST.Len (varExpr v $ BArray BInt) BInt)
+              == [LoadCI temp0 0, LoadM temp1 (Var v) temp0 WInt] temp1
+        , testProperty "ord generates no instructions" $ \v ->
+            toTAC' (AST.Ord (varExpr v BChar) BInt) == [] (Var v)
+        , testProperty "chr generates a bounds check" $ \v ->
+            toTAC' (AST.Chr (varExpr v BInt) BChar)
+              == [CheckBounds 0 (Var v) 127] (Var v)
         ]
     , testGroup
         "binary expressions"
