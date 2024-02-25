@@ -16,26 +16,6 @@ ADT representing the three-address code (TAC) instructions.
 data TAC ident lident
   = -- | > <var> := <var> <binop> <var>
     BinInstr (Var ident) (Var ident) BinOp (Var ident)
-  | -- |
-    -- > <var> := <var> == <var>
-    --
-    -- where @var@ is a @array@ or @pair@
-    EqR (Var ident) (Var ident) (Var ident)
-  | -- |
-    -- > <var> := <var> != <var>
-    --
-    -- where @var@ is a @array@ or @pair@
-    IneqR (Var ident) (Var ident) (Var ident)
-  | -- |
-    -- > <var> := <var> == <var>
-    --
-    -- where @var@ is a @int@, @bool@, @char@, or @string@
-    EqV (Var ident) (Var ident) (Var ident)
-  | -- |
-    -- > <var> := <var> != <var>
-    --
-    -- where @var@ is a @int@, @bool@, @char@, or @string@
-    IneqV (Var ident) (Var ident) (Var ident)
   | -- | > <var> := <unop> <var>
     UnInstr (Var ident) UnOp (Var ident)
   | -- | > <var> := <var>[<Offset>]
@@ -74,7 +54,20 @@ data TAC ident lident
     Free (Var ident)
 
 -- | Binary operators in TAC
-data BinOp = Add | Sub | Mul | Div | Mod | And | Or | Lt | Gt | Le | Ge
+data BinOp
+  = Add
+  | Sub
+  | Mul
+  | Div
+  | Mod
+  | And
+  | Or
+  | Lt
+  | Gt
+  | Le
+  | Ge
+  | Eq
+  | Ineq
 
 -- | Unary operators in TAC
 data UnOp = Neg | Not
