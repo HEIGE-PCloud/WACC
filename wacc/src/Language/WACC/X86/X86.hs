@@ -10,7 +10,7 @@ import Data.Typeable ()
 import Language.WACC.Error (quote)
 
 data Label = I Integer | R Runtime | S String
-  deriving (Data)
+  deriving (Eq, Ord, Data)
 
 data Runtime
   = PrintI
@@ -25,7 +25,7 @@ data Runtime
   | ReadC
   | ErrOutOfMemory
   | ErrOverflow
-  deriving (Typeable, Data, Show)
+  deriving (Eq, Ord, Typeable, Data, Show)
 
 type Prog = [Instr]
 
@@ -49,6 +49,7 @@ data Instr
   | Cmpb Operand Operand
   | Call Label
   | Je Label
+  | Jo Label
   | Jne Label
   | Jmp Label
   | Dir Directive
@@ -66,7 +67,7 @@ data Directive
   deriving (Typeable, Data)
 
 data Operand = Imm Integer | Reg Register | Mem Memory
-  deriving (Data)
+  deriving (Eq, Ord, Data)
 
 data Memory
   = -- | (53) :- immediate memory access
@@ -85,7 +86,7 @@ data Memory
     MScaleI Integer Register Register Integer
   | -- | f4(%rax) :- offset to label, single register memory access
     MRegL Label Register
-  deriving (Data)
+  deriving (Eq, Ord, Data)
 
 {- |
 [source diagram for below](https://scientia.doc.ic.ac.uk/api/resources/11646/file/Lecture4_StackProcedures.pdf#page=17)
@@ -161,10 +162,10 @@ data Register
   | R15w
   | R15b
   | Rip
-  deriving (Show, Data)
+  deriving (Eq, Ord, Show, Data)
 
 callee :: [Register]
-callee = [Rbx, Rbp, R12, R13, R14, R15]
+callee = [Rbx, R12, R13, R14, R15]
 
 caller :: [Register]
 caller = [R10, R11]
