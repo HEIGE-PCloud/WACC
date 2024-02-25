@@ -165,13 +165,13 @@ data Register
   deriving (Eq, Ord, Show, Data)
 
 callee :: [Register]
-callee = [Rbx, R12, R13, R14, R15]
+callee = [Rbx, Rbp, R12, R13, R14, R15]
 
 caller :: [Register]
 caller = [R10, R11]
 
-args :: [Register]
-args = [Rdi, Rsi, Rdx, Rcx, R8, R9]
+argRegs :: [Register]
+argRegs = [Rdi, Rsi, Rdx, Rcx, R8, R9]
 
 class ATNT a where
   formatA :: a -> String

@@ -13,10 +13,11 @@ import Control.Monad.RWS
   , put
   , tell
   )
-import Data.Bimap hiding ((!))
+import Data.Bimap hiding (map, (!))
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
+import Data.List ((\\))
 import Data.Map (Map, findMin, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
@@ -29,27 +30,17 @@ import Language.WACC.X86.X86
   , Memory (..)
   , Operand (..)
   , Prog
-  , Register (R10, Rbp)
+  , Register (R10, Rbp, Rsp)
   , Runtime (..)
+  , argRegs
+  , callee
+  , caller
   )
 import qualified Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
 translateProg :: TACProgram Integer Integer -> Prog
 translateProg = D.toList . foldr (D.append . translateFunc) D.empty . M.elems
-
-{- | Rbp points to the location just before the first stack variable of a frame
-This means the last callee saved register pushed onto the stack
--}
-translateFunc :: Func Integer Integer -> DList Instr
-translateFunc (Func l v bs) = is
-  where
-    ((), is) =
-      evalRWS
-        (translateBlocks (TAC.Label n) startBlock)
-        bs
-        (TransST B.empty S.empty 0 S.empty []) -- Not empty regs list
-    (n, startBlock) = M.findMin bs
 
 {- | When registers run out and values in the stack are
 required for a computation, they put in this register.
@@ -78,6 +69,59 @@ type Analysis =
     (Map Integer (BasicBlock Integer Integer))
     (DList Instr)
     TransST
+
+{- | Rbp points to the location just before the first stack variable of a frame
+This means the last callee saved register pushed onto the stack
+
+Assuming stack looks like this: (initial value of Rsp and constant value of Rbp)
+
+--------------
+Extra Arg: 1
+.
+.
+Extra Arg: n     <-- Rsp
+--------------
+Callee Saved: 1
+.
+.
+Callee Saved: m  <-- Rbp
+-------------
+Local Regs: 1
+.
+.
+-}
+translateFunc :: Func Integer Integer -> DList Instr
+translateFunc (Func l vs bs) = is
+  where
+    (_, is) =
+      evalRWS
+        funcRWS
+        bs
+        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller)) -- Not empty regs list
+    (n, startBlock) = M.findMin bs
+
+    funcRWS = do
+      mapM (tellInstr . Pushq . Reg) callee -- callee saving registers
+      tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
+      mapM setupRegArgs (zip vs argRegs)
+      puts
+        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ (drop (length vs) argRegs)} -- mark extra arg regs as usable
+        )
+      -- \| if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
+      mapM
+        setupStackArgs
+        ( zip
+            (drop (length argRegs) vs)
+            (map (\x -> (-x) - toInteger (length callee)) [0 ..])
+        )
+      translateBlocks (TAC.Label n) startBlock -- translate main part of code
+      svn <- gets stackVarNum
+      tellInstr (Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
+      mapM (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
+    setupRegArgs :: (Var Integer, Register) -> Analysis ()
+    setupRegArgs (v, r) = puts (addAlloc v (Reg r))
+    setupStackArgs :: (Var Integer, Integer) -> Analysis ()
+    setupStackArgs (v, n) = puts (addAlloc v (Mem (MRegI n Rbp)))
 
 -- | translate each statement of the block. then figure out which block to go to
 translateBlocks
