@@ -5,7 +5,7 @@ module Language.WACC.X86.Translate where
 import Control.Monad.RWS
   ( RWS
   , asks
-  , evalRWS
+  , execRWS
   , get
   , gets
   , local
@@ -24,8 +24,10 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Language.WACC.TAC.TAC
 import qualified Language.WACC.TAC.TAC as TAC
+import Language.WACC.X86.Runtime (runtimeLib)
 import Language.WACC.X86.X86
-  ( Instr (..)
+  ( Directive (..)
+  , Instr (..)
   , Label (..)
   , Memory (..)
   , Operand (..)
@@ -40,7 +42,19 @@ import qualified Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
 translateProg :: TACProgram Integer Integer -> Prog
-translateProg = D.toList . foldr (D.append . translateFunc) D.empty . M.elems
+translateProg p = D.toList $ preamble `D.append` (D.concat is) `D.append` (D.concat runtime)
+  where
+    runtime :: [DList Instr]
+    runtime = (runtimeLib !) <$> (S.toList (S.unions runtimeLs))
+    (runtimeLs, is) = unzip $ map translateFunc (M.elems p)
+    preamble :: DList Instr
+    preamble =
+      D.fromList
+        [ Dir $ DirGlobl (S "main")
+        , Dir $ DirSection
+        , Dir $ DirRodata
+        , Dir $ DirText
+        ]
 
 {- | When registers run out and values in the stack are
 required for a computation, they put in this register.
@@ -90,11 +104,11 @@ Local Regs: 1
 .
 .
 -}
-translateFunc :: Func Integer Integer -> DList Instr
-translateFunc (Func l vs bs) = is
+translateFunc :: Func Integer Integer -> (Set Runtime, DList Instr)
+translateFunc (Func l vs bs) = (runtimeFns st, is)
   where
-    (_, is) =
-      evalRWS
+    (st, is) =
+      execRWS
         funcRWS
         bs
         (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller)) -- Not empty regs list
