@@ -163,6 +163,7 @@ translateTAC (BinInstr lv rv1 op rv2) = do
   tellInstr (Movq op1 (Reg r))
   tellInstr ((translateBinOp op) op2 (Reg r))
   tellInstr (Jo (R ErrOverflow))
+
 -- translateTAC (EqR (Var ident) (Var ident) (Var ident)
 -- translateTAC (IneqR (Var ident) (Var ident) (Var ident)
 -- translateTAC (EqV (Var ident) (Var ident) (Var ident)
@@ -177,6 +178,6 @@ translateTAC (BinInstr lv rv1 op rv2) = do
 -- translateTAC (PrintLn (Var ident) WType
 -- translateTAC (Exit (Var ident)
 -- translateTAC (Read (Var ident) WType
-translateTAC (TAC.Malloc lv rv) = translateTAC (Call lv (R X86.Malloc) [rv])
+-- translateTAC (TAC.Malloc lv rv) = translateTAC (TAC.Call lv (R X86.Malloc) [rv])
 
 -- translateTAC (Free (Var ident)
