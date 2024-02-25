@@ -1,6 +1,7 @@
 export PATH := $(PWD):$(PATH)
 
 compile:
+	git submodule update --init --recursive
 	stack install --local-bin-path . wacc:exe:compile
 
 build-test:
@@ -82,6 +83,6 @@ clean:
 	$(RM) *.s
 	$(RM) test
 	$(RM) rspec.xml
-	$(RM) a.out
+	$(RM) *.out
 
 .PHONY: clean compile test

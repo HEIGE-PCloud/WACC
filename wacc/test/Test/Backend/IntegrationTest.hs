@@ -35,6 +35,18 @@ import Text.Gigaparsec.Token.Lexer
   , sym
   )
 
+enabledTests :: [FilePath]
+enabledTests =
+  [ "valid/basic/exit/exit-1.wacc"
+  , "valid/IO/IOLoop.wacc"
+  ]
+
+allTests :: [FilePath]
+allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
+
+ignoredTests :: [FilePath]
+ignoredTests = allTests \\ enabledTests
+
 lexer :: Lexer
 lexer = mkLexer plain
 
@@ -103,7 +115,7 @@ mkTestProgramMetadata path (((d, i), o), e) =
   TestProgramMetadata
     { sourceCodeFilePath = path
     , assemblyFilePath = takeBaseName path ++ ".s"
-    , executableFilePath = "a.out"
+    , executableFilePath = takeBaseName path ++ ".out"
     , description = d
     , input = fromMaybe "" i
     , output = fromMaybe "" o
@@ -169,15 +181,6 @@ outputChecker rawOutput realOutput = case res of
       )
   where
     res = parse @String genOutputParser rawOutput
-
-allTests :: [FilePath]
-allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
-
-ignoredTests :: [FilePath]
-ignoredTests = allTests \\ enabledTests
-
-enabledTests :: [FilePath]
-enabledTests = ["valid/runtimeErr/integerOverflow/intWayOverflow.wacc"]
 
 mkIntegrationTestCase :: FilePath -> TestTree
 mkIntegrationTestCase rawPath =
