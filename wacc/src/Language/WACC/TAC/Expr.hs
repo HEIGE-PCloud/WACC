@@ -14,6 +14,7 @@ import Control.Monad (zipWithM)
 import Data.Bool (bool)
 import Data.Char (ord)
 import Data.DList (DList)
+import Data.Foldable (foldl')
 import Data.Functor.Foldable (embed)
 import Data.Semigroup (sconcat)
 import GHC.IsList (IsList (..))
@@ -105,8 +106,8 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (StringLit s _) _) = [[LoadCS t s] t | t <- freshTemp]
   toTAC (WAtom (Null _) _) = loadCI 0
   toTAC (WAtom (Ident v _) _) = pure $ [] (Var v)
-  toTAC (WAtom (ArrayElem (ArrayIndex v xs _) _) t) =
-    foldr chainIndexTACs ([] $ Var v) <$> zipWithM mkIndexTACs xs ts
+  toTAC (WAtom (ArrayElem (ArrayIndex v xs t) _) _) =
+    foldl' chainIndexTACs ([] $ Var v) <$> zipWithM mkIndexTACs xs ts
     where
       ts = unfoldElementTypes t
       unfoldElementTypes (BArray t') = t' : unfoldElementTypes t'
@@ -132,7 +133,7 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
         ]
       toWType (BFixed wft) = embed $ WErasedPair <$ wft
       toWType _ = error "subexpression with unknown type"
-      chainIndexTACs f xts = xts <> f (exprV xts)
+      chainIndexTACs xts f = xts <> f (exprV xts)
   toTAC (AST.Not x _) = unOp Not x
   toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) =
