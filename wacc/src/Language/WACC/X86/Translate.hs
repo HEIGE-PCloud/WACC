@@ -8,16 +8,14 @@ import Control.Monad.RWS
   , evalRWS
   , get
   , gets
-  , local
-  , modify
   , put
   , tell
   )
-import Data.Bimap hiding ((!))
+import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
-import Data.Map (Map, findMin, (!))
+import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -85,8 +83,8 @@ puts f = do
   s <- get
   put (f s)
 
-setTranslated :: (TAC.Label Integer) -> Allocation -> Allocation
-setTranslated l x@(Allocation {translated}) = x {translated = (S.insert l) translated}
+setTranslated :: TAC.Label Integer -> Allocation -> Allocation
+setTranslated l x@(Allocation {translated}) = x {translated = S.insert l translated}
 
 translateBlock
   :: TAC.Label Integer
@@ -95,33 +93,28 @@ translateBlock
 translateBlock l@(TAC.Label n) is = do
   puts (setTranslated l) -- include label in translated set
   tellInstr (Lab (mapLab l))
-  mapM translateTAC is
-  return ()
+  mapM_ translateTAC is
 
-mapLab :: (TAC.Label Integer) -> X86.Label
+mapLab :: TAC.Label Integer -> X86.Label
 mapLab (Label x) = I x
 
 tellInstr = tell . D.singleton
 
 isTranslated :: TAC.Label Integer -> Analysis Bool
-isTranslated l = gets ((S.member l) . translated)
+isTranslated l = gets (S.member l . translated)
 
 translateNext :: Jump Integer Integer -> Analysis ()
 translateNext (Jump l1@(Label n)) = do
   nextBlock <- asks (! n)
   t <- isTranslated l1
-  case t of
-    False -> translateBlocks l1 nextBlock
-    True -> tellInstr (Jmp (mapLab l1))
+  (if t then tellInstr (Jmp (mapLab l1)) else translateBlocks l1 nextBlock)
 translateNext (CJump v l1 l2@(TAC.Label n2)) = do
   operand <- gets ((B.! v) . getAlloc)
   tellInstr (Cmpq operand (Imm 0))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
   t <- isTranslated l1
-  case t of
-    False -> translateNext (Jump l1)
-    True -> pure ()
+  (if t then pure () else translateNext (Jump l1))
 translateNext (TAC.Ret var) = pure ()
 
 -- getVar :: Var Integer -> Analysis Register
@@ -133,7 +126,7 @@ translateNext (TAC.Ret var) = pure ()
 --    Mem m -> do undefined
 
 addAlloc :: Var Integer -> Operand -> Allocation -> Allocation
-addAlloc v o x@(Allocation {getAlloc}) = x {getAlloc = (B.insert v o) getAlloc}
+addAlloc v o x@(Allocation {getAlloc}) = x {getAlloc = B.insert v o getAlloc}
 
 getReg :: Analysis Register
 getReg = do
@@ -141,9 +134,9 @@ getReg = do
   case rs of
     [] -> do
       tellInstr (Pushq (Reg swapReg))
-      swapVar <- gets ((B.!> (Reg swapReg)) . getAlloc)
+      swapVar <- gets ((B.!> Reg swapReg) . getAlloc)
       puts (\x@(Allocation {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
-      stackAddr <- (gets ((* 4) . stackVarNum))
+      stackAddr <- gets ((* 4) . stackVarNum)
       puts (addAlloc swapVar (Mem (MRegI stackAddr Rbp)))
       return swapReg
     (r : rs) -> do
@@ -161,23 +154,21 @@ translateTAC (BinInstr lv rv1 op rv2) = do
   op1 <- gets ((B.! rv1) . getAlloc)
   op2 <- gets ((B.! rv2) . getAlloc)
   tellInstr (Movq op1 (Reg r))
-  tellInstr ((translateBinOp op) op2 (Reg r))
+  tellInstr (translateBinOp op op2 (Reg r))
   tellInstr (Jo (R ErrOverflow))
-
--- translateTAC (EqR (Var ident) (Var ident) (Var ident)
--- translateTAC (IneqR (Var ident) (Var ident) (Var ident)
--- translateTAC (EqV (Var ident) (Var ident) (Var ident)
--- translateTAC (IneqV (Var ident) (Var ident) (Var ident)
--- translateTAC (UnInstr (Var ident) UnOp (Var ident)
--- translateTAC (Store (Var ident) (Offset ident) (Var ident) WType
--- translateTAC (LoadCI (Var ident) Int
--- translateTAC (LoadCS (Var ident) String
--- translateTAC (LoadM (Var ident) (Var ident) (Offset ident) WType
--- translateTAC (Call (Var ident) (Label lident) [Var ident]
--- translateTAC (Print (Var ident) WType
--- translateTAC (PrintLn (Var ident) WType
--- translateTAC (Exit (Var ident)
--- translateTAC (Read (Var ident) WType
--- translateTAC (TAC.Malloc lv rv) = translateTAC (TAC.Call lv (R X86.Malloc) [rv])
-
--- translateTAC (Free (Var ident)
+translateTAC (EqR v1 v2 v3) = undefined
+translateTAC (IneqR v1 v2 v3) = undefined
+translateTAC (EqV v1 v2 v3) = undefined
+translateTAC (IneqV v1 v2 v3) = undefined
+translateTAC (UnInstr v1 op v2) = undefined
+translateTAC (Store v1 off v2 w) = undefined
+translateTAC (LoadCI v i) = undefined
+translateTAC (LoadCS v s) = undefined
+translateTAC (LoadM v1 v2 off w) = undefined
+translateTAC (TAC.Call v1 (Label l) vs) = undefined
+translateTAC (Print v w) = undefined
+translateTAC (TAC.PrintLn v w) = undefined
+translateTAC (Exit v) = undefined
+translateTAC (Read v w) = undefined
+translateTAC (TAC.Malloc lv rv) = undefined
+translateTAC (TAC.Free v) = undefined
