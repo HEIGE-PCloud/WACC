@@ -22,13 +22,12 @@ import Language.WACC.AST
   , Expr (WAtom)
   , WAtom (..)
   , WType (..)
-  , getAnn
   )
 import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
-import Language.WACC.TypeChecking (BType (..), isHeapAllocated)
+import Language.WACC.TypeChecking (BType (..))
 import Prelude hiding (GT, LT)
 
 {- |
@@ -158,11 +157,7 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (AST.GTE x y _) = binOp x GTE y
   toTAC (AST.LT x y _) = binOp x LT y
   toTAC (AST.LTE x y _) = binOp x LTE y
-  toTAC (AST.Eq x y _)
-    | isHeapAllocated (getAnn x) = binInstr x EqR y
-    | otherwise = binInstr x EqV y
-  toTAC (AST.Ineq x y _)
-    | isHeapAllocated (getAnn x) = binInstr x IneqR y
-    | otherwise = binInstr x IneqV y
+  toTAC (AST.Eq x y _) = binOp x Eq y
+  toTAC (AST.Ineq x y _) = binOp x Ineq y
   toTAC (AST.And x y _) = binOp x And y
   toTAC (AST.Or x y _) = binOp x Or y

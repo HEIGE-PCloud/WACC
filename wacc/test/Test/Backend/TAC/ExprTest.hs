@@ -41,41 +41,6 @@ testBinOp name astOp tacOp t1 t2 t3 =
     toTAC' (astOp (varExpr v1 t1) (varExpr v2 t2) t3)
       == [BinInstr temp0 (Var v1) tacOp (Var v2)] temp0
 
-testEq
-  :: String
-  -> String
-  -> (Expr Int BType -> Expr Int BType -> BType -> Expr Int BType)
-  -> (Var Int -> Var Int -> Var Int -> TAC Int Int)
-  -> (Var Int -> Var Int -> Var Int -> TAC Int Int)
-  -> TestTree
-testEq name tacName astOp tacInstrR tacInstrV =
-  testGroup
-    name
-    [ testEq' BInt "ints"
-    , testEq' BBool "bools"
-    , testEq' BChar "chars"
-    , testEq' BString "strings"
-    , testEq' BErasedPair "pairs"
-    , testEq' (BArray BInt) "arrays"
-    ]
-  where
-    testEq' t tName =
-      let
-        useR = isHeapAllocated t
-      in
-        testProperty
-          ( unwords
-              ["on", tName, "generates", tacName ++ if useR then "R" else "V"]
-          )
-          $ \v1 v2 ->
-            toTAC' (astOp (varExpr v1 t) (varExpr v2 t) BBool)
-              == [ (if useR then tacInstrR else tacInstrV)
-                    temp0
-                    (Var v1)
-                    (Var v2)
-                 ]
-                temp0
-
 exprTestGroup :: TestTree
 exprTestGroup =
   testGroup
@@ -136,7 +101,7 @@ exprTestGroup =
         , testBinOp "_<=_" AST.LTE LTE BInt BInt BBool
         , testBinOp "_&&_" AST.And And BBool BBool BBool
         , testBinOp "_||_" AST.Or Or BBool BBool BBool
-        , testEq "_==_" "Eq" AST.Eq EqR EqV
-        , testEq "_!=_" "Ineq" AST.Ineq IneqR IneqV
+        , testBinOp "_==_" AST.Eq Eq BInt BInt BBool
+        , testBinOp "_!=_" AST.Ineq Ineq BInt BInt BBool
         ]
     ]
