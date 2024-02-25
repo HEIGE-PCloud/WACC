@@ -4,6 +4,7 @@ WACC program type checker.
 module Language.WACC.TypeChecking
   ( checkTypes
   , BType (..)
+  , fix
   , isHeapAllocated
   )
 where

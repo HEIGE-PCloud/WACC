@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedLists #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns -Wno-type-defaults #-}
 
 module Test.Backend.TAC.ExprTest (exprTestGroup) where
 
 import Data.Char (ord)
-import Language.WACC.AST (Expr (WAtom), WAtom (..), WType (..))
+import Data.Functor.Foldable (embed, project)
+import Language.WACC.AST (ArrayIndex (..), Expr (WAtom), WAtom (..), WType (..))
 import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.Expr
@@ -19,14 +21,33 @@ testTACM = runTACM 0
 toTAC' :: Expr Int BType -> ExprTACs Int Int
 toTAC' = testTACM . toTAC
 
+intLit :: (Integral a) => a -> Expr Int BType
+intLit x = WAtom (IntLit (toInteger x) BInt) BInt
+
 varExpr :: Int -> BType -> Expr Int BType
 varExpr v t = WAtom (Ident v t) t
 
-temp0 :: Var Int
-temp0 = Temp 0
+temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
+(temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _) = Temp <$> [0 ..]
 
-temp1 :: Var Int
-temp1 = Temp 1
+temp7, temp8, temp9, temp10, temp11 :: Var Int
+(temp7 : temp8 : temp9 : temp10 : temp11 : _) = Temp <$> [7 ..]
+
+testIndexScaling :: String -> WType -> Int -> TestTree
+testIndexScaling tName wt tSize =
+  testProperty (unwords [tName, "array indices are scaled by", show tSize]) $
+    \v i ->
+      toTAC' (WAtom (ArrayElem (ArrayIndex v [intLit i] (BArray bt)) bt) bt)
+        == [ LoadCI temp0 4
+           , LoadCI temp1 tSize
+           , LoadCI temp2 i
+           , BinInstr temp3 temp2 Mul temp1
+           , BinInstr temp4 temp3 Add temp0
+           , LoadM temp5 (Var v) temp4 (embed $ WErasedPair <$ project wt)
+           ]
+          temp5
+  where
+    bt = fix wt
 
 testBinOp
   :: String
@@ -50,8 +71,7 @@ exprTestGroup =
         [ testGroup
             "literals"
             [ testProperty "int literals are loaded using LoadCI" $ \i ->
-                toTAC' (WAtom (IntLit (toInteger i) BInt) BInt)
-                  == [LoadCI temp0 i] temp0
+                toTAC' (intLit i) == [LoadCI temp0 i] temp0
             , testCase "false is 0" $
                 toTAC' (WAtom (BoolLit False BBool) BBool)
                   @?= [LoadCI temp0 0] temp0
@@ -70,6 +90,43 @@ exprTestGroup =
             ]
         , testProperty "identifiers generate no instructions" $ \v ->
             toTAC' (varExpr v BInt) == [] (Var v)
+        , testGroup
+            "array indexing"
+            [ testIndexScaling "int" WInt 4
+            , testIndexScaling "bool" WChar 1
+            , testIndexScaling "char" WChar 1
+            , testIndexScaling "string" WString 8
+            , testIndexScaling "pair" WErasedPair 8
+            , testIndexScaling "array" (WArray WInt) 8
+            , testProperty "indices are applied from left to right" $
+                \v i1 i2 ->
+                  toTAC'
+                    ( WAtom
+                        ( ArrayElem
+                            ( ArrayIndex
+                                v
+                                [intLit i1, intLit i2]
+                                (BArray $ BArray BInt)
+                            )
+                            BInt
+                        )
+                        BInt
+                    )
+                    == [ LoadCI temp0 4
+                       , LoadCI temp1 8
+                       , LoadCI temp2 i1
+                       , BinInstr temp3 temp2 Mul temp1
+                       , BinInstr temp4 temp3 Add temp0
+                       , LoadM temp5 (Var v) temp4 (WArray WErasedPair)
+                       , LoadCI temp6 4
+                       , LoadCI temp7 4
+                       , LoadCI temp8 i2
+                       , BinInstr temp9 temp8 Mul temp7
+                       , BinInstr temp10 temp9 Add temp6
+                       , LoadM temp11 temp5 temp10 WInt
+                       ]
+                      temp11
+            ]
         ]
     , testGroup
         "unary expressions"
