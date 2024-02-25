@@ -25,6 +25,7 @@ data Runtime
   | ReadC
   | ErrOutOfMemory
   | ErrOverflow
+  | ErrDivByZero
   deriving (Eq, Ord, Typeable, Data, Show)
 
 type Prog = [Instr]
