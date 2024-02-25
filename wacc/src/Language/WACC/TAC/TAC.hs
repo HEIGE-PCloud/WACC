@@ -55,22 +55,22 @@ data TAC ident lident
 
 -- | Binary operators in TAC
 data BinOp
-  = Add
-  | Sub
-  | Mul
+  = Mul
   | Div
   | Mod
-  | And
-  | Or
-  | Lt
-  | Gt
-  | Le
-  | Ge
+  | Add
+  | Sub
+  | GT
+  | GTE
+  | LT
+  | LTE
   | Eq
   | Ineq
+  | And
+  | Or
 
 -- | Unary operators in TAC
-data UnOp = Neg | Not
+data UnOp = Not | Negate
 
 -- | Variables in TAC, either temporary or named in the source code.
 data Var ident = Temp ident | Var ident
