@@ -144,18 +144,18 @@ getReg = do
       puts (\x -> x {freeRegs = rs})
       return r
 
-translateBinOp :: BinOp -> Operand -> Operand -> Instr
-translateBinOp Add o1 o2 = Addq o1 o2
-translateBinOp Sub o1 o2 = Subq o1 o2
-translateBinOp Mul o1 o2 = undefined
-translateBinOp Div o1 o2 = undefined
-translateBinOp Mod o1 o2 = undefined
-translateBinOp And o1 o2 = undefined
-translateBinOp Or o1 o2 = undefined
-translateBinOp Lt o1 o2 = undefined
-translateBinOp Gt o1 o2 = undefined
-translateBinOp Le o1 o2 = undefined
-translateBinOp Ge o1 o2 = undefined
+translateBinOp :: BinOp -> Operand -> Operand -> [Instr]
+translateBinOp Add o1 o2 = [Addl o1 o2, Jo (R ErrOverflow)]
+translateBinOp Sub o1 o2 = [Subl o1 o2, Jo (R ErrOverflow)]
+translateBinOp Mul o1 o2 = [Imull o1 o2, Jo (R ErrOverflow)]
+translateBinOp Div o1 o2 = []
+translateBinOp Mod o1 o2 = []
+translateBinOp And o1 o2 = []
+translateBinOp Or o1 o2 = []
+translateBinOp Lt o1 o2 = []
+translateBinOp Gt o1 o2 = []
+translateBinOp Le o1 o2 = []
+translateBinOp Ge o1 o2 = []
 
 translateTAC :: TAC Integer Integer -> Analysis ()
 translateTAC (BinInstr v1 v2 op v3) = do
@@ -167,8 +167,7 @@ translateTAC (BinInstr v1 v2 op v3) = do
   operand1 <- gets ((B.! v2) . getAlloc)
   operand2 <- gets ((B.! v3) . getAlloc)
   tellInstr (Movq operand1 reg)
-  tellInstr (translateBinOp op operand2 reg)
-  tellInstr (Jo (R ErrOverflow))
+  mapM_ tellInstr (translateBinOp op operand2 reg)
 translateTAC (EqR v1 v2 v3) = undefined
 translateTAC (IneqR v1 v2 v3) = undefined
 translateTAC (EqV v1 v2 v3) = undefined
