@@ -40,7 +40,7 @@ swapReg :: Register
 swapReg = R10
 
 data Allocation = Allocation
-  { getAlloc :: Bimap (Var Integer) Operand
+  { getAlloc :: Bimap (Var Integer) Operand -- a bidirectional map between variables and their locations
   , translated :: Set (TAC.Label Integer)
   , stackVarNum :: Integer
   , runtimeFns :: Set Runtime
@@ -128,6 +128,7 @@ translateNext (TAC.Ret var) = pure ()
 addAlloc :: Var Integer -> Operand -> Allocation -> Allocation
 addAlloc v o x@(Allocation {getAlloc}) = x {getAlloc = B.insert v o getAlloc}
 
+-- | Get the next free register
 getReg :: Analysis Register
 getReg = do
   rs <- gets freeRegs
@@ -143,18 +144,30 @@ getReg = do
       puts (\x -> x {freeRegs = rs})
       return r
 
-translateBinOp :: BinOp -> (Operand -> Operand -> Instr)
-translateBinOp = undefined -- TODO deal with division separately
+translateBinOp :: BinOp -> Operand -> Operand -> Instr
+translateBinOp Add o1 o2 = Addq o1 o2
+translateBinOp Sub o1 o2 = Subq o1 o2
+translateBinOp Mul o1 o2 = undefined
+translateBinOp Div o1 o2 = undefined
+translateBinOp Mod o1 o2 = undefined
+translateBinOp And o1 o2 = undefined
+translateBinOp Or o1 o2 = undefined
+translateBinOp Lt o1 o2 = undefined
+translateBinOp Gt o1 o2 = undefined
+translateBinOp Le o1 o2 = undefined
+translateBinOp Ge o1 o2 = undefined
 
 translateTAC :: TAC Integer Integer -> Analysis ()
-translateTAC (BinInstr lv rv1 op rv2) = do
+translateTAC (BinInstr v1 v2 op v3) = do
   -- always assign new variables to a register
   r <- getReg
-  puts (addAlloc lv (Reg r))
-  op1 <- gets ((B.! rv1) . getAlloc)
-  op2 <- gets ((B.! rv2) . getAlloc)
-  tellInstr (Movq op1 (Reg r))
-  tellInstr (translateBinOp op op2 (Reg r))
+  let
+    reg = Reg r
+  puts (addAlloc v1 reg)
+  operand1 <- gets ((B.! v2) . getAlloc)
+  operand2 <- gets ((B.! v3) . getAlloc)
+  tellInstr (Movq operand1 reg)
+  tellInstr (translateBinOp op operand2 reg)
   tellInstr (Jo (R ErrOverflow))
 translateTAC (EqR v1 v2 v3) = undefined
 translateTAC (IneqR v1 v2 v3) = undefined
