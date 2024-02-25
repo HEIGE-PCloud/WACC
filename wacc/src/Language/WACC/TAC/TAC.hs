@@ -59,6 +59,7 @@ data TAC ident lident
     CheckBounds Int (Var ident) Int
   deriving (Eq, Show)
 
+-- | Binary operators in TAC
 data BinOp
   = Mul
   | Div
