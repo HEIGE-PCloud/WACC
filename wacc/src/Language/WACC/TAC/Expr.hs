@@ -115,16 +115,21 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
       mkIndexTACs indexExpr t' =
         [ \v' ->
           sconcat
-            [ calcIndexTACs
+            [ loadOffsetTACs
             , loadScalarTACs
-            , [BinInstr temp1 (exprV calcIndexTACs) Mul (exprV loadScalarTACs)]
-                temp1
-            , [LoadM temp2 v' temp1 (toWType t')] temp2
+            , calcIndexTACs
+            , [ BinInstr temp1 (exprV calcIndexTACs) Mul (exprV loadScalarTACs)
+              , BinInstr temp2 temp1 Add (exprV loadOffsetTACs)
+              , LoadM temp3 v' temp2 (toWType t')
+              ]
+                temp3
             ]
-        | calcIndexTACs <- toTAC indexExpr
+        | loadOffsetTACs <- loadCI (sizeOf BInt)
         , loadScalarTACs <- loadCI (sizeOf t')
+        , calcIndexTACs <- toTAC indexExpr
         , temp1 <- freshTemp
         , temp2 <- freshTemp
+        , temp3 <- freshTemp
         ]
       toWType (BFixed wft) = embed $ WErasedPair <$ wft
       toWType _ = error "subexpression with unknown type"
