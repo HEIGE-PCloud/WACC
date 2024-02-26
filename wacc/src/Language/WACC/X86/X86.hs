@@ -10,7 +10,7 @@ import Data.Typeable ()
 import Language.WACC.Error (quote)
 
 data Label = I Integer | R Runtime | S String
-  deriving (Eq, Ord, Data)
+  deriving (Eq, Ord, Data, Show)
 
 data Runtime
   = PrintI
@@ -82,7 +82,7 @@ data Directive
   deriving (Typeable, Data)
 
 data Operand = Imm Integer | Reg Register | Mem Memory
-  deriving (Eq, Ord, Data)
+  deriving (Eq, Ord, Data, Show)
 
 data Memory
   = -- | (53) :- immediate memory access
@@ -101,7 +101,7 @@ data Memory
     MScaleI Integer Register Register Integer
   | -- | f4(%rax) :- offset to label, single register memory access
     MRegL Label Register
-  deriving (Eq, Ord, Data)
+  deriving (Eq, Ord, Data, Show)
 
 {- |
 [source diagram for below](https://scientia.doc.ic.ac.uk/api/resources/11646/file/Lecture4_StackProcedures.pdf#page=17)
