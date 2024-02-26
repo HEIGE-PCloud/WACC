@@ -151,16 +151,19 @@ partitionReg r@R15 = Post (show r)
 partitionReg r = let 'R' : cs = show r in Pre cs -- remove the 'R' at the start
 
 instance ATNTs Register where
-  formatAs Q r = map toLower (show r ++ "q")
-  formatAs L r = case partitionReg r of
-    Post (str) -> str ++ "d"
-    Pre (str) -> 'e' : str
-  formatAs W r = case partitionReg r of
-    Post (str) -> str ++ "w"
-    Pre (str) -> str
-  formatAs B r = case partitionReg r of
-    Post (str) -> str ++ "b"
-    Pre (str) -> lower str (head str)
+  formatAs Q r = '%' : map toLower (show r)
+  formatAs L r =
+    '%' : case partitionReg r of
+      Post (str) -> str ++ "d"
+      Pre (str) -> 'e' : str
+  formatAs W r =
+    '%' : case partitionReg r of
+      Post (str) -> str ++ "w"
+      Pre (str) -> str
+  formatAs B r =
+    '%' : case partitionReg r of
+      Post (str) -> str ++ "b"
+      Pre (str) -> lower str (head str)
     where
       lower _ 'a' = "al"
       lower _ 'b' = "bl"
@@ -185,7 +188,7 @@ instance ATNTs Memory where
 
 instance ATNTs Operand where
   formatAs s (Imm x) = '$' : formatA x
-  formatAs s (Reg r) = '%' : formatAs s r
+  formatAs s (Reg r) = formatAs s r
   formatAs s (Mem m) = formatAs s m
 
 {- |
@@ -261,7 +264,7 @@ formatLab i l = unwords [instrName i, formatA l]
 
 formatBinOp :: (ATNTs a, ATNTs b) => Name -> Size -> a -> b -> [Char]
 formatBinOp name s op1 op2 =
-  map toLower (show name)
+  map toLower (show name ++ show s)
     ++ " "
     ++ formatAs s op1
     ++ ", "
