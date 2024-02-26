@@ -54,6 +54,7 @@ data Instr
   | Cmpb Operand Operand
   | Call Label
   | Cltd
+  | Setl Operand
   | Je Label
   | Jo Label
   | Jne Label
@@ -251,6 +252,7 @@ instance ATNT Instr where
   formatA i@(Jo l) = formatUnOp i l
   formatA i@(Jne l) = formatUnOp i l
   formatA i@(Jmp l) = formatUnOp i l
+  formatA i@(Setl l) = formatUnOp i l
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
   formatA Cltd = "cltd"

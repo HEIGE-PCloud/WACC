@@ -16,7 +16,7 @@ import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
 import Data.List ((\\))
-import Data.Map (Map, findMin, (!))
+import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -40,18 +40,18 @@ import qualified Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
 translateProg :: TACProgram Integer Integer -> Prog
-translateProg p = D.toList $ preamble `D.append` (D.concat is) `D.append` (D.concat runtime)
+translateProg p = D.toList $ preamble `D.append` D.concat is `D.append` D.concat runtime
   where
     runtime :: [DList Instr]
-    runtime = (runtimeLib !) <$> (S.toList (S.unions runtimeLs))
+    runtime = (runtimeLib !) <$> S.toList (S.unions runtimeLs)
     (runtimeLs, is) = unzip $ map translateFunc (M.elems p)
     preamble :: DList Instr
     preamble =
       D.fromList
         [ Dir $ DirGlobl (S "main")
-        , Dir $ DirSection
-        , Dir $ DirRodata
-        , Dir $ DirText
+        , Dir DirSection
+        , Dir DirRodata
+        , Dir DirText
         ]
 
 {- | When registers run out and values in the stack are
@@ -113,14 +113,14 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
     (n, startBlock) = M.findMin bs
 
     funcRWS = do
-      mapM (tellInstr . Pushq . Reg) callee -- callee saving registers
+      mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
       tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
-      mapM setupRegArgs (zip vs argRegs)
+      mapM_ setupRegArgs (zip vs argRegs)
       puts
-        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ (drop (length vs) argRegs)} -- mark extra arg regs as usable
+        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ drop (length vs) argRegs} -- mark extra arg regs as usable
         )
       -- \| if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
-      mapM
+      mapM_
         setupStackArgs
         ( zip
             (drop (length argRegs) vs)
@@ -151,8 +151,8 @@ puts f = do
   put (f s)
 
 -- | Mark the block as translated, so its not re-translated
-setTranslated :: (TAC.Label Integer) -> TransST -> TransST
-setTranslated l x@(TransST {translated}) = x {translated = (S.insert l) translated}
+setTranslated :: TAC.Label Integer -> TransST -> TransST
+setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated}
 
 -- | translate each TAC statement
 translateBlock
@@ -191,7 +191,7 @@ translateNext (CJump v l1 l2@(TAC.Label n2)) = do
 translateNext (TAC.Ret var) = pure ()
 
 addAlloc :: Var Integer -> Operand -> TransST -> TransST
-addAlloc v o x@(TransST {alloc}) = x {alloc = (B.insert v o) alloc}
+addAlloc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
 -- | Free a register if none are available by pushing the swapReg onto stack
 getReg :: Analysis Register
@@ -200,56 +200,37 @@ getReg = do
   case rs of
     [] -> do
       tellInstr (Pushq (Reg swapReg))
-      swapVar <- gets ((B.!> (Reg swapReg)) . alloc)
+      swapVar <- gets ((B.!> Reg swapReg) . alloc)
       puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
-      stackAddr <- (gets ((* 4) . stackVarNum))
+      stackAddr <- gets ((* 4) . stackVarNum)
       puts (addAlloc swapVar (Mem (MRegI stackAddr Rbp)))
       return swapReg
     (r : rs) -> do
       puts (\x -> x {freeRegs = rs})
       return r
 
-translateBinOp :: BinOp -> Operand -> Operand -> [Instr]
-translateBinOp Add o1 o2 = [Addl o1 o2, Jo (R ErrOverflow)]
-translateBinOp Sub o1 o2 = [Subl o1 o2, Jo (R ErrOverflow)]
-translateBinOp Mul o1 o2 = [Imull o1 o2, Jo (R ErrOverflow)]
-{-
-43		movl %r12d, %eax
-44		cmpl $0, %r13d
-45		je _errDivZero
-46		# sign extend EAX into EDX
-47		cltd
-48		idivl %r13d
--}
-translateBinOp Div o1 o2 =
-  [ Movl o1 (Reg Eax)
-  , Cmpl (Imm 0) o2
-  , Je (R ErrDivByZero)
-  , Cltd
-  , Idivl o2
-  ]
-translateBinOp Mod o1 o2 = []
-translateBinOp And o1 o2 = []
-translateBinOp Or o1 o2 = []
-translateBinOp TAC.LT o1 o2 = [Cmpq o1 o2]
-translateBinOp TAC.GT o1 o2 = []
-translateBinOp TAC.LTE o1 o2 = []
-translateBinOp TAC.GTE o1 o2 = []
-translateBinOp TAC.Eq o1 o2 = []
-translateBinOp TAC.Ineq o1 o2 = []
-
-translateTAC :: TAC Integer Integer -> Analysis ()
-translateTAC (BinInstr v1 v2 op v3) = do
-  -- always assign new variables to a register
+getReg' v = do
   r <- getReg
   let
     reg = Reg r
-  puts (addAlloc v1 reg)
-  operand1 <- gets ((B.! v2) . alloc)
-  operand2 <- gets ((B.! v3) . alloc)
-  tellInstr (Movq operand1 reg)
-  mapM_ tellInstr (translateBinOp op operand2 reg)
-translateTAC (UnInstr v1 op v2) = undefined
+  puts (addAlloc v reg)
+  return reg
+
+getOprand :: Var Integer -> Analysis Operand
+getOprand v = gets ((B.! v) . alloc)
+
+translateTAC :: TAC Integer Integer -> Analysis ()
+translateTAC (BinInstr v1 v2 op v3) = do
+  operand <- getReg' v1
+  operand1 <- getOprand v2
+  operand2 <- getOprand v3
+  translateBinOp operand op operand1 operand2
+translateTAC (UnInstr v1 op v2) =
+  do
+    reg <- getReg' v1
+    operand <- getOprand v2
+    translateUnOp op operand
+    tellInstr (Movq operand reg)
 translateTAC (Store v1 off v2 w) = undefined
 translateTAC (LoadCI v i) = undefined
 translateTAC (LoadCS v s) = undefined
@@ -261,3 +242,97 @@ translateTAC (Exit v) = undefined
 translateTAC (Read v w) = undefined
 translateTAC (TAC.Malloc lv rv) = undefined
 translateTAC (TAC.Free v) = undefined
+
+{- | Translate a binary operation
+| <o> := <o1> <binop> <o2>
+-}
+translateBinOp :: Operand -> BinOp -> Operand -> Operand -> Analysis ()
+translateBinOp o Add o1 o2 = do
+  movl o1 eax
+  movl o2 ebx
+  addl ebx eax
+  jo ErrOverflow
+  movl ebx o
+translateBinOp o Sub o1 o2 = do
+  movl o1 eax
+  movl o2 ebx
+  subl ebx eax
+  jo ErrOverflow
+  movl ebx o
+translateBinOp o Mul o1 o2 = do
+  movl o1 eax
+  movl o2 ebx
+  imull ebx eax
+  jo ErrOverflow
+  movl ebx o
+translateBinOp o Div o1 o2 = do
+  movl o1 eax -- %eax := o1
+  cmpl (Imm 0) eax -- check for division by zero
+  je ErrDivByZero
+  cltd -- sign extend eax into edx
+  movl o2 ebx -- %ebx := o2
+  idivl ebx -- divide edx:eax by ebx
+  movl eax o -- %o := eax
+translateBinOp o Mod o1 o2 = do
+  movl o1 eax -- %eax := o1
+  cmpl (Imm 0) eax -- check for division by zero
+  je ErrDivByZero
+  cltd -- sign extend eax into edx
+  movl o2 ebx -- %ebx := o2
+  idivl ebx -- divide edx:eax by ebx
+  movl edx o -- %o := edx
+translateBinOp o And o1 o2 = undefined -- TODO: needs unique labels
+translateBinOp o Or o1 o2 = undefined
+translateBinOp o TAC.LT o1 o2 = do
+  tellInstr (Cmpq o2 o1)
+  tellInstr (Setl (Reg Al))
+  tellInstr (Movl (Reg Al) o1)
+translateBinOp o TAC.LTE o1 o2 = undefined
+translateBinOp o TAC.GT o1 o2 = undefined
+translateBinOp o TAC.GTE o1 o2 = undefined
+translateBinOp o TAC.Eq o1 o2 = undefined
+translateBinOp o TAC.Ineq o1 o2 = undefined
+
+-- | <var> := <unop> <var>
+translateUnOp :: UnOp -> Operand -> Analysis ()
+translateUnOp Not o = undefined
+translateUnOp Negate o = undefined
+
+eax :: Operand
+eax = Reg Eax
+
+ebx :: Operand
+ebx = Reg Ebx
+
+ecx :: Operand
+ecx = Reg Ecx
+
+edx :: Operand
+edx = Reg Edx
+
+movl :: Operand -> Operand -> Analysis ()
+movl o r = tellInstr (Movl o r)
+
+addl :: Operand -> Operand -> Analysis ()
+addl o1 o2 = tellInstr (Addl o1 o2)
+
+subl :: Operand -> Operand -> Analysis ()
+subl o1 o2 = tellInstr (Subl o1 o2)
+
+imull :: Operand -> Operand -> Analysis ()
+imull o1 o2 = tellInstr (Imull o1 o2)
+
+idivl :: Operand -> Analysis ()
+idivl o = tellInstr (Idivl o)
+
+cmpl :: Operand -> Operand -> Analysis ()
+cmpl o1 o2 = tellInstr (Cmpl o1 o2)
+
+jo :: X86.Runtime -> Analysis ()
+jo l = tellInstr (Jo (R l))
+
+je :: X86.Runtime -> Analysis ()
+je l = tellInstr (Je (R l))
+
+cltd :: Analysis ()
+cltd = tellInstr Cltd
