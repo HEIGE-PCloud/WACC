@@ -41,6 +41,7 @@ data Instr
   | Movb Operand Operand
   | Movslq Operand Operand
   | Movsbq Operand Operand
+  | Movzbl Operand Operand
   | Leaq Operand Operand
   | Subq Operand Operand
   | Subl Operand Operand
@@ -54,7 +55,12 @@ data Instr
   | Cmpb Operand Operand
   | Call Label
   | Cltd
+  | Sete Operand
+  | Setne Operand
   | Setl Operand
+  | Setle Operand
+  | Setg Operand
+  | Setge Operand
   | Je Label
   | Jo Label
   | Jne Label
@@ -236,6 +242,7 @@ instance ATNT Instr where
   formatA i@(Movb op1 op2) = formatBinOp i op1 op2
   formatA i@(Movslq op1 op2) = formatBinOp i op1 op2
   formatA i@(Movsbq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Movzbl op1 op2) = formatBinOp i op1 op2
   formatA i@(Leaq op1 op2) = formatBinOp i op1 op2
   formatA i@(Subq op1 op2) = formatBinOp i op1 op2
   formatA i@(Subl op1 op2) = formatBinOp i op1 op2
@@ -252,7 +259,12 @@ instance ATNT Instr where
   formatA i@(Jo l) = formatUnOp i l
   formatA i@(Jne l) = formatUnOp i l
   formatA i@(Jmp l) = formatUnOp i l
+  formatA i@(Sete l) = formatUnOp i l
+  formatA i@(Setne l) = formatUnOp i l
   formatA i@(Setl l) = formatUnOp i l
+  formatA i@(Setle l) = formatUnOp i l
+  formatA i@(Setg l) = formatUnOp i l
+  formatA i@(Setge l) = formatUnOp i l
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
   formatA Cltd = "cltd"

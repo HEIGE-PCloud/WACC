@@ -284,19 +284,53 @@ translateBinOp o Mod o1 o2 = do
 translateBinOp o And o1 o2 = undefined -- TODO: needs unique labels
 translateBinOp o Or o1 o2 = undefined
 translateBinOp o TAC.LT o1 o2 = do
-  tellInstr (Cmpq o2 o1)
-  tellInstr (Setl (Reg Al))
-  tellInstr (Movl (Reg Al) o1)
-translateBinOp o TAC.LTE o1 o2 = undefined
-translateBinOp o TAC.GT o1 o2 = undefined
-translateBinOp o TAC.GTE o1 o2 = undefined
-translateBinOp o TAC.Eq o1 o2 = undefined
-translateBinOp o TAC.Ineq o1 o2 = undefined
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setl al -- set al to 1 if %eax < %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.LTE o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setle al -- set al to 1 if %eax <= %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.GT o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setg al -- set al to 1 if %eax > %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.GTE o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setge al -- set al to 1 if %eax >= %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.Eq o1 o2 = do
+  movq o1 rax -- %eax := o1
+  movq o2 rbx -- %ebx := o2
+  cmpq rbx rax -- compare %ebx and %eax
+  sete al -- set al to 1 if %eax == %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.Ineq o1 o2 = do
+  movq o1 rax -- %eax := o1
+  movq o2 rbx -- %ebx := o2
+  cmpq rbx rax -- compare %ebx and %eax
+  setne al -- set al to 1 if %eax != %ebx
+  movzbl al o -- %o := %al
 
 -- | <var> := <unop> <var>
 translateUnOp :: UnOp -> Operand -> Analysis ()
 translateUnOp Not o = undefined
 translateUnOp Negate o = undefined
+
+al :: Operand
+al = Reg Al
+
+rax = Reg Rax
+
+rbx = Reg Rbx
 
 eax :: Operand
 eax = Reg Eax
@@ -310,8 +344,16 @@ ecx = Reg Ecx
 edx :: Operand
 edx = Reg Edx
 
+mov m o r = tellInstr (m o r)
+
 movl :: Operand -> Operand -> Analysis ()
-movl o r = tellInstr (Movl o r)
+movl = mov Movl
+
+movq :: Operand -> Operand -> Analysis ()
+movq = mov Movq
+
+movzbl :: Operand -> Operand -> Analysis ()
+movzbl o r = tellInstr (Movzbl o r)
 
 addl :: Operand -> Operand -> Analysis ()
 addl o1 o2 = tellInstr (Addl o1 o2)
@@ -328,6 +370,9 @@ idivl o = tellInstr (Idivl o)
 cmpl :: Operand -> Operand -> Analysis ()
 cmpl o1 o2 = tellInstr (Cmpl o1 o2)
 
+cmpq :: Operand -> Operand -> Analysis ()
+cmpq o1 o2 = tellInstr (Cmpq o1 o2)
+
 jo :: X86.Runtime -> Analysis ()
 jo l = tellInstr (Jo (R l))
 
@@ -336,3 +381,21 @@ je l = tellInstr (Je (R l))
 
 cltd :: Analysis ()
 cltd = tellInstr Cltd
+
+set s r = tellInstr (s r)
+
+sete = set Sete
+
+setne = set Setne
+
+setl :: Operand -> Analysis ()
+setl = set Setl
+
+setle :: Operand -> Analysis ()
+setle = set Setle
+
+setg :: Operand -> Analysis ()
+setg = set Setg
+
+setge :: Operand -> Analysis ()
+setge = set Setge
