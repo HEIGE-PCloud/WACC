@@ -31,14 +31,12 @@ data Runtime
 type Prog = [Instr]
 
 data Name
-  = Mov Size
-  | Lea Size
-  | Sub Size
-  | Add Size
-  | And Size
-  | Cmp Size
-  | Movsl Size
-  | Movsb Size
+  = Mov
+  | Lea
+  | Sub
+  | Add
+  | And
+  | Cmp
   deriving (Eq, Ord, Show, Typeable, Data)
 
 data Size = Q | L | W | B
@@ -47,15 +45,17 @@ data Size = Q | L | W | B
 -- | cannot have two Mem operands for the same instruction
 data Instr
   = Lab Label
-  | Ret
-  | Pushq Operand
-  | Popq Operand
-  | BinOp Name Operand Operand
-  | Call Label
   | Je Label
   | Jo Label
   | Jne Label
   | Jmp Label
+  | Call Label
+  | Ret
+  | Pushq Operand
+  | Popq Operand
+  | BinOp Name Size Operand Operand
+  | Movslq Operand Operand
+  | Movsbq Operand Operand
   | Dir Directive
   | Comment String
   deriving (Typeable, Data)
@@ -105,6 +105,7 @@ data Register
   | Rdi
   | Rbp
   | Rsp
+  | Rip
   | R8
   | R9
   | R10
@@ -113,7 +114,6 @@ data Register
   | R13
   | R14
   | R15
-  | Rip
   deriving (Eq, Ord, Show, Data)
 
 callee :: [Register]
@@ -126,33 +126,67 @@ argRegs :: [Register]
 argRegs = [Rdi, Rsi, Rdx, Rcx, R8, R9]
 
 class ATNT a where
-  formatA :: a  -> String
+  formatA :: a -> String
+
+class ATNTs a where
+  formatAs :: Size -> a -> String
 
 instance ATNT Integer where
   formatA = show
 
-instance ATNT Register where
-  formatA  r = '%' : map toLower (show r)
+{- | Formatting registers like Rax, Rbx, Rcx, etc
+| Formatting registers like R8, R9, R10, etc
+-}
+data RegFormat = Pre String | Post String
+
+partitionReg :: Register -> RegFormat
+partitionReg r@R8 = Post (show r)
+partitionReg r@R9 = Post (show r)
+partitionReg r@R10 = Post (show r)
+partitionReg r@R11 = Post (show r)
+partitionReg r@R12 = Post (show r)
+partitionReg r@R13 = Post (show r)
+partitionReg r@R14 = Post (show r)
+partitionReg r@R15 = Post (show r)
+partitionReg r = let 'R' : cs = show r in Pre cs -- remove the 'R' at the start
+
+instance ATNTs Register where
+  formatAs Q r = map toLower (show r ++ "q")
+  formatAs L r = case partitionReg r of
+    Post (str) -> str ++ "d"
+    Pre (str) -> 'e' : str
+  formatAs W r = case partitionReg r of
+    Post (str) -> str ++ "w"
+    Pre (str) -> str
+  formatAs B r = case partitionReg r of
+    Post (str) -> str ++ "b"
+    Pre (str) -> lower str (head str)
+    where
+      lower _ 'a' = "al"
+      lower _ 'b' = "bl"
+      lower _ 'c' = "cl"
+      lower _ 'd' = "dl"
+      lower str _ = str ++ "l"
 
 paren :: String -> String
 paren x = "(" ++ x ++ ")"
 
-instance ATNT Memory where
-  formatA (MI x) = paren (show x)
-  formatA (MReg r) = paren (formatA r)
-  formatA (MTwoReg r1 r2) = paren (intercalate ", " (map formatA [r1, r2]))
-  formatA (MScale r1 r2 s) = paren (intercalate ", " (map formatA [r1, r2] ++ [formatA s]))
-  formatA (MRegI x r) = formatA x ++ paren (formatA r)
-  formatA (MTwoRegI x r1 r2) = formatA x ++ paren (intercalate ", " (map formatA [r1, r2]))
-  formatA (MScaleI x r1 r2 s) =
+instance ATNTs Memory where
+  formatAs s (MI x) = paren (show x)
+  formatAs s (MReg r) = paren (formatAs s r)
+  formatAs s (MTwoReg r1 r2) = paren (intercalate ", " (map (formatAs s) [r1, r2]))
+  formatAs s (MScale r1 r2 sc) = paren (intercalate ", " (map (formatAs s) [r1, r2] ++ [formatA sc]))
+  formatAs s (MRegI x r) = formatA x ++ paren (formatAs s r)
+  formatAs s (MTwoRegI x r1 r2) = formatA x ++ paren (intercalate ", " (map (formatAs s) [r1, r2]))
+  formatAs s (MScaleI x r1 r2 sc) =
     formatA x
-      ++ paren (intercalate ", " (map formatA [r1, r2] ++ [formatA s]))
-  formatA (MRegL l r) = formatA l ++ paren (formatA r)
+      ++ paren (intercalate ", " (map (formatAs s) [r1, r2] ++ [formatA sc]))
+  formatAs s (MRegL l r) = formatA l ++ paren (formatAs s r)
 
-instance ATNT Operand where
-  formatA (Imm x) = '$' : formatA x
-  formatA (Reg r) = formatA r
-  formatA (Mem m) = formatA m
+instance ATNTs Operand where
+  formatAs s (Imm x) = '$' : formatA x
+  formatAs s (Reg r) = '%' : formatAs s r
+  formatAs s (Mem m) = formatAs s m
 
 {- |
 use magic to get name of the constructor as a string and make it lower case
@@ -174,72 +208,70 @@ instance ATNT Label where
   formatA (S x) = x
 
 pattern Movq :: Operand -> Operand -> Instr
-pattern Movq op1 op2 = BinOp (Mov Q) op1 op2
+pattern Movq op1 op2 = BinOp Mov Q op1 op2
 
 pattern Movl :: Operand -> Operand -> Instr
-pattern Movl op1 op2 = BinOp (Mov L) op1 op2
+pattern Movl op1 op2 = BinOp Mov L op1 op2
 
 pattern Movb :: Operand -> Operand -> Instr
-pattern Movb op1 op2 = BinOp (Mov B) op1 op2
+pattern Movb op1 op2 = BinOp Mov B op1 op2
 
 pattern Leaq :: Operand -> Operand -> Instr
-pattern Leaq op1 op2 = BinOp (Lea Q) op1 op2
+pattern Leaq op1 op2 = BinOp Lea Q op1 op2
 
 pattern Subq :: Operand -> Operand -> Instr
-pattern Subq op1 op2 = BinOp (Sub Q) op1 op2
+pattern Subq op1 op2 = BinOp Sub Q op1 op2
 
 pattern Addq :: Operand -> Operand -> Instr
-pattern Addq op1 op2 = BinOp (Add Q) op1 op2
+pattern Addq op1 op2 = BinOp Add Q op1 op2
 
 pattern Andq :: Operand -> Operand -> Instr
-pattern Andq op1 op2 = BinOp (And Q) op1 op2
+pattern Andq op1 op2 = BinOp And Q op1 op2
 
 pattern Cmpq :: Operand -> Operand -> Instr
-pattern Cmpq op1 op2 = BinOp (Cmp Q) op1 op2
+pattern Cmpq op1 op2 = BinOp Cmp Q op1 op2
 
 pattern Cmpl :: Operand -> Operand -> Instr
-pattern Cmpl op1 op2 = BinOp (Cmp L) op1 op2
+pattern Cmpl op1 op2 = BinOp Cmp L op1 op2
 
 pattern Cmpb :: Operand -> Operand -> Instr
-pattern Cmpb op1 op2 = BinOp (Cmp B) op1 op2
-
-pattern Movslq :: Operand -> Operand -> Instr
-pattern Movslq op1 op2 = BinOp (Movsl Q) op1 op2
-
-pattern Movsbq :: Operand -> Operand -> Instr
-pattern Movsbq op1 op2 = BinOp (Movsb Q) op1 op2
+pattern Cmpb op1 op2 = BinOp Cmp B op1 op2
 
 instance ATNT Instr where
   formatA (Lab x) = formatA x ++ ":"
   formatA Ret = "ret"
-  formatA i@(Pushq op) = formatUnOp i op
-  formatA i@(Popq op) = formatUnOp i op
-  formatA (BinOp name op1 op2) = formatBinOp name op1 op2
-  formatA i@(Call l) = formatUnOp i l
-  formatA i@(Je l) = formatUnOp i l
-  formatA i@(Jo l) = formatUnOp i l
-  formatA i@(Jne l) = formatUnOp i l
-  formatA i@(Jmp l) = formatUnOp i l
+  formatA (BinOp name s op1 op2) = formatBinOp name s op1 op2
+  formatA i@(Movslq op1 op2) = instrName i ++ " " ++ formatAs L op1 ++ ", " ++ formatAs Q op2
+  formatA i@(Movsbq op1 op2) = instrName i ++ " " ++ formatAs B op1 ++ ", " ++ formatAs Q op2
+  formatA i@(Pushq op) = formatUnOp i Q op
+  formatA i@(Popq op) = formatUnOp i Q op
+  formatA i@(Call l) = formatLab i l
+  formatA i@(Je l) = formatLab i l
+  formatA i@(Jo l) = formatLab i l
+  formatA i@(Jne l) = formatLab i l
+  formatA i@(Jmp l) = formatLab i l
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
 
-formatUnOp :: (ATNT a) => Instr -> a -> String
-formatUnOp i op = unwords [instrName i, formatA op]
+formatUnOp :: Instr -> Size -> Operand -> String
+formatUnOp i s op = unwords [instrName i, formatAs s op]
 
-formatBinOp :: (ATNT a, ATNT b) => Name -> a -> b -> [Char]
-formatBinOp name op1 op2 =
+formatLab :: Instr -> Label -> String
+formatLab i l = unwords [instrName i, formatA l]
+
+formatBinOp :: (ATNTs a, ATNTs b) => Name -> Size -> a -> b -> [Char]
+formatBinOp name s op1 op2 =
   map toLower (show name)
     ++ " "
-    ++ formatA op1
+    ++ formatAs s op1
     ++ ", "
-    ++ formatA op2
+    ++ formatAs s op2
 
 instance ATNT Directive where
   formatA d@(DirInt x) = unwords [dirName d, show x]
   formatA d@(DirAsciz str) = unwords [dirName d, quote str]
   formatA d@(DirGlobl l) = unwords [dirName d, formatA l]
   formatA d = dirName d
-
 
 instance ATNT [Instr] where
   formatA instrs = unlines (map formatA instrs)

@@ -90,9 +90,9 @@ printi =
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
-  , Movl (Reg Edi) (Reg Esi)
+  , Movl (Reg Rdi) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._printi_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Al)
+  , Movb (Imm 0) (Reg Rax)
   , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
   , Call cfflush
@@ -138,9 +138,9 @@ prints =
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
   , Movq (Reg Rdi) (Reg Rdx)
-  , Movl (Mem (MRegI (-4) Rdi)) (Reg Esi)
+  , Movl (Mem (MRegI (-4) Rdi)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._prints_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Al)
+  , Movb (Imm 0) (Reg Rax)
   , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
   , Call cfflush
@@ -205,16 +205,16 @@ printb =
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
-  , Cmpb (Imm 0) (Reg Dil)
+  , Cmpb (Imm 0) (Reg Rdi)
   , Jne (S ".L_printb0")
   , Leaq (Mem (MRegL (S ".L._printb_str0") Rip)) (Reg Rdx)
   , Jmp (S ".L_printb1")
   , Lab (S ".L_printb0")
   , Leaq (Mem (MRegL (S ".L._printb_str1") Rip)) (Reg Rdx)
   , Lab (S ".L_printb1")
-  , Movl (Mem (MRegI (-4) Rdx)) (Reg Esi)
+  , Movl (Mem (MRegI (-4) Rdx)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._printb_str2") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Al)
+  , Movb (Imm 0) (Reg Rax)
   , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
   , Call cfflush
@@ -258,9 +258,9 @@ printc =
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
-  , Movb (Reg Dil) (Reg Sil)
+  , Movb (Reg Rdi) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._printc_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Al)
+  , Movb (Imm 0) (Reg Rax)
   , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
   , Call cfflush
@@ -307,7 +307,7 @@ printp =
   , Andq (Imm (-16)) (Reg Rsp)
   , Movq (Reg Rdi) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._printp_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Al)
+  , Movb (Imm 0) (Reg Rax)
   , Call cprintf
   , Movq (Imm 0) (Reg Rdi)
   , Call cfflush
@@ -431,7 +431,7 @@ errOutOfMemory =
   , Andq (Imm (-16)) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfMemory_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1)) (Reg Dil)
+  , Movb (Imm (-1)) (Reg Rdi)
   , Call cexit
   ]
 
@@ -462,7 +462,7 @@ errOverflow =
   , Andq (Imm (-16)) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOverflow_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1)) (Reg Dil)
+  , Movb (Imm (-1)) (Reg Rdi)
   , Call cexit
   ]
 
@@ -508,10 +508,10 @@ readi =
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
   , Subq (Imm 16) (Reg Rsp)
-  , Movl (Reg Edi) (Mem (MRegI 0 Rsp))
+  , Movl (Reg Rdi) (Mem (MRegI 0 Rsp))
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readi_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Al)
+  , Movb (Imm 0) (Reg Rax)
   , Call cscanf
   , Movslq (Mem (MRegI 0 Rsp)) (Reg Rax)
   , Addq (Imm 16) (Reg Rsp)
@@ -562,10 +562,10 @@ readc =
   , Movq (Reg Rsp) (Reg Rbp)
   , Andq (Imm (-16)) (Reg Rsp)
   , Subq (Imm 16) (Reg Rsp)
-  , Movb (Reg Dil) (Mem (MRegI 0 Rsp))
+  , Movb (Reg Rdi) (Mem (MRegI 0 Rsp))
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readc_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Al)
+  , Movb (Imm 0) (Reg Rax)
   , Call cscanf
   , Movsbq (Mem (MRegI 0 Rsp)) (Reg Rax)
   , Addq (Imm 16) (Reg Rsp)
@@ -576,4 +576,4 @@ readc =
 
 -- | Print a program, useful for debugging in GHCi
 printProg :: Prog -> IO ()
-printProg prog = putStrLn $ formatProg
+printProg = putStrLn . formatA
