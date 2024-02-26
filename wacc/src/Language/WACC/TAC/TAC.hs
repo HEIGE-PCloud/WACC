@@ -8,7 +8,7 @@ Defines the three-address code (TAC) representation of the WACC language.
 module Language.WACC.TAC.TAC where
 
 import Data.Map (Map)
-import Language.WACC.AST.WType (WType)
+import Language.WACC.TAC.FType (FType)
 
 {- |
 ADT representing the three-address code (TAC) instructions.
@@ -19,13 +19,13 @@ data TAC ident lident
   | -- | > <var> := <unop> <var>
     UnInstr (Var ident) UnOp (Var ident)
   | -- | > <var> := <var>[<Offset>]
-    Store (Var ident) (Offset ident) (Var ident) WType
+    Store (Var ident) (Offset ident) (Var ident) FType
   | -- | > <var> := Int
     LoadCI (Var ident) Int
   | -- | > <var> := String
     LoadCS (Var ident) String
   | -- | > <var> := <var>[<Offset>]
-    LoadM (Var ident) (Var ident) (Offset ident) WType
+    LoadM (Var ident) (Var ident) (Offset ident) FType
   | -- |
     -- > <var> := call <lident>([<var>])
     --
@@ -35,19 +35,19 @@ data TAC ident lident
     -- > print <var>
     --
     -- where type annotates which print function to use
-    Print (Var ident) WType
+    Print (Var ident) FType
   | -- |
     -- > println <var>
     --
     -- where type annotates which println function to use
-    PrintLn (Var ident) WType
+    PrintLn (Var ident) FType
   | -- |  > exit <var>
     Exit (Var ident)
   | -- |
     -- > <var> := read
     --
     -- where input is read from stdin and annotated with type
-    Read (Var ident) WType
+    Read (Var ident) FType
   | -- | > <var> := malloc <Offset>
     Malloc (Var ident) (Offset ident)
   | -- | > free <var>

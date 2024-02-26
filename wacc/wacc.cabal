@@ -37,6 +37,7 @@ library
       Language.WACC.Semantic.Scope
       Language.WACC.TAC.Class
       Language.WACC.TAC.Expr
+      Language.WACC.TAC.FType
       Language.WACC.TAC.RValue
       Language.WACC.TAC.State
       Language.WACC.TAC.TAC
