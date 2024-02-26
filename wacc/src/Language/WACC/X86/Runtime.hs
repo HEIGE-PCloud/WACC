@@ -576,4 +576,4 @@ readc =
 
 -- | Print a program, useful for debugging in GHCi
 printProg :: Prog -> IO ()
-printProg prog = putStrLn $ formatA prog
+printProg prog = putStrLn $ formatProg

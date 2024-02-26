@@ -116,7 +116,7 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
 
     funcRWS = do
       mapM (tellInstr . Pushq . Reg) callee -- callee saving registers
-      tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
+      tellInstr (X86.Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
       mapM setupRegArgs (zip vs argRegs)
       puts
         ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ (drop (length vs) argRegs)} -- mark extra arg regs as usable
@@ -130,7 +130,7 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
         )
       translateBlocks (TAC.Label n) startBlock -- translate main part of code
       svn <- gets stackVarNum
-      tellInstr (Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
+      tellInstr (X86.Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
       mapM (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
     setupRegArgs :: (Var Integer, Register) -> Analysis ()
     setupRegArgs (v, r) = puts (addAlloc v (Reg r))
@@ -188,7 +188,7 @@ translateNext (Jump l1@(Label n)) = do
     True -> tellInstr (Jmp (mapLab l1))
 translateNext (CJump v l1 l2@(TAC.Label n2)) = do
   operand <- gets ((B.! v) . alloc)
-  tellInstr (Cmpq operand (Imm 0))
+  tellInstr (X86.Cmpq operand (Imm 0))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
   t <- isTranslated l1
@@ -226,7 +226,7 @@ translateTAC (BinInstr lv rv1 op rv2) = do
   puts (addAlloc lv (Reg r))
   op1 <- gets ((B.! rv1) . alloc)
   op2 <- gets ((B.! rv2) . alloc)
-  tellInstr (Movq op1 (Reg r))
+  tellInstr (X86.Movq op1 (Reg r))
   tellInstr ((translateBinOp op) op2 (Reg r))
   tellInstr (Jo (R ErrOverflow))
 

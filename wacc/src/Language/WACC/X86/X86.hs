@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Language.WACC.X86.X86 where
 
@@ -29,24 +30,27 @@ data Runtime
 
 type Prog = [Instr]
 
+data Name
+  = Mov Size
+  | Lea Size
+  | Sub Size
+  | Add Size
+  | And Size
+  | Cmp Size
+  | Movsl Size
+  | Movsb Size
+  deriving (Eq, Ord, Show, Typeable, Data)
+
+data Size = Q | L | W | B
+  deriving (Eq, Ord, Show, Typeable, Data)
+
 -- | cannot have two Mem operands for the same instruction
 data Instr
   = Lab Label
   | Ret
   | Pushq Operand
   | Popq Operand
-  | Movq Operand Operand
-  | Movl Operand Operand
-  | Movb Operand Operand
-  | Movslq Operand Operand
-  | Movsbq Operand Operand
-  | Leaq Operand Operand
-  | Subq Operand Operand
-  | Addq Operand Operand
-  | Andq Operand Operand
-  | Cmpq Operand Operand
-  | Cmpl Operand Operand
-  | Cmpb Operand Operand
+  | BinOp Name Operand Operand
   | Call Label
   | Je Label
   | Jo Label
@@ -94,73 +98,21 @@ Each kind of register in x86-64 segregated below. Feel free to change in case a 
 -}
 data Register
   = Rax
-  | Eax
-  | Ax
-  | Ah
-  | Al
   | Rbx
-  | Ebx
-  | Bx
-  | Bh
-  | Bl
   | Rcx
-  | Ecx
-  | Cx
-  | Ch
-  | Cl
   | Rdx
-  | Edx
-  | Dx
-  | Dh
-  | Dl
   | Rsi
-  | Esi
-  | Si
-  | Sil
   | Rdi
-  | Edi
-  | Di
-  | Dil
   | Rbp
-  | Ebp
-  | Bp
-  | Bpl
   | Rsp
-  | Esp
-  | Sp
-  | Spl
   | R8
-  | R8d
-  | R8w
-  | R8b
   | R9
-  | R9d
-  | R9w
-  | R9b
   | R10
-  | R10d
-  | R10w
-  | R10b
   | R11
-  | R11d
-  | R11w
-  | R11b
   | R12
-  | R12d
-  | R12w
-  | R12b
   | R13
-  | R13d
-  | R13w
-  | R13b
   | R14
-  | R14d
-  | R14w
-  | R14b
   | R15
-  | R15d
-  | R15w
-  | R15b
   | Rip
   deriving (Eq, Ord, Show, Data)
 
@@ -174,25 +126,27 @@ argRegs :: [Register]
 argRegs = [Rdi, Rsi, Rdx, Rcx, R8, R9]
 
 class ATNT a where
-  formatA :: a -> String
+  formatA :: a  -> String
 
 instance ATNT Integer where
   formatA = show
 
 instance ATNT Register where
-  formatA r = '%' : map toLower (show r)
+  formatA  r = '%' : map toLower (show r)
 
 paren :: String -> String
 paren x = "(" ++ x ++ ")"
 
 instance ATNT Memory where
-  formatA (MI x) = paren (formatA x)
+  formatA (MI x) = paren (show x)
   formatA (MReg r) = paren (formatA r)
   formatA (MTwoReg r1 r2) = paren (intercalate ", " (map formatA [r1, r2]))
   formatA (MScale r1 r2 s) = paren (intercalate ", " (map formatA [r1, r2] ++ [formatA s]))
   formatA (MRegI x r) = formatA x ++ paren (formatA r)
   formatA (MTwoRegI x r1 r2) = formatA x ++ paren (intercalate ", " (map formatA [r1, r2]))
-  formatA (MScaleI x r1 r2 s) = formatA x ++ paren (intercalate ", " (map formatA [r1, r2] ++ [formatA s]))
+  formatA (MScaleI x r1 r2 s) =
+    formatA x
+      ++ paren (intercalate ", " (map formatA [r1, r2] ++ [formatA s]))
   formatA (MRegL l r) = formatA l ++ paren (formatA r)
 
 instance ATNT Operand where
@@ -219,25 +173,51 @@ instance ATNT Label where
   formatA (R x) = '_' : map toLower (show x)
   formatA (S x) = x
 
+pattern Movq :: Operand -> Operand -> Instr
+pattern Movq op1 op2 = BinOp (Mov Q) op1 op2
+
+pattern Movl :: Operand -> Operand -> Instr
+pattern Movl op1 op2 = BinOp (Mov L) op1 op2
+
+pattern Movb :: Operand -> Operand -> Instr
+pattern Movb op1 op2 = BinOp (Mov B) op1 op2
+
+pattern Leaq :: Operand -> Operand -> Instr
+pattern Leaq op1 op2 = BinOp (Lea Q) op1 op2
+
+pattern Subq :: Operand -> Operand -> Instr
+pattern Subq op1 op2 = BinOp (Sub Q) op1 op2
+
+pattern Addq :: Operand -> Operand -> Instr
+pattern Addq op1 op2 = BinOp (Add Q) op1 op2
+
+pattern Andq :: Operand -> Operand -> Instr
+pattern Andq op1 op2 = BinOp (And Q) op1 op2
+
+pattern Cmpq :: Operand -> Operand -> Instr
+pattern Cmpq op1 op2 = BinOp (Cmp Q) op1 op2
+
+pattern Cmpl :: Operand -> Operand -> Instr
+pattern Cmpl op1 op2 = BinOp (Cmp L) op1 op2
+
+pattern Cmpb :: Operand -> Operand -> Instr
+pattern Cmpb op1 op2 = BinOp (Cmp B) op1 op2
+
+pattern Movslq :: Operand -> Operand -> Instr
+pattern Movslq op1 op2 = BinOp (Movsl Q) op1 op2
+
+pattern Movsbq :: Operand -> Operand -> Instr
+pattern Movsbq op1 op2 = BinOp (Movsb Q) op1 op2
+
 instance ATNT Instr where
   formatA (Lab x) = formatA x ++ ":"
   formatA Ret = "ret"
   formatA i@(Pushq op) = formatUnOp i op
   formatA i@(Popq op) = formatUnOp i op
-  formatA i@(Movq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Movl op1 op2) = formatBinOp i op1 op2
-  formatA i@(Movb op1 op2) = formatBinOp i op1 op2
-  formatA i@(Movslq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Movsbq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Leaq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Subq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Addq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Andq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Cmpq op1 op2) = formatBinOp i op1 op2
-  formatA i@(Cmpl op1 op2) = formatBinOp i op1 op2
-  formatA i@(Cmpb op1 op2) = formatBinOp i op1 op2
+  formatA (BinOp name op1 op2) = formatBinOp name op1 op2
   formatA i@(Call l) = formatUnOp i l
   formatA i@(Je l) = formatUnOp i l
+  formatA i@(Jo l) = formatUnOp i l
   formatA i@(Jne l) = formatUnOp i l
   formatA i@(Jmp l) = formatUnOp i l
   formatA (Dir d) = formatA d
@@ -246,14 +226,20 @@ instance ATNT Instr where
 formatUnOp :: (ATNT a) => Instr -> a -> String
 formatUnOp i op = unwords [instrName i, formatA op]
 
-formatBinOp :: (ATNT a, ATNT b) => Instr -> a -> b -> [Char]
-formatBinOp i op1 op2 = instrName i ++ " " ++ formatA op1 ++ ", " ++ formatA op2
+formatBinOp :: (ATNT a, ATNT b) => Name -> a -> b -> [Char]
+formatBinOp name op1 op2 =
+  map toLower (show name)
+    ++ " "
+    ++ formatA op1
+    ++ ", "
+    ++ formatA op2
 
 instance ATNT Directive where
-  formatA d@(DirInt x) = unwords [dirName d, formatA x]
+  formatA d@(DirInt x) = unwords [dirName d, show x]
   formatA d@(DirAsciz str) = unwords [dirName d, quote str]
   formatA d@(DirGlobl l) = unwords [dirName d, formatA l]
   formatA d = dirName d
 
+
 instance ATNT [Instr] where
-  formatA = unlines . map formatA
+  formatA instrs = unlines (map formatA instrs)
