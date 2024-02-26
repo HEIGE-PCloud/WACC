@@ -216,6 +216,12 @@ getReg' v = do
   puts (addAlloc v reg)
   return reg
 
+saveRegister :: [Register] -> Analysis ()
+saveRegister = mapM_ (tellInstr . Pushq . Reg)
+
+restoreRegister :: [Register] -> Analysis ()
+restoreRegister = mapM_ (tellInstr . Popq . Reg)
+
 getOprand :: Var Integer -> Analysis Operand
 getOprand v = gets ((B.! v) . alloc)
 
@@ -241,8 +247,16 @@ translateTAC (Print v w) = undefined
 translateTAC (TAC.PrintLn v w) = undefined
 translateTAC (Exit v) = undefined
 translateTAC (Read v w) = undefined
-translateTAC (TAC.Malloc lv rv) = undefined
-translateTAC (TAC.Free v) = undefined
+translateTAC (TAC.Malloc lv rv) = do
+  operand <- getReg' lv
+  operand' <- getOprand rv
+  movq operand' arg1
+  call (R X86.Malloc)
+  movq argRet operand
+translateTAC (TAC.Free v) = do
+  operand <- getOprand v
+  movq operand arg1
+  call (R X86.Free)
 
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
@@ -416,3 +430,20 @@ setge = set Setge
 
 negl :: Operand -> Analysis ()
 negl o = tellInstr (Negl o)
+
+call :: X86.Label -> Analysis ()
+call l = tellInstr (X86.Call l)
+
+arg1 = Reg Rdi
+
+arg2 = Reg Rsi
+
+arg3 = Reg Rdx
+
+arg4 = Reg Rcx
+
+arg5 = Reg R8
+
+arg6 = Reg R9
+
+argRet = Reg Rax
