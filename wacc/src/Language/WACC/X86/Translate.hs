@@ -20,6 +20,9 @@ import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
+import Language.WACC.AST.WType
+  ( WType (WArray, WBool, WChar, WErasedPair, WInt, WKnownPair, WString)
+  )
 import Language.WACC.TAC.TAC
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.Runtime (runtimeLib)
@@ -209,6 +212,7 @@ getReg = do
       puts (\x -> x {freeRegs = rs})
       return r
 
+getReg' :: Var Integer -> Analysis Operand
 getReg' v = do
   r <- getReg
   let
@@ -239,12 +243,16 @@ translateTAC (UnInstr v1 op v2) =
 translateTAC (Store v1 off v2 w) = undefined
 translateTAC (LoadCI v i) = do
   operand <- getReg' v
-  tellInstr (Movq (Imm (fromIntegral i)) operand)
+  movq (Imm (fromIntegral i)) operand
 translateTAC (LoadCS v s) = undefined
 translateTAC (LoadM v1 v2 off w) = undefined
 translateTAC (TAC.Call v1 (Label l) vs) = undefined
-translateTAC (Print v w) = undefined
-translateTAC (TAC.PrintLn v w) = undefined
+translateTAC (Print v w) = do
+  operand <- getOprand v
+  translatePrint operand w
+translateTAC (TAC.PrintLn v w) = do
+  translateTAC (Print v w)
+  call printLn
 translateTAC (Exit v) = undefined
 translateTAC (Read v w) = undefined
 translateTAC (TAC.Malloc lv rv) = do
@@ -347,6 +355,23 @@ translateUnOp o Negate o' = do
   negl eax
   movl eax o
 
+translatePrint :: Operand -> WType -> Analysis ()
+translatePrint o WInt = do
+  movq o arg1
+  call printi
+translatePrint o WBool = do
+  movq o arg1
+  call printb
+translatePrint o WChar = do
+  movq o arg1
+  call printc
+translatePrint o WString = do
+  movq o arg1
+  call prints
+translatePrint o _ = do
+  movq o arg1
+  call printp
+
 al :: Operand
 al = Reg Al
 
@@ -434,16 +459,41 @@ negl o = tellInstr (Negl o)
 call :: X86.Label -> Analysis ()
 call l = tellInstr (X86.Call l)
 
+arg1 :: Operand
 arg1 = Reg Rdi
 
+arg2 :: Operand
 arg2 = Reg Rsi
 
+arg3 :: Operand
 arg3 = Reg Rdx
 
+arg4 :: Operand
 arg4 = Reg Rcx
+arg5 :: Operand
 
+arg6 :: Operand
 arg5 = Reg R8
 
 arg6 = Reg R9
 
+argRet :: Operand
 argRet = Reg Rax
+
+printi :: X86.Label
+printi = R X86.PrintI
+
+printc :: X86.Label
+printc = R X86.PrintC
+
+printb :: X86.Label
+printp :: X86.Label
+printb = R X86.PrintB
+
+printp = R X86.PrintP
+
+prints :: X86.Label
+prints = R X86.PrintS
+
+printLn :: X86.Label
+printLn = R X86.PrintLn
