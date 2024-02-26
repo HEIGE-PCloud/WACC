@@ -227,7 +227,7 @@ getLabel :: Analysis X86.Label
 getLabel = do
   n <- gets labelCounter
   puts (\x -> x {labelCounter = n + 1})
-  return (S (".L" ++ show n))
+  return (S (".TAC_L" ++ show n))
 
 saveRegister :: [Register] -> Analysis ()
 saveRegister = mapM_ (tellInstr . Pushq . Reg)
@@ -253,7 +253,24 @@ translateTAC (Store v1 off v2 w) = undefined
 translateTAC (LoadCI v i) = do
   operand <- getReg' v
   movq (Imm (fromIntegral i)) operand
-translateTAC (LoadCS v s) = undefined
+{-
+.section .rodata
+	.int 11
+.L.str0:
+	.asciz "hello world"
+.text
+leaq .L.str0(%rip), o
+-}
+translateTAC (LoadCS v s) = do
+  o <- getReg' v
+  l <- getLabel
+  section
+  rodata
+  int (fromIntegral $ length s)
+  lab l
+  asciz s
+  text
+  leaq (Mem (MRegL l Rip)) o
 translateTAC (LoadM v1 v2 off w) = undefined
 translateTAC (TAC.Call v1 (Label l) vs) = undefined
 translateTAC (Print v w) = do
@@ -464,6 +481,9 @@ ecx = Reg Ecx
 edx :: Operand
 edx = Reg Edx
 
+leaq :: Operand -> Operand -> Analysis ()
+leaq o1 o2 = tellInstr (Leaq o1 o2)
+
 mov :: (a -> b -> Instr) -> a -> b -> Analysis ()
 mov m o r = tellInstr (m o r)
 
@@ -581,3 +601,18 @@ errDivByZero = R X86.ErrDivByZero
 
 lab :: X86.Label -> Analysis ()
 lab = tellInstr . Lab
+
+section :: Analysis ()
+section = tellInstr (Dir DirSection)
+
+rodata :: Analysis ()
+rodata = tellInstr (Dir DirRodata)
+
+int :: Integer -> Analysis ()
+int x = tellInstr (Dir (DirInt x))
+
+asciz :: String -> Analysis ()
+asciz s = tellInstr (Dir (DirAsciz s))
+
+text :: Analysis ()
+text = tellInstr (Dir DirText)
