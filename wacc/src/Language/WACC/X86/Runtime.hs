@@ -606,6 +606,29 @@ readc =
   , Ret
   ]
 
+{-
+_exit:
+	pushq %rbp
+	movq %rsp, %rbp
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	call exit@plt
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+exit :: Prog
+exit =
+  [ Lab (R Exit)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Call cexit
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
 -- | Print a program, useful for debugging in GHCi
 printProg :: Prog -> IO ()
 printProg prog = putStrLn $ formatA prog

@@ -26,6 +26,7 @@ data Runtime
   | ErrOutOfMemory
   | ErrOverflow
   | ErrDivByZero
+  | Exit
   deriving (Eq, Ord, Typeable, Data, Show)
 
 type Prog = [Instr]

@@ -253,7 +253,10 @@ translateTAC (Print v w) = do
 translateTAC (TAC.PrintLn v w) = do
   translateTAC (Print v w)
   call printLn
-translateTAC (Exit v) = undefined
+translateTAC (TAC.Exit v) = do
+  operand <- getOprand v
+  movq operand arg1
+  call (R X86.Exit)
 translateTAC (Read v w) = undefined
 translateTAC (TAC.Malloc lv rv) = do
   operand <- getReg' lv
@@ -470,8 +473,8 @@ arg3 = Reg Rdx
 
 arg4 :: Operand
 arg4 = Reg Rcx
-arg5 :: Operand
 
+arg5 :: Operand
 arg6 :: Operand
 arg5 = Reg R8
 
