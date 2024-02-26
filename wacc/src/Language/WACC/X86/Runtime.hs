@@ -1,5 +1,7 @@
 module Language.WACC.X86.Runtime where
 
+import qualified Data.DList as D
+import qualified Data.Map as M
 import Language.WACC.X86.X86
 
 x86Examples :: [(Prog, String)]
@@ -17,6 +19,23 @@ x86Examples =
   , (prints, "prints")
   , (printi, "printi")
   ]
+
+runtimeLib :: M.Map Runtime (D.DList Instr)
+runtimeLib =
+  M.fromList
+    [ (PrintI, D.fromList printi)
+    , (PrintB, D.fromList printb)
+    , (PrintC, D.fromList printc)
+    , (PrintS, D.fromList prints)
+    , (PrintP, D.fromList printp)
+    , (PrintLn, D.fromList println)
+    , (Free, D.fromList free)
+    , (Malloc, D.fromList malloc)
+    , (ReadI, D.fromList readi)
+    , (ReadC, D.fromList readc)
+    , (ErrOutOfMemory, D.fromList errOutOfMemory)
+    , (ErrOverflow, D.fromList errOverflow)
+    ]
 
 cprintf :: Label
 cprintf = S "printf@plt"

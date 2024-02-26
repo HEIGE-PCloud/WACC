@@ -5,71 +5,137 @@ module Language.WACC.X86.Translate where
 import Control.Monad.RWS
   ( RWS
   , asks
-  , evalRWS
+  , execRWS
   , get
   , gets
   , put
   , tell
   )
-import Data.Bimap (Bimap)
+import Data.Bimap hiding (map, (!))
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
-import Data.Map (Map, (!))
+import Data.List ((\\))
+import Data.Map (Map, findMin, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
 import Language.WACC.TAC.TAC
 import qualified Language.WACC.TAC.TAC as TAC
+import Language.WACC.X86.Runtime (runtimeLib)
 import Language.WACC.X86.X86
-  ( Instr (..)
+  ( Directive (..)
+  , Instr (..)
   , Label (..)
   , Memory (..)
   , Operand (..)
   , Prog
   , Register (..)
   , Runtime (..)
+  , argRegs
+  , callee
+  , caller
   )
 import qualified Language.WACC.X86.X86 as X86
 
-{- | A caller saved register. When registers run out and values in the stack are
-required for a computation, they are swapped with the value in this register.
-This is only required when there are both operands are in memory.
+-- | Translate every function's instructions and concat
+translateProg :: TACProgram Integer Integer -> Prog
+translateProg p = D.toList $ preamble `D.append` (D.concat is) `D.append` (D.concat runtime)
+  where
+    runtime :: [DList Instr]
+    runtime = (runtimeLib !) <$> (S.toList (S.unions runtimeLs))
+    (runtimeLs, is) = unzip $ map translateFunc (M.elems p)
+    preamble :: DList Instr
+    preamble =
+      D.fromList
+        [ Dir $ DirGlobl (S "main")
+        , Dir $ DirSection
+        , Dir $ DirRodata
+        , Dir $ DirText
+        ]
+
+{- | When registers run out and values in the stack are
+required for a computation, they put in this register.
+A caller saved register.
 -}
 swapReg :: Register
 swapReg = R10
 
-data Allocation = Allocation
-  { getAlloc :: Bimap (Var Integer) Operand -- a bidirectional map between variables and their locations
+-- | The state of RWS monad for translation of each function
+data TransST = TransST
+  { alloc :: Bimap (Var Integer) Operand
+  -- ^ bijection between variables in TAC to register/memory in X86
   , translated :: Set (TAC.Label Integer)
+  -- ^ Set of basic blocks that have been translated
   , stackVarNum :: Integer
+  -- ^ The number of stack variables used so far (not incl. saving callee saved reg)
   , runtimeFns :: Set Runtime
+  -- ^ Set of runtime functions which need to be included
   , freeRegs :: [Register]
+  -- ^ Unused registers
   }
 
+-- | Reader maps labels to basic blocks. Writer holds output X86 program
 type Analysis =
   RWS
     (Map Integer (BasicBlock Integer Integer))
     (DList Instr)
-    Allocation
-
--- | Translate every function's instructions and concat
-translateProg :: TACProgram Integer Integer -> Prog
-translateProg = D.toList . foldr (D.append . translateFunc) D.empty . M.elems
+    TransST
 
 {- | Rbp points to the location just before the first stack variable of a frame
 This means the last callee saved register pushed onto the stack
+
+Assuming stack looks like this: (initial value of Rsp and constant value of Rbp)
+
+--------------
+Extra Arg: 1
+.
+.
+Extra Arg: n     <-- Rsp
+--------------
+Callee Saved: 1
+.
+.
+Callee Saved: m  <-- Rbp
+-------------
+Local Regs: 1
+.
+.
 -}
-translateFunc :: Func Integer Integer -> DList Instr
-translateFunc (Func l v bs) = is
+translateFunc :: Func Integer Integer -> (Set Runtime, DList Instr)
+translateFunc (Func l vs bs) = (runtimeFns st, is)
   where
-    ((), is) =
-      evalRWS
-        (translateBlocks (TAC.Label n) startBlock)
+    (st, is) =
+      execRWS
+        funcRWS
         bs
-        (Allocation B.empty S.empty 0 S.empty []) -- Not empty regs list
+        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller)) -- Not empty regs list
     (n, startBlock) = M.findMin bs
 
+    funcRWS = do
+      mapM (tellInstr . Pushq . Reg) callee -- callee saving registers
+      tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
+      mapM setupRegArgs (zip vs argRegs)
+      puts
+        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ (drop (length vs) argRegs)} -- mark extra arg regs as usable
+        )
+      -- \| if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
+      mapM
+        setupStackArgs
+        ( zip
+            (drop (length argRegs) vs)
+            (map (\x -> (-x) - toInteger (length callee)) [0 ..])
+        )
+      translateBlocks (TAC.Label n) startBlock -- translate main part of code
+      svn <- gets stackVarNum
+      tellInstr (Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
+      mapM (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
+    setupRegArgs :: (Var Integer, Register) -> Analysis ()
+    setupRegArgs (v, r) = puts (addAlloc v (Reg r))
+    setupStackArgs :: (Var Integer, Integer) -> Analysis ()
+    setupStackArgs (v, n) = puts (addAlloc v (Mem (MRegI n Rbp)))
+
+-- | translate each statement of the block. then figure out which block to go to
 translateBlocks
   :: TAC.Label Integer
   -> BasicBlock Integer Integer
@@ -78,14 +144,17 @@ translateBlocks l (BasicBlock is next) = do
   translateBlock l is
   translateNext next
 
+-- | modify the state of the RWS monad
 puts :: (Monoid w) => (s -> s) -> RWS r w s ()
 puts f = do
   s <- get
   put (f s)
 
-setTranslated :: TAC.Label Integer -> Allocation -> Allocation
-setTranslated l x@(Allocation {translated}) = x {translated = S.insert l translated}
+-- | Mark the block as translated, so its not re-translated
+setTranslated :: (TAC.Label Integer) -> TransST -> TransST
+setTranslated l x@(TransST {translated}) = x {translated = (S.insert l) translated}
 
+-- | translate each TAC statement
 translateBlock
   :: TAC.Label Integer
   -> [TAC Integer Integer]
@@ -103,13 +172,17 @@ tellInstr = tell . D.singleton
 isTranslated :: TAC.Label Integer -> Analysis Bool
 isTranslated l = gets (S.member l . translated)
 
+{- | Flow control: For CJump translate l2 first then translate l1 after returning from the recursive call
+This generates weird (but correct) assembly with else first then if. The if block appears roughly at the
+end of the recursive call.
+-}
 translateNext :: Jump Integer Integer -> Analysis ()
 translateNext (Jump l1@(Label n)) = do
   nextBlock <- asks (! n)
   t <- isTranslated l1
   (if t then tellInstr (Jmp (mapLab l1)) else translateBlocks l1 nextBlock)
 translateNext (CJump v l1 l2@(TAC.Label n2)) = do
-  operand <- gets ((B.! v) . getAlloc)
+  operand <- gets ((B.! v) . alloc)
   tellInstr (Cmpq operand (Imm 0))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
@@ -117,27 +190,19 @@ translateNext (CJump v l1 l2@(TAC.Label n2)) = do
   (if t then pure () else translateNext (Jump l1))
 translateNext (TAC.Ret var) = pure ()
 
--- getVar :: Var Integer -> Analysis Register
--- getVar v = do
---  vLoc <- gets (! v)
---  case vLoc of
---    Imm i -> error "This is not supposed to happen by pre-condition"
---    Reg r -> return (Reg r)
---    Mem m -> do undefined
+addAlloc :: Var Integer -> Operand -> TransST -> TransST
+addAlloc v o x@(TransST {alloc}) = x {alloc = (B.insert v o) alloc}
 
-addAlloc :: Var Integer -> Operand -> Allocation -> Allocation
-addAlloc v o x@(Allocation {getAlloc}) = x {getAlloc = B.insert v o getAlloc}
-
--- | Get the next free register
+-- | Free a register if none are available by pushing the swapReg onto stack
 getReg :: Analysis Register
 getReg = do
   rs <- gets freeRegs
   case rs of
     [] -> do
       tellInstr (Pushq (Reg swapReg))
-      swapVar <- gets ((B.!> Reg swapReg) . getAlloc)
-      puts (\x@(Allocation {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
-      stackAddr <- gets ((* 4) . stackVarNum)
+      swapVar <- gets ((B.!> (Reg swapReg)) . alloc)
+      puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
+      stackAddr <- (gets ((* 4) . stackVarNum))
       puts (addAlloc swapVar (Mem (MRegI stackAddr Rbp)))
       return swapReg
     (r : rs) -> do
@@ -166,10 +231,12 @@ translateBinOp Div o1 o2 =
 translateBinOp Mod o1 o2 = []
 translateBinOp And o1 o2 = []
 translateBinOp Or o1 o2 = []
-translateBinOp Lt o1 o2 = [Cmpq o1 o2]
-translateBinOp Gt o1 o2 = []
-translateBinOp Le o1 o2 = []
-translateBinOp Ge o1 o2 = []
+translateBinOp TAC.LT o1 o2 = [Cmpq o1 o2]
+translateBinOp TAC.GT o1 o2 = []
+translateBinOp TAC.LTE o1 o2 = []
+translateBinOp TAC.GTE o1 o2 = []
+translateBinOp TAC.Eq o1 o2 = []
+translateBinOp TAC.Ineq o1 o2 = []
 
 translateTAC :: TAC Integer Integer -> Analysis ()
 translateTAC (BinInstr v1 v2 op v3) = do
@@ -178,14 +245,10 @@ translateTAC (BinInstr v1 v2 op v3) = do
   let
     reg = Reg r
   puts (addAlloc v1 reg)
-  operand1 <- gets ((B.! v2) . getAlloc)
-  operand2 <- gets ((B.! v3) . getAlloc)
+  operand1 <- gets ((B.! v2) . alloc)
+  operand2 <- gets ((B.! v3) . alloc)
   tellInstr (Movq operand1 reg)
   mapM_ tellInstr (translateBinOp op operand2 reg)
-translateTAC (EqR v1 v2 v3) = undefined
-translateTAC (IneqR v1 v2 v3) = undefined
-translateTAC (EqV v1 v2 v3) = undefined
-translateTAC (IneqV v1 v2 v3) = undefined
 translateTAC (UnInstr v1 op v2) = undefined
 translateTAC (Store v1 off v2 w) = undefined
 translateTAC (LoadCI v i) = undefined

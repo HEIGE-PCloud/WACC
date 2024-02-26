@@ -4,4 +4,4 @@ compile
 test.wacc
 rspec.xml
 *.s
-a.out
+*.out
