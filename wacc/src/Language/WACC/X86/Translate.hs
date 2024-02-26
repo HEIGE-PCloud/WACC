@@ -296,7 +296,10 @@ translateTAC (LoadM v1 v2 off w) = do
   comment "End LoadM"
 translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
-  -- TODO: argument passing
+  -- push all registers on to stack
+  os <- mapM getOprand vs
+  mapM_ (tellInstr . Pushq) (reverse os)
+  -- call the function
   call (I l)
   comment "End Call"
 translateTAC (Print v w) = do
