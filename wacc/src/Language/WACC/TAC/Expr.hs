@@ -15,17 +15,16 @@ import Data.Bool (bool)
 import Data.Char (ord)
 import Data.DList (DList)
 import Data.Foldable (foldl')
-import Data.Functor.Foldable (embed)
 import Data.Semigroup (sconcat)
 import GHC.IsList (IsList (..))
 import Language.WACC.AST
   ( ArrayIndex (..)
   , Expr (WAtom)
   , WAtom (..)
-  , WType (..)
   )
 import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
+import Language.WACC.TAC.FType
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking (BType (..))
@@ -90,12 +89,6 @@ binOp
   -> TACM ident lident (ExprTACs ident lident)
 binOp x op y = binInstr x (\t xv yv -> BinInstr t xv op yv) y
 
-sizeOf :: BType -> Int
-sizeOf BInt = 4
-sizeOf BBool = 1
-sizeOf BChar = 1
-sizeOf _ = 8
-
 type instance TACIdent (Expr ident a) = ident
 
 instance (Enum ident) => ToTAC (Expr ident BType) where
@@ -109,7 +102,7 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (ArrayElem (ArrayIndex v xs t) _) _) =
     foldl' chainIndexTACs ([] $ Var v) <$> zipWithM mkIndexTACs xs ts
     where
-      ts = unfoldElementTypes t
+      ts = flatten <$> unfoldElementTypes t
       unfoldElementTypes (BArray t') = t' : unfoldElementTypes t'
       unfoldElementTypes t' = [t']
       mkIndexTACs indexExpr t' =
@@ -120,24 +113,22 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
             , calcIndexTACs
             , [ BinInstr temp1 (exprV calcIndexTACs) Mul (exprV loadScalarTACs)
               , BinInstr temp2 temp1 Add (exprV loadOffsetTACs)
-              , LoadM temp3 v' temp2 (toWType t')
+              , LoadM temp3 v' temp2 t'
               ]
                 temp3
             ]
-        | loadOffsetTACs <- loadCI (sizeOf BInt)
+        | loadOffsetTACs <- loadCI (sizeOf FInt)
         , loadScalarTACs <- loadCI (sizeOf t')
         , calcIndexTACs <- toTAC indexExpr
         , temp1 <- freshTemp
         , temp2 <- freshTemp
         , temp3 <- freshTemp
         ]
-      toWType (BFixed wft) = embed $ WErasedPair <$ wft
-      toWType _ = error "subexpression with unknown type"
       chainIndexTACs xts f = xts <> f (exprV xts)
   toTAC (AST.Not x _) = unOp Not x
   toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) =
-    [ cts <> [LoadM t (exprV xts) (exprV cts) WInt] t
+    [ cts <> [LoadM t (exprV xts) (exprV cts) FInt] t
     | xts <- toTAC x
     , cts <- loadCI 0
     , t <- freshTemp
