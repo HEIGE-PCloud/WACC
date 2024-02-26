@@ -263,7 +263,7 @@ translateTAC (UnInstr v1 op v2) =
 translateTAC (Store v1 off v2 w) = do
   -- \| > <var> := <var>[<Offset>]
   comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  -- TODO: implement
+  translateStore v1 off v2 (getSize w)
   comment "End Store"
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
@@ -557,6 +557,18 @@ translateLoadM v1 v2 off s = do
   call (arrayLoad s)
   movq r9 o1
 
+translateStore
+  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
+translateStore v1 off v2 s = do
+  -- array ptr passed in R9, index in R10, and value in R11
+  o1 <- getOprand v1
+  offset <- getOprand off
+  o2 <- getOprand v2
+  movq o1 r9
+  movq offset r10
+  movq o2 r11
+  call (arrayStore s)
+
 al :: Operand
 al = Reg Al
 
@@ -734,3 +746,9 @@ arrayLoad 1 = R ArrLoad1
 arrayLoad 4 = R ArrLoad4
 arrayLoad 8 = R ArrLoad8
 arrayLoad _ = error "Invalid size for array load"
+
+arrayStore :: (Eq a, Num a) => a -> X86.Label
+arrayStore 1 = R ArrStore1
+arrayStore 4 = R ArrStore4
+arrayStore 8 = R ArrStore8
+arrayStore _ = error "Invalid size for array store"
