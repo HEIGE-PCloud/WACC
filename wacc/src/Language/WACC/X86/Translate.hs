@@ -8,8 +8,6 @@ import Control.Monad.RWS
   , execRWS
   , get
   , gets
-  , local
-  , modify
   , put
   , tell
   )
@@ -18,10 +16,13 @@ import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
 import Data.List ((\\))
-import Data.Map (Map, findMin, (!))
+import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
+import Language.WACC.AST.WType
+  ( WType (WBool, WChar, WInt, WString)
+  )
 import Language.WACC.TAC.TAC
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.Runtime (runtimeLib)
@@ -32,7 +33,7 @@ import Language.WACC.X86.X86
   , Memory (..)
   , Operand (..)
   , Prog
-  , Register (R10, Rbp, Rsp)
+  , Register (..)
   , Runtime (..)
   , argRegs
   , callee
@@ -42,18 +43,18 @@ import qualified Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
 translateProg :: TACProgram Integer Integer -> Prog
-translateProg p = D.toList $ preamble `D.append` (D.concat is) `D.append` (D.concat runtime)
+translateProg p = D.toList $ preamble `D.append` D.concat is `D.append` D.concat runtime
   where
     runtime :: [DList Instr]
-    runtime = (runtimeLib !) <$> (S.toList (S.unions runtimeLs))
+    runtime = (runtimeLib !) <$> S.toList (S.unions runtimeLs)
     (runtimeLs, is) = unzip $ map translateFunc (M.elems p)
     preamble :: DList Instr
     preamble =
       D.fromList
         [ Dir $ DirGlobl (S "main")
-        , Dir $ DirSection
-        , Dir $ DirRodata
-        , Dir $ DirText
+        , Dir DirSection
+        , Dir DirRodata
+        , Dir DirText
         ]
 
 {- | When registers run out and values in the stack are
@@ -75,6 +76,8 @@ data TransST = TransST
   -- ^ Set of runtime functions which need to be included
   , freeRegs :: [Register]
   -- ^ Unused registers
+  , labelCounter :: Integer
+  -- ^ Counter for generating unique labels
   }
 
 -- | Reader maps labels to basic blocks. Writer holds output X86 program
@@ -111,18 +114,18 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
       execRWS
         funcRWS
         bs
-        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller)) -- Not empty regs list
+        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller) 0) -- Not empty regs list
     (n, startBlock) = M.findMin bs
 
     funcRWS = do
-      mapM (tellInstr . Pushq . Reg) callee -- callee saving registers
+      mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
       tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
-      mapM setupRegArgs (zip vs argRegs)
+      mapM_ setupRegArgs (zip vs argRegs)
       puts
-        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ (drop (length vs) argRegs)} -- mark extra arg regs as usable
+        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ drop (length vs) argRegs} -- mark extra arg regs as usable
         )
       -- \| if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
-      mapM
+      mapM_
         setupStackArgs
         ( zip
             (drop (length argRegs) vs)
@@ -153,8 +156,8 @@ puts f = do
   put (f s)
 
 -- | Mark the block as translated, so its not re-translated
-setTranslated :: (TAC.Label Integer) -> TransST -> TransST
-setTranslated l x@(TransST {translated}) = x {translated = (S.insert l) translated}
+setTranslated :: TAC.Label Integer -> TransST -> TransST
+setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated}
 
 -- | translate each TAC statement
 translateBlock
@@ -164,16 +167,16 @@ translateBlock
 translateBlock l@(TAC.Label n) is = do
   puts (setTranslated l) -- include label in translated set
   tellInstr (Lab (mapLab l))
-  mapM translateTAC is
-  return ()
+  mapM_ translateTAC is
 
-mapLab :: (TAC.Label Integer) -> X86.Label
+mapLab :: TAC.Label Integer -> X86.Label
 mapLab (Label x) = I x
 
+tellInstr :: Instr -> Analysis ()
 tellInstr = tell . D.singleton
 
 isTranslated :: TAC.Label Integer -> Analysis Bool
-isTranslated l = gets ((S.member l) . translated)
+isTranslated l = gets (S.member l . translated)
 
 {- | Flow control: For CJump translate l2 first then translate l1 after returning from the recursive call
 This generates weird (but correct) assembly with else first then if. The if block appears roughly at the
@@ -183,22 +186,18 @@ translateNext :: Jump Integer Integer -> Analysis ()
 translateNext (Jump l1@(Label n)) = do
   nextBlock <- asks (! n)
   t <- isTranslated l1
-  case t of
-    False -> translateBlocks l1 nextBlock
-    True -> tellInstr (Jmp (mapLab l1))
+  (if t then tellInstr (Jmp (mapLab l1)) else translateBlocks l1 nextBlock)
 translateNext (CJump v l1 l2@(TAC.Label n2)) = do
   operand <- gets ((B.! v) . alloc)
   tellInstr (Cmpq operand (Imm 0))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
   t <- isTranslated l1
-  case t of
-    False -> translateNext (Jump l1)
-    True -> pure ()
+  (if t then pure () else translateNext (Jump l1))
 translateNext (TAC.Ret var) = pure ()
 
 addAlloc :: Var Integer -> Operand -> TransST -> TransST
-addAlloc v o x@(TransST {alloc}) = x {alloc = (B.insert v o) alloc}
+addAlloc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
 -- | Free a register if none are available by pushing the swapReg onto stack
 getReg :: Analysis Register
@@ -207,38 +206,378 @@ getReg = do
   case rs of
     [] -> do
       tellInstr (Pushq (Reg swapReg))
-      swapVar <- gets ((B.!> (Reg swapReg)) . alloc)
+      swapVar <- gets ((B.!> Reg swapReg) . alloc)
       puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
-      stackAddr <- (gets ((* 4) . stackVarNum))
+      stackAddr <- gets ((* 4) . stackVarNum)
       puts (addAlloc swapVar (Mem (MRegI stackAddr Rbp)))
       return swapReg
     (r : rs) -> do
       puts (\x -> x {freeRegs = rs})
       return r
 
-translateBinOp :: BinOp -> (Operand -> Operand -> Instr)
-translateBinOp = undefined -- TODO deal with division separately
+getReg' :: Var Integer -> Analysis Operand
+getReg' v = do
+  r <- getReg
+  let
+    reg = Reg r
+  puts (addAlloc v reg)
+  return reg
+
+getLabel :: Analysis X86.Label
+getLabel = do
+  n <- gets labelCounter
+  puts (\x -> x {labelCounter = n + 1})
+  return (S (".L" ++ show n))
+
+saveRegister :: [Register] -> Analysis ()
+saveRegister = mapM_ (tellInstr . Pushq . Reg)
+
+restoreRegister :: [Register] -> Analysis ()
+restoreRegister = mapM_ (tellInstr . Popq . Reg)
+
+getOprand :: Var Integer -> Analysis Operand
+getOprand v = gets ((B.! v) . alloc)
 
 translateTAC :: TAC Integer Integer -> Analysis ()
-translateTAC (BinInstr lv rv1 op rv2) = do
-  -- always assign new variables to a register
-  r <- getReg
-  puts (addAlloc lv (Reg r))
-  op1 <- gets ((B.! rv1) . alloc)
-  op2 <- gets ((B.! rv2) . alloc)
-  tellInstr (Movq op1 (Reg r))
-  tellInstr ((translateBinOp op) op2 (Reg r))
-  tellInstr (Jo (R ErrOverflow))
+translateTAC (BinInstr v1 v2 op v3) = do
+  operand <- getReg' v1
+  operand1 <- getOprand v2
+  operand2 <- getOprand v3
+  translateBinOp operand op operand1 operand2
+translateTAC (UnInstr v1 op v2) =
+  do
+    operand <- getReg' v1
+    operand' <- getOprand v2
+    translateUnOp operand op operand'
+translateTAC (Store v1 off v2 w) = undefined
+translateTAC (LoadCI v i) = do
+  operand <- getReg' v
+  movq (Imm (fromIntegral i)) operand
+translateTAC (LoadCS v s) = undefined
+translateTAC (LoadM v1 v2 off w) = undefined
+translateTAC (TAC.Call v1 (Label l) vs) = undefined
+translateTAC (Print v w) = do
+  operand <- getOprand v
+  movq operand arg1
+  translatePrint w
+translateTAC (TAC.PrintLn v w) = do
+  translateTAC (Print v w)
+  call printLn
+translateTAC (TAC.Exit v) = do
+  operand <- getOprand v
+  movq operand arg1
+  call (R X86.Exit)
+translateTAC (Read v w) = do
+  operand <- getReg' v
+  translateRead operand w
+translateTAC (TAC.Malloc lv rv) = do
+  operand <- getReg' lv
+  operand' <- getOprand rv
+  movq operand' arg1
+  call (R X86.Malloc)
+  movq argRet operand
+translateTAC (TAC.Free v) = do
+  operand <- getOprand v
+  movq operand arg1
+  call (R X86.Free)
 
--- translateTAC (UnInstr (Var ident) UnOp (Var ident)
--- translateTAC (Store (Var ident) (Offset ident) (Var ident) WType
--- translateTAC (LoadCI (Var ident) Int
--- translateTAC (LoadCS (Var ident) String
--- translateTAC (LoadM (Var ident) (Var ident) (Offset ident) WType
--- translateTAC (Call (Var ident) (Label lident) [Var ident]
--- translateTAC (Print (Var ident) WType
--- translateTAC (PrintLn (Var ident) WType
--- translateTAC (Exit (Var ident)
--- translateTAC (Read (Var ident) WType
--- translateTAC (TAC.Malloc lv rv) = translateTAC (TAC.Call lv (R X86.Malloc) [rv])
--- translateTAC (Free (Var ident)
+{- | Translate a binary operation
+| <o> := <o1> <binop> <o2>
+-}
+translateBinOp :: Operand -> BinOp -> Operand -> Operand -> Analysis ()
+translateBinOp o Add o1 o2 = do
+  movl o1 eax
+  movl o2 ebx
+  addl ebx eax
+  jo errOverflow
+  movl ebx o
+translateBinOp o Sub o1 o2 = do
+  movl o1 eax
+  movl o2 ebx
+  subl ebx eax
+  jo errOverflow
+  movl ebx o
+translateBinOp o Mul o1 o2 = do
+  movl o1 eax
+  movl o2 ebx
+  imull ebx eax
+  jo errOverflow
+  movl ebx o
+translateBinOp o Div o1 o2 = do
+  movl o1 eax -- %eax := o1
+  cmpl (Imm 0) eax -- check for division by zero
+  je errDivByZero
+  cltd -- sign extend eax into edx
+  movl o2 ebx -- %ebx := o2
+  idivl ebx -- divide edx:eax by ebx
+  movl eax o -- %o := eax
+translateBinOp o Mod o1 o2 = do
+  movl o1 eax -- %eax := o1
+  cmpl (Imm 0) eax -- check for division by zero
+  je errDivByZero
+  cltd -- sign extend eax into edx
+  movl o2 ebx -- %ebx := o2
+  idivl ebx -- divide edx:eax by ebx
+  movl edx o -- %o := edx
+  {-
+    cmpl $0, o1
+    je .L2
+    cmpl $0, o2
+    je .L2
+    movl $1, %eax
+    jmp .L3
+  .L2:
+    movl $0, %eax
+  .L3:
+    movzbl %al, %eax
+    movl %eax, o
+  -}
+translateBinOp o And o1 o2 = do
+  l2 <- getLabel
+  l3 <- getLabel
+  cmpl (Imm 0) o1
+  je l2
+  cmpl (Imm 0) o2
+  je l2
+  movl (Imm 1) eax
+  jmp l3
+  lab l2
+  movl (Imm 0) eax
+  lab l3
+  movzbl al eax
+  movl eax o
+{-
+  cmpl $0, o1
+  jne .L2
+  cmpl $0, o2
+  je .L3
+.L2:
+  movl $1, %eax
+  jmp .L4
+.L3:
+  movl $0, %eax
+.L4:
+  movzbl %al, %eax
+  movl %eax, o
+-}
+translateBinOp o Or o1 o2 = do
+  l2 <- getLabel
+  l3 <- getLabel
+  l4 <- getLabel
+  cmpl (Imm 0) o1
+  jne l2
+  cmpl (Imm 0) o2
+  je l3
+  lab l2
+  movl (Imm 1) eax
+  jmp l4
+  lab l3
+  movl (Imm 0) eax
+  lab l4
+  movzbl al eax
+  movl eax o
+translateBinOp o TAC.LT o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setl al -- set al to 1 if %eax < %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.LTE o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setle al -- set al to 1 if %eax <= %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.GT o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setg al -- set al to 1 if %eax > %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.GTE o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl ebx eax -- compare %ebx and %eax
+  setge al -- set al to 1 if %eax >= %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.Eq o1 o2 = do
+  movq o1 rax -- %eax := o1
+  movq o2 rbx -- %ebx := o2
+  cmpq rbx rax -- compare %ebx and %eax
+  sete al -- set al to 1 if %eax == %ebx
+  movzbl al o -- %o := %al
+translateBinOp o TAC.Ineq o1 o2 = do
+  movq o1 rax -- %eax := o1
+  movq o2 rbx -- %ebx := o2
+  cmpq rbx rax -- compare %ebx and %eax
+  setne al -- set al to 1 if %eax != %ebx
+  movzbl al o -- %o := %al
+
+-- | <var> := <unop> <var>
+translateUnOp :: Operand -> UnOp -> Operand -> Analysis ()
+translateUnOp o Not o' = do
+  movl o' eax
+  cmpl (Imm 0) eax
+  sete al
+  movzbl al o
+translateUnOp o Negate o' = do
+  movl o' eax
+  negl eax
+  movl eax o
+
+translatePrint :: WType -> Analysis ()
+translatePrint WInt = do call printi
+translatePrint WBool = do call printb
+translatePrint WChar = do call printc
+translatePrint WString = do call prints
+translatePrint _ = do call printp
+
+translateRead :: Operand -> WType -> Analysis ()
+translateRead o WInt = do
+  call (R X86.ReadI)
+  movq argRet o
+translateRead o WChar = do
+  call (R X86.ReadC)
+  movq argRet o
+translateRead _ w =
+  error $
+    "Invalid type for read, only int and char are supported, got: " ++ show w
+
+al :: Operand
+al = Reg Al
+
+rax :: Operand
+rax = Reg Rax
+
+rbx :: Operand
+rbx = Reg Rbx
+
+eax :: Operand
+eax = Reg Eax
+
+ebx :: Operand
+ebx = Reg Ebx
+
+ecx :: Operand
+ecx = Reg Ecx
+
+edx :: Operand
+edx = Reg Edx
+
+mov :: (a -> b -> Instr) -> a -> b -> Analysis ()
+mov m o r = tellInstr (m o r)
+
+movl :: Operand -> Operand -> Analysis ()
+movl = mov Movl
+
+movq :: Operand -> Operand -> Analysis ()
+movq = mov Movq
+
+movzbl :: Operand -> Operand -> Analysis ()
+movzbl o r = tellInstr (Movzbl o r)
+
+addl :: Operand -> Operand -> Analysis ()
+addl o1 o2 = tellInstr (Addl o1 o2)
+
+subl :: Operand -> Operand -> Analysis ()
+subl o1 o2 = tellInstr (Subl o1 o2)
+
+imull :: Operand -> Operand -> Analysis ()
+imull o1 o2 = tellInstr (Imull o1 o2)
+
+idivl :: Operand -> Analysis ()
+idivl o = tellInstr (Idivl o)
+
+cmpl :: Operand -> Operand -> Analysis ()
+cmpl o1 o2 = tellInstr (Cmpl o1 o2)
+
+cmpq :: Operand -> Operand -> Analysis ()
+cmpq o1 o2 = tellInstr (Cmpq o1 o2)
+
+jo :: X86.Label -> Analysis ()
+jo l = tellInstr (Jo l)
+
+je :: X86.Label -> Analysis ()
+je l = tellInstr (Je l)
+
+jne :: X86.Label -> Analysis ()
+jne l = tellInstr (Jne l)
+
+jmp :: X86.Label -> Analysis ()
+jmp l = tellInstr (Jmp l)
+
+cltd :: Analysis ()
+cltd = tellInstr Cltd
+
+set :: (a -> Instr) -> a -> Analysis ()
+set s r = tellInstr (s r)
+
+sete :: Operand -> Analysis ()
+sete = set Sete
+
+setne :: Operand -> Analysis ()
+setne = set Setne
+
+setl :: Operand -> Analysis ()
+setl = set Setl
+
+setle :: Operand -> Analysis ()
+setle = set Setle
+
+setg :: Operand -> Analysis ()
+setg = set Setg
+
+setge :: Operand -> Analysis ()
+setge = set Setge
+
+negl :: Operand -> Analysis ()
+negl o = tellInstr (Negl o)
+
+call :: X86.Label -> Analysis ()
+call l = tellInstr (X86.Call l)
+
+arg1 :: Operand
+arg1 = Reg Rdi
+
+arg2 :: Operand
+arg2 = Reg Rsi
+
+arg3 :: Operand
+arg3 = Reg Rdx
+
+arg4 :: Operand
+arg4 = Reg Rcx
+
+arg5 :: Operand
+arg6 :: Operand
+arg5 = Reg R8
+
+arg6 = Reg R9
+
+argRet :: Operand
+argRet = Reg Rax
+
+printi :: X86.Label
+printi = R X86.PrintI
+
+printc :: X86.Label
+printc = R X86.PrintC
+
+printb :: X86.Label
+printp :: X86.Label
+printb = R X86.PrintB
+
+printp = R X86.PrintP
+
+prints :: X86.Label
+prints = R X86.PrintS
+
+printLn :: X86.Label
+printLn = R X86.PrintLn
+
+errOverflow = R X86.ErrOverflow
+
+errDivByZero = R X86.ErrDivByZero
+
+lab :: X86.Label -> Analysis ()
+lab = tellInstr . Lab

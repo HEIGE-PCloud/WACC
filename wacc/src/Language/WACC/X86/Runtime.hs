@@ -468,6 +468,38 @@ errOverflow =
 
 {-
 .section .rodata
+# length of .L._errDivZero_str0
+	.int 40
+.L._errDivZero_str0:
+	.asciz "fatal error: division or modulo by zero\n"
+.text
+_errDivZero:
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	leaq .L._errDivZero_str0(%rip), %rdi
+	call _prints
+	movb $-1, %dil
+	call exit@plt
+-}
+
+errDivByZero :: Prog
+errDivByZero =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 40
+  , Lab (S ".L._errDivZero_str0")
+  , Dir $ DirAsciz "fatal error: division or modulo by zero\n"
+  , Dir DirText
+  , Lab (R ErrDivByZero)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Leaq (Mem (MRegL (S ".L._errDivZero_str0") Rip)) (Reg Rdi)
+  , Call (R PrintS)
+  , Movb (Imm (-1)) (Reg Dil)
+  , Call cexit
+  ]
+
+{-
+.section .rodata
 # length of .L._readi_str0
 	.int 2
 .L._readi_str0:
@@ -569,6 +601,29 @@ readc =
   , Call cscanf
   , Movsbq (Mem (MRegI 0 Rsp)) (Reg Rax)
   , Addq (Imm 16) (Reg Rsp)
+  , Movq (Reg Rbp) (Reg Rsp)
+  , Popq (Reg Rbp)
+  , Ret
+  ]
+
+{-
+_exit:
+	pushq %rbp
+	movq %rsp, %rbp
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	call exit@plt
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+-}
+exit :: Prog
+exit =
+  [ Lab (R Exit)
+  , Pushq (Reg Rbp)
+  , Movq (Reg Rsp) (Reg Rbp)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Call cexit
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret

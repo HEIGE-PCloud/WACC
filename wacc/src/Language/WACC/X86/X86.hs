@@ -25,6 +25,8 @@ data Runtime
   | ReadC
   | ErrOutOfMemory
   | ErrOverflow
+  | ErrDivByZero
+  | Exit
   deriving (Eq, Ord, Typeable, Data, Show)
 
 type Prog = [Instr]
@@ -40,14 +42,27 @@ data Instr
   | Movb Operand Operand
   | Movslq Operand Operand
   | Movsbq Operand Operand
+  | Movzbl Operand Operand
   | Leaq Operand Operand
   | Subq Operand Operand
+  | Subl Operand Operand
   | Addq Operand Operand
+  | Addl Operand Operand
+  | Imull Operand Operand
+  | Idivl Operand
   | Andq Operand Operand
   | Cmpq Operand Operand
   | Cmpl Operand Operand
   | Cmpb Operand Operand
   | Call Label
+  | Cltd
+  | Sete Operand
+  | Setne Operand
+  | Setl Operand
+  | Setle Operand
+  | Setg Operand
+  | Setge Operand
+  | Negl Operand
   | Je Label
   | Jo Label
   | Jne Label
@@ -229,19 +244,33 @@ instance ATNT Instr where
   formatA i@(Movb op1 op2) = formatBinOp i op1 op2
   formatA i@(Movslq op1 op2) = formatBinOp i op1 op2
   formatA i@(Movsbq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Movzbl op1 op2) = formatBinOp i op1 op2
   formatA i@(Leaq op1 op2) = formatBinOp i op1 op2
   formatA i@(Subq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Subl op1 op2) = formatBinOp i op1 op2
   formatA i@(Addq op1 op2) = formatBinOp i op1 op2
+  formatA i@(Addl op1 op2) = formatBinOp i op1 op2
+  formatA i@(Imull op1 op2) = formatBinOp i op1 op2
+  formatA i@(Idivl op) = formatUnOp i op
   formatA i@(Andq op1 op2) = formatBinOp i op1 op2
   formatA i@(Cmpq op1 op2) = formatBinOp i op1 op2
   formatA i@(Cmpl op1 op2) = formatBinOp i op1 op2
   formatA i@(Cmpb op1 op2) = formatBinOp i op1 op2
   formatA i@(Call l) = formatUnOp i l
   formatA i@(Je l) = formatUnOp i l
+  formatA i@(Jo l) = formatUnOp i l
   formatA i@(Jne l) = formatUnOp i l
   formatA i@(Jmp l) = formatUnOp i l
+  formatA i@(Sete l) = formatUnOp i l
+  formatA i@(Setne l) = formatUnOp i l
+  formatA i@(Setl l) = formatUnOp i l
+  formatA i@(Setle l) = formatUnOp i l
+  formatA i@(Setg l) = formatUnOp i l
+  formatA i@(Setge l) = formatUnOp i l
+  formatA i@(Negl l) = formatUnOp i l
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
+  formatA Cltd = "cltd"
 
 formatUnOp :: (ATNT a) => Instr -> a -> String
 formatUnOp i op = unwords [instrName i, formatA op]
