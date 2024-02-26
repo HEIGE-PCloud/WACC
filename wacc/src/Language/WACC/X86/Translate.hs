@@ -258,7 +258,8 @@ translateTAC (LoadM v1 v2 off w) = undefined
 translateTAC (TAC.Call v1 (Label l) vs) = undefined
 translateTAC (Print v w) = do
   operand <- getOprand v
-  translatePrint operand w
+  movq operand arg1
+  translatePrint w
 translateTAC (TAC.PrintLn v w) = do
   translateTAC (Print v w)
   call printLn
@@ -424,22 +425,12 @@ translateUnOp o Negate o' = do
   negl eax
   movl eax o
 
-translatePrint :: Operand -> WType -> Analysis ()
-translatePrint o WInt = do
-  movq o arg1
-  call printi
-translatePrint o WBool = do
-  movq o arg1
-  call printb
-translatePrint o WChar = do
-  movq o arg1
-  call printc
-translatePrint o WString = do
-  movq o arg1
-  call prints
-translatePrint o _ = do
-  movq o arg1
-  call printp
+translatePrint :: WType -> Analysis ()
+translatePrint WInt = do call printi
+translatePrint WBool = do call printb
+translatePrint WChar = do call printc
+translatePrint WString = do call prints
+translatePrint _ = do call printp
 
 translateRead :: Operand -> WType -> Analysis ()
 translateRead o WInt = do
