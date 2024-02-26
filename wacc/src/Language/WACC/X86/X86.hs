@@ -47,11 +47,13 @@ data Instr
   | Addq Operand Operand
   | Addl Operand Operand
   | Imull Operand Operand
+  | Idivl Operand
   | Andq Operand Operand
   | Cmpq Operand Operand
   | Cmpl Operand Operand
   | Cmpb Operand Operand
   | Call Label
+  | Cltd
   | Je Label
   | Jo Label
   | Jne Label
@@ -239,6 +241,7 @@ instance ATNT Instr where
   formatA i@(Addq op1 op2) = formatBinOp i op1 op2
   formatA i@(Addl op1 op2) = formatBinOp i op1 op2
   formatA i@(Imull op1 op2) = formatBinOp i op1 op2
+  formatA i@(Idivl op) = formatUnOp i op
   formatA i@(Andq op1 op2) = formatBinOp i op1 op2
   formatA i@(Cmpq op1 op2) = formatBinOp i op1 op2
   formatA i@(Cmpl op1 op2) = formatBinOp i op1 op2
@@ -250,6 +253,7 @@ instance ATNT Instr where
   formatA i@(Jmp l) = formatUnOp i l
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
+  formatA Cltd = "cltd"
 
 formatUnOp :: (ATNT a) => Instr -> a -> String
 formatUnOp i op = unwords [instrName i, formatA op]

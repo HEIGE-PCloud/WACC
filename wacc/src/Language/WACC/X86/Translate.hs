@@ -27,7 +27,7 @@ import Language.WACC.X86.X86
   , Memory (..)
   , Operand (..)
   , Prog
-  , Register (R10, Rbp)
+  , Register (..)
   , Runtime (..)
   )
 import qualified Language.WACC.X86.X86 as X86
@@ -148,11 +148,25 @@ translateBinOp :: BinOp -> Operand -> Operand -> [Instr]
 translateBinOp Add o1 o2 = [Addl o1 o2, Jo (R ErrOverflow)]
 translateBinOp Sub o1 o2 = [Subl o1 o2, Jo (R ErrOverflow)]
 translateBinOp Mul o1 o2 = [Imull o1 o2, Jo (R ErrOverflow)]
-translateBinOp Div o1 o2 = []
+{-
+43		movl %r12d, %eax
+44		cmpl $0, %r13d
+45		je _errDivZero
+46		# sign extend EAX into EDX
+47		cltd
+48		idivl %r13d
+-}
+translateBinOp Div o1 o2 =
+  [ Movl o1 (Reg Eax)
+  , Cmpl (Imm 0) o2
+  , Je (R ErrDivByZero)
+  , Cltd
+  , Idivl o2
+  ]
 translateBinOp Mod o1 o2 = []
 translateBinOp And o1 o2 = []
 translateBinOp Or o1 o2 = []
-translateBinOp Lt o1 o2 = []
+translateBinOp Lt o1 o2 = [Cmpq o1 o2]
 translateBinOp Gt o1 o2 = []
 translateBinOp Le o1 o2 = []
 translateBinOp Ge o1 o2 = []
