@@ -8,7 +8,7 @@
 {- |
 TAC translation actions for WACC expressions.
 -}
-module Language.WACC.TAC.Expr (ExprTACs (..)) where
+module Language.WACC.TAC.Expr (ExprTACs (..), loadCI) where
 
 import Control.Monad (zipWithM)
 import Data.Bool (bool)
@@ -58,6 +58,9 @@ The result is assumed to be stored in the rightmost variable.
 instance Semigroup (ExprTACs ident lident) where
   ExprTACs _ ts1 <> ExprTACs v ts2 = ExprTACs v (ts1 <> ts2)
 
+{- |
+Load an integer constant into a fresh temporary variable.
+-}
 loadCI :: (Enum ident) => Int -> TACM ident lident (ExprTACs ident lident)
 loadCI x = [[LoadCI t x] t | t <- freshTemp]
 
