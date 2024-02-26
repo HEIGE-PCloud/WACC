@@ -227,12 +227,13 @@ translateTAC (BinInstr v1 v2 op v3) = do
   translateBinOp operand op operand1 operand2
 translateTAC (UnInstr v1 op v2) =
   do
-    reg <- getReg' v1
-    operand <- getOprand v2
-    translateUnOp op operand
-    tellInstr (Movq operand reg)
+    operand <- getReg' v1
+    operand' <- getOprand v2
+    translateUnOp operand op operand'
 translateTAC (Store v1 off v2 w) = undefined
-translateTAC (LoadCI v i) = undefined
+translateTAC (LoadCI v i) = do
+  operand <- getReg' v
+  tellInstr (Movq (Imm (fromIntegral i)) operand)
 translateTAC (LoadCS v s) = undefined
 translateTAC (LoadM v1 v2 off w) = undefined
 translateTAC (TAC.Call v1 (Label l) vs) = undefined
@@ -321,15 +322,24 @@ translateBinOp o TAC.Ineq o1 o2 = do
   movzbl al o -- %o := %al
 
 -- | <var> := <unop> <var>
-translateUnOp :: UnOp -> Operand -> Analysis ()
-translateUnOp Not o = undefined
-translateUnOp Negate o = undefined
+translateUnOp :: Operand -> UnOp -> Operand -> Analysis ()
+translateUnOp o Not o' = do
+  movl o' eax
+  cmpl (Imm 0) eax
+  sete al
+  movzbl al o
+translateUnOp o Negate o' = do
+  movl o' eax
+  negl eax
+  movl eax o
 
 al :: Operand
 al = Reg Al
 
+rax :: Operand
 rax = Reg Rax
 
+rbx :: Operand
 rbx = Reg Rbx
 
 eax :: Operand
@@ -344,6 +354,7 @@ ecx = Reg Ecx
 edx :: Operand
 edx = Reg Edx
 
+mov :: (a -> b -> Instr) -> a -> b -> Analysis ()
 mov m o r = tellInstr (m o r)
 
 movl :: Operand -> Operand -> Analysis ()
@@ -382,10 +393,13 @@ je l = tellInstr (Je (R l))
 cltd :: Analysis ()
 cltd = tellInstr Cltd
 
+set :: (a -> Instr) -> a -> Analysis ()
 set s r = tellInstr (s r)
 
+sete :: Operand -> Analysis ()
 sete = set Sete
 
+setne :: Operand -> Analysis ()
 setne = set Setne
 
 setl :: Operand -> Analysis ()
@@ -399,3 +413,6 @@ setg = set Setg
 
 setge :: Operand -> Analysis ()
 setge = set Setge
+
+negl :: Operand -> Analysis ()
+negl o = tellInstr (Negl o)

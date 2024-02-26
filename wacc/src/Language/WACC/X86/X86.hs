@@ -61,6 +61,7 @@ data Instr
   | Setle Operand
   | Setg Operand
   | Setge Operand
+  | Negl Operand
   | Je Label
   | Jo Label
   | Jne Label
@@ -265,6 +266,7 @@ instance ATNT Instr where
   formatA i@(Setle l) = formatUnOp i l
   formatA i@(Setg l) = formatUnOp i l
   formatA i@(Setge l) = formatUnOp i l
+  formatA i@(Negl l) = formatUnOp i l
   formatA (Dir d) = formatA d
   formatA (Comment str) = "# " ++ str
   formatA Cltd = "cltd"
