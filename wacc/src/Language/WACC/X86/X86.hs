@@ -13,7 +13,9 @@ data Label = I Integer | R Runtime | S String
   deriving (Eq, Ord, Data, Show)
 
 data Runtime
-  = PrintI
+  = ArrLoad
+  | ArrStore
+  | PrintI
   | PrintB
   | PrintC
   | PrintS
@@ -55,6 +57,8 @@ data Instr
   | Cmpq Operand Operand
   | Cmpl Operand Operand
   | Cmpb Operand Operand
+  | Cmovl Operand Operand
+  | Cmovge Operand Operand
   | Call Label
   | Cltd
   | Sete Operand
@@ -66,6 +70,8 @@ data Instr
   | Negl Operand
   | Je Label
   | Jo Label
+  | Jl Label
+  | Jge Label
   | Jne Label
   | Jmp Label
   | Dir Directive

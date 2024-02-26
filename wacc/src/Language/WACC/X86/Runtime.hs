@@ -667,6 +667,38 @@ exit =
   , Ret
   ]
 
+{-
+_arrLoad:
+	# Special calling convention: array ptr passed in R9, index in R10, and return into R9
+  pushq %rbx
+  cmpl $0, %r10d
+  cmovl %r10, %rsi
+  jl _errOutOfBounds
+  movl -4(%r9), %ebx
+  cmpl %ebx, %r10d
+  cmovge %r10, %rsi
+  jge _errOutOfBounds
+  movslq (%r9,%r10,4), %r9
+  popq %rbx
+  ret
+-}
+
+arrLoad :: Prog
+arrLoad =
+  [ Lab (R ArrLoad)
+  , Pushq (Reg Rbx)
+  , Cmpl (Imm 0) (Reg R10d)
+  , Cmovl (Reg R10) (Reg Rsi)
+  , Jl (R ErrOutOfBounds)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
+  , Cmovge (Reg R10) (Reg Rsi)
+  , Jge (R ErrOutOfBounds)
+  , Movslq (Mem (MScale R9 R10 4)) (Reg R9)
+  , Popq (Reg Rbx)
+  , Ret
+  ]
+
 -- | Print a program, useful for debugging in GHCi
 printProg :: Prog -> IO ()
 printProg prog = putStrLn $ formatA prog

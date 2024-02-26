@@ -261,7 +261,7 @@ translateTAC (UnInstr v1 op v2) =
     translateUnOp operand op operand'
     comment "End UnInstr"
 translateTAC (Store v1 off v2 w) = do
-  -- | > <var> := <var>[<Offset>]
+  -- \| > <var> := <var>[<Offset>]
   comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
   -- TODO: implement
   comment "End Store"
