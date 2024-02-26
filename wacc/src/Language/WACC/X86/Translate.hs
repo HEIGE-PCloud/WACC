@@ -257,7 +257,9 @@ translateTAC (TAC.Exit v) = do
   operand <- getOprand v
   movq operand arg1
   call (R X86.Exit)
-translateTAC (Read v w) = undefined
+translateTAC (Read v w) = do
+  operand <- getReg' v
+  translateRead operand w
 translateTAC (TAC.Malloc lv rv) = do
   operand <- getReg' lv
   operand' <- getOprand rv
@@ -374,6 +376,17 @@ translatePrint o WString = do
 translatePrint o _ = do
   movq o arg1
   call printp
+
+translateRead :: Operand -> WType -> Analysis ()
+translateRead o WInt = do
+  call (R X86.ReadI)
+  movq argRet o
+translateRead o WChar = do
+  call (R X86.ReadC)
+  movq argRet o
+translateRead _ w =
+  error $
+    "Invalid type for read, only int and char are supported, got: " ++ show w
 
 al :: Operand
 al = Reg Al
