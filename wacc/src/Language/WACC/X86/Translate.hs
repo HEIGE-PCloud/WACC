@@ -229,11 +229,11 @@ getLabel = do
   puts (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
-getOffset :: WType -> Analysis Integer
-getOffset WInt = pure 4
-getOffset WChar = pure 1
-getOffset WBool = pure 1
-getOffset _ = pure 8
+getSize :: WType -> Int
+getSize WInt = 4
+getSize WChar = 1
+getSize WBool = 1
+getSize _ = 8
 
 saveRegister :: [Register] -> Analysis ()
 saveRegister = mapM_ (tellInstr . Pushq . Reg)
@@ -292,7 +292,7 @@ translateTAC (LoadCS v s) = do
   comment "End LoadCS"
 translateTAC (LoadM v1 v2 off w) = do
   comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  -- TODO: implement
+  translateLoadM v1 v2 off (getSize w)
   comment "End LoadM"
 translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
@@ -545,8 +545,32 @@ translateRead _ w =
   error $
     "Invalid type for read, only int and char are supported, got: " ++ show w
 
+translateLoadM
+  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
+translateLoadM v1 v2 off s = do
+  -- array ptr passed in R9, index in R10, and return into R9
+  o1 <- getReg' v1
+  o2 <- getOprand v2
+  offset <- getOprand off
+  movq o2 r9
+  movq offset r10
+  call (arrayLoad s)
+  movq r9 o1
+
 al :: Operand
 al = Reg Al
+
+r8 :: Operand
+r8 = Reg R8
+
+r9 :: Operand
+r9 = Reg R9
+
+r10 :: Operand
+r10 = Reg R10
+
+r11 :: Operand
+r11 = Reg R11
 
 rax :: Operand
 rax = Reg Rax
@@ -704,3 +728,9 @@ text = tellInstr (Dir DirText)
 
 comment :: String -> Analysis ()
 comment s = tellInstr (Comment s)
+
+arrayLoad :: (Eq a, Num a) => a -> X86.Label
+arrayLoad 1 = R ArrLoad1
+arrayLoad 4 = R ArrLoad4
+arrayLoad 8 = R ArrLoad8
+arrayLoad _ = error "Invalid size for array load"
