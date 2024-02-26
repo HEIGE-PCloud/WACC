@@ -437,6 +437,44 @@ errOutOfMemory =
 
 {-
 .section .rodata
+# length of .L._errOutOfBounds_str0
+	.int 42
+.L._errOutOfBounds_str0:
+	.asciz "fatal error: array index %d out of bounds\n"
+.text
+_errOutOfBounds:
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	leaq .L._errOutOfBounds_str0(%rip), %rdi
+	# on x86, al represents the number of SIMD registers used as variadic arguments
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movb $-1, %dil
+	call exit@plt
+-}
+errOutOfBounds :: Prog
+errOutOfBounds =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 42
+  , Lab (S ".L._errOutOfBounds_str0")
+  , Dir $ DirAsciz "fatal error: array index %d out of bounds\n"
+  , Dir DirText
+  , Lab (R ErrOutOfBounds)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Leaq (Mem (MRegL (S ".L._errOutOfBounds_str0") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call cprintf
+  , Movq (Imm 0) (Reg Rdi)
+  , Call cfflush
+  , Movb (Imm (-1)) (Reg Dil)
+  , Call cexit
+  ]
+
+{-
+.section .rodata
 # length of .L._errOverflow_str0
 	.int 52
 .L._errOverflow_str0:
@@ -626,6 +664,193 @@ exit =
   , Call cexit
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
+  , Ret
+  ]
+
+{-
+_arrLoad1:
+	# Special calling convention: array ptr passed in R9, index in R10, and return into R9
+	pushq %rbx
+	cmpl $0, %r10d
+	cmovl %r10, %rsi
+	jl _errOutOfBounds
+	movl -4(%r9), %ebx
+	cmpl %ebx, %r10d
+  cmovge %r10, %rsi
+  jge _errOutOfBounds
+  movsbq (%r9,%r10), %r9
+  popq %rbx
+  ret
+-}
+arrLoad1 :: Prog
+arrLoad1 =
+  [ Lab (R ArrLoad1)
+  , Pushq (Reg Rbx)
+  , Cmpl (Imm 0) (Reg R10d)
+  , Cmovl (Reg R10) (Reg Rsi)
+  , Jl (R ErrOutOfBounds)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
+  , Cmovge (Reg R10) (Reg Rsi)
+  , Jge (R ErrOutOfBounds)
+  , Movsbq (Mem (MScale R9 R10 1)) (Reg R9)
+  , Popq (Reg Rbx)
+  , Ret
+  ]
+
+{-
+_arrStore1:
+	# Special calling convention: array ptr passed in R9, index in R10, value to store in RAX
+	pushq %rbx
+	cmpl $0, %r10d
+	cmovl %r10, %rsi
+	jl _errOutOfBounds
+	movl -4(%r9), %ebx
+	cmpl %ebx, %r10d
+	cmovge %r10, %rsi
+	jge _errOutOfBounds
+	movb %al, (%r9,%r10)
+	popq %rbx
+	ret
+-}
+arrStore1 :: Prog
+arrStore1 =
+  [ Lab (R ArrStore1)
+  , Pushq (Reg Rbx)
+  , Cmpl (Imm 0) (Reg R10d)
+  , Cmovl (Reg R10) (Reg Rsi)
+  , Jl (R ErrOutOfBounds)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
+  , Cmovge (Reg R10) (Reg Rsi)
+  , Jge (R ErrOutOfBounds)
+  , Movb (Reg Al) (Mem (MScale R9 R10 1))
+  , Popq (Reg Rbx)
+  , Ret
+  ]
+
+{-
+_arrStore4:
+	# Special calling convention: array ptr passed in R9, index in R10, value to store in RAX
+	pushq %rbx
+	cmpl $0, %r10d
+	cmovl %r10, %rsi
+	jl _errOutOfBounds
+	movl -4(%r9), %ebx
+	cmpl %ebx, %r10d
+	cmovge %r10, %rsi
+	jge _errOutOfBounds
+	movl %eax, (%r9,%r10,4)
+	popq %rbx
+	ret
+-}
+arrStore4 :: Prog
+arrStore4 =
+  [ Lab (R ArrStore4)
+  , Pushq (Reg Rbx)
+  , Cmpl (Imm 0) (Reg R10d)
+  , Cmovl (Reg R10) (Reg Rsi)
+  , Jl (R ErrOutOfBounds)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
+  , Cmovge (Reg R10) (Reg Rsi)
+  , Jge (R ErrOutOfBounds)
+  , Movl (Reg Eax) (Mem (MScale R9 R10 4))
+  , Popq (Reg Rbx)
+  , Ret
+  ]
+
+{-
+_arrLoad4:
+	# Special calling convention: array ptr passed in R9, index in R10, and return into R9
+  pushq %rbx
+  cmpl $0, %r10d
+  cmovl %r10, %rsi
+  jl _errOutOfBounds
+  movl -4(%r9), %ebx
+  cmpl %ebx, %r10d
+  cmovge %r10, %rsi
+  jge _errOutOfBounds
+  movslq (%r9,%r10,4), %r9
+  popq %rbx
+  ret
+-}
+
+arrLoad4 :: Prog
+arrLoad4 =
+  [ Lab (R ArrLoad4)
+  , Pushq (Reg Rbx)
+  , Cmpl (Imm 0) (Reg R10d)
+  , Cmovl (Reg R10) (Reg Rsi)
+  , Jl (R ErrOutOfBounds)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
+  , Cmovge (Reg R10) (Reg Rsi)
+  , Jge (R ErrOutOfBounds)
+  , Movslq (Mem (MScale R9 R10 4)) (Reg R9)
+  , Popq (Reg Rbx)
+  , Ret
+  ]
+
+{-
+_arrLoad8:
+	# Special calling convention: array ptr passed in R9, index in R10, and return into R9
+	pushq %rbx
+	cmpl $0, %r10d
+	cmovl %r10, %rsi
+	jl _errOutOfBounds
+	movl -4(%r9), %ebx
+	cmpl %ebx, %r10d
+	cmovge %r10, %rsi
+	jge _errOutOfBounds
+	movq (%r9,%r10,8), %r9
+	popq %rbx
+	ret
+-}
+arrLoad8 :: Prog
+arrLoad8 =
+  [ Lab (R ArrLoad8)
+  , Pushq (Reg Rbx)
+  , Cmpl (Imm 0) (Reg R10d)
+  , Cmovl (Reg R10) (Reg Rsi)
+  , Jl (R ErrOutOfBounds)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
+  , Cmovge (Reg R10) (Reg Rsi)
+  , Jge (R ErrOutOfBounds)
+  , Movq (Mem (MScale R9 R10 8)) (Reg R9)
+  , Popq (Reg Rbx)
+  , Ret
+  ]
+
+{-
+_arrStore8:
+	# Special calling convention: array ptr passed in R9, index in R10, value to store in RAX
+	pushq %rbx
+	cmpl $0, %r10d
+	cmovl %r10, %rsi
+	jl _errOutOfBounds
+	movl -4(%r9), %ebx
+	cmpl %ebx, %r10d
+  cmovge %r10, %rsi
+  jge _errOutOfBounds
+  movq %rax, (%r9,%r10,8)
+  popq %rbx
+  ret
+-}
+arrStore8 :: Prog
+arrStore8 =
+  [ Lab (R ArrStore8)
+  , Pushq (Reg Rbx)
+  , Cmpl (Imm 0) (Reg R10d)
+  , Cmovl (Reg R10) (Reg Rsi)
+  , Jl (R ErrOutOfBounds)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
+  , Cmovge (Reg R10) (Reg Rsi)
+  , Jge (R ErrOutOfBounds)
+  , Movq (Reg Rax) (Mem (MScale R9 R10 8))
+  , Popq (Reg Rbx)
   , Ret
   ]
 

@@ -227,7 +227,13 @@ getLabel :: Analysis X86.Label
 getLabel = do
   n <- gets labelCounter
   puts (\x -> x {labelCounter = n + 1})
-  return (S (".L" ++ show n))
+  return (S (".TAC_L" ++ show n))
+
+getSize :: WType -> Int
+getSize WInt = 4
+getSize WChar = 1
+getSize WBool = 1
+getSize _ = 8
 
 saveRegister :: [Register] -> Analysis ()
 saveRegister = mapM_ (tellInstr . Pushq . Reg)
@@ -240,70 +246,131 @@ getOprand v = gets ((B.! v) . alloc)
 
 translateTAC :: TAC Integer Integer -> Analysis ()
 translateTAC (BinInstr v1 v2 op v3) = do
+  comment $
+    "BinInstr: " ++ show v1 ++ " := " ++ show v2 ++ " " ++ show op ++ " " ++ show v3
   operand <- getReg' v1
   operand1 <- getOprand v2
   operand2 <- getOprand v3
   translateBinOp operand op operand1 operand2
+  comment "End BinInstr"
 translateTAC (UnInstr v1 op v2) =
   do
+    comment $ "UnInstr: " ++ show v1 ++ " := " ++ show op ++ " " ++ show v2
     operand <- getReg' v1
     operand' <- getOprand v2
     translateUnOp operand op operand'
-translateTAC (Store v1 off v2 w) = undefined
+    comment "End UnInstr"
+translateTAC (Store v1 off v2 w) = do
+  -- \| > <var> := <var>[<Offset>]
+  comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
+  translateStore v1 off v2 (getSize w)
+  comment "End Store"
 translateTAC (LoadCI v i) = do
+  comment $ "LoadCI: " ++ show v ++ " := " ++ show i
   operand <- getReg' v
   movq (Imm (fromIntegral i)) operand
-translateTAC (LoadCS v s) = undefined
-translateTAC (LoadM v1 v2 off w) = undefined
-translateTAC (TAC.Call v1 (Label l) vs) = undefined
+  comment "End LoadCI"
+{-
+.section .rodata
+	.int 11
+.L.str0:
+	.asciz "hello world"
+.text
+leaq .L.str0(%rip), o
+-}
+translateTAC (LoadCS v s) = do
+  comment $ "LoadCS: " ++ show v ++ " := " ++ show s
+  o <- getReg' v
+  l <- getLabel
+  section
+  rodata
+  int (fromIntegral $ length s)
+  lab l
+  asciz s
+  text
+  leaq (Mem (MRegL l Rip)) o
+  comment "End LoadCS"
+translateTAC (LoadM v1 v2 off w) = do
+  comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
+  translateLoadM v1 v2 off (getSize w)
+  comment "End LoadM"
+translateTAC (TAC.Call v1 (Label l) vs) = do
+  comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
+  -- push all registers on to stack
+  os <- mapM getOprand vs
+  mapM_ (tellInstr . Pushq) (reverse os)
+  -- call the function
+  call (I l)
+  comment "End Call"
 translateTAC (Print v w) = do
+  comment $ "Print: print " ++ show v
   operand <- getOprand v
   movq operand arg1
   translatePrint w
+  comment "End Print"
 translateTAC (TAC.PrintLn v w) = do
+  comment $ "PrintLn: println " ++ show v
   translateTAC (Print v w)
   call printLn
+  comment "End PrintLn"
 translateTAC (TAC.Exit v) = do
+  comment $ "Exit: exit " ++ show v
   operand <- getOprand v
   movq operand arg1
   call (R X86.Exit)
+  comment "End Exit"
 translateTAC (Read v w) = do
+  comment $ "Read: " ++ show v ++ " := read"
   operand <- getReg' v
   translateRead operand w
+  comment "End Read"
 translateTAC (TAC.Malloc lv rv) = do
+  comment $ "Malloc: " ++ show lv ++ " := malloc " ++ show rv
   operand <- getReg' lv
   operand' <- getOprand rv
   movq operand' arg1
   call (R X86.Malloc)
   movq argRet operand
+  comment "End Malloc"
 translateTAC (TAC.Free v) = do
+  comment $ "Free: free " ++ show v
   operand <- getOprand v
   movq operand arg1
   call (R X86.Free)
+  comment "End Free"
 
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
 -}
 translateBinOp :: Operand -> BinOp -> Operand -> Operand -> Analysis ()
 translateBinOp o Add o1 o2 = do
+  comment $ "Binary Addition: " ++ show o ++ " := " ++ show o1 ++ " + " ++ show o2
   movl o1 eax
   movl o2 ebx
   addl ebx eax
   jo errOverflow
   movl ebx o
+  comment "End Binary Addition"
 translateBinOp o Sub o1 o2 = do
+  comment $
+    "Binary Subtraction: " ++ show o ++ " := " ++ show o1 ++ " - " ++ show o2
   movl o1 eax
   movl o2 ebx
   subl ebx eax
   jo errOverflow
   movl ebx o
+  comment "End Binary Subtraction"
 translateBinOp o Mul o1 o2 = do
+  comment $
+    "Binary Multiplication: " ++ show o ++ " := " ++ show o1 ++ " * " ++ show o2
   movl o1 eax
   movl o2 ebx
   imull ebx eax
   jo errOverflow
   movl ebx o
+  comment "End Binary Multiplication"
 translateBinOp o Div o1 o2 = do
+  comment $ "Binary Division: " ++ show o ++ " := " ++ show o1 ++ " / " ++ show o2
   movl o1 eax -- %eax := o1
   cmpl (Imm 0) eax -- check for division by zero
   je errDivByZero
@@ -311,7 +378,9 @@ translateBinOp o Div o1 o2 = do
   movl o2 ebx -- %ebx := o2
   idivl ebx -- divide edx:eax by ebx
   movl eax o -- %o := eax
+  comment "End Binary Division"
 translateBinOp o Mod o1 o2 = do
+  comment $ "Binary Modulo: " ++ show o ++ " := " ++ show o1 ++ " % " ++ show o2
   movl o1 eax -- %eax := o1
   cmpl (Imm 0) eax -- check for division by zero
   je errDivByZero
@@ -319,20 +388,22 @@ translateBinOp o Mod o1 o2 = do
   movl o2 ebx -- %ebx := o2
   idivl ebx -- divide edx:eax by ebx
   movl edx o -- %o := edx
-  {-
-    cmpl $0, o1
-    je .L2
-    cmpl $0, o2
-    je .L2
-    movl $1, %eax
-    jmp .L3
-  .L2:
-    movl $0, %eax
-  .L3:
-    movzbl %al, %eax
-    movl %eax, o
-  -}
+  comment "End Binary Modulo"
+{-
+  cmpl $0, o1
+  je .L2
+  cmpl $0, o2
+  je .L2
+  movl $1, %eax
+  jmp .L3
+.L2:
+  movl $0, %eax
+.L3:
+  movzbl %al, %eax
+  movl %eax, o
+-}
 translateBinOp o And o1 o2 = do
+  comment $ "Binary And: " ++ show o ++ " := " ++ show o1 ++ " && " ++ show o2
   l2 <- getLabel
   l3 <- getLabel
   cmpl (Imm 0) o1
@@ -346,6 +417,7 @@ translateBinOp o And o1 o2 = do
   lab l3
   movzbl al eax
   movl eax o
+  comment "End Binary And"
 {-
   cmpl $0, o1
   jne .L2
@@ -361,6 +433,7 @@ translateBinOp o And o1 o2 = do
   movl %eax, o
 -}
 translateBinOp o Or o1 o2 = do
+  comment $ "Binary Or: " ++ show o ++ " := " ++ show o1 ++ " || " ++ show o2
   l2 <- getLabel
   l3 <- getLabel
   l4 <- getLabel
@@ -376,54 +449,86 @@ translateBinOp o Or o1 o2 = do
   lab l4
   movzbl al eax
   movl eax o
+  comment "End Binary Or"
 translateBinOp o TAC.LT o1 o2 = do
+  comment $
+    "Binary Less Than: " ++ show o ++ " := " ++ show o1 ++ " < " ++ show o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setl al -- set al to 1 if %eax < %ebx
   movzbl al o -- %o := %al
+  comment "End Binary Less Than"
 translateBinOp o TAC.LTE o1 o2 = do
+  comment $
+    "Binary Less Than or Equal: "
+      ++ show o
+      ++ " := "
+      ++ show o1
+      ++ " <= "
+      ++ show o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setle al -- set al to 1 if %eax <= %ebx
   movzbl al o -- %o := %al
+  comment "End Binary Less Than or Equal"
 translateBinOp o TAC.GT o1 o2 = do
+  comment $
+    "Binary Greater Than: " ++ show o ++ " := " ++ show o1 ++ " > " ++ show o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setg al -- set al to 1 if %eax > %ebx
   movzbl al o -- %o := %al
+  comment "End Binary Greater Than"
 translateBinOp o TAC.GTE o1 o2 = do
+  comment $
+    "Binary Greater Than or Equal: "
+      ++ show o
+      ++ " := "
+      ++ show o1
+      ++ " >= "
+      ++ show o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setge al -- set al to 1 if %eax >= %ebx
   movzbl al o -- %o := %al
+  comment "End Binary Greater Than or Equal"
 translateBinOp o TAC.Eq o1 o2 = do
+  comment $ "Binary Equal: " ++ show o ++ " := " ++ show o1 ++ " == " ++ show o2
   movq o1 rax -- %eax := o1
   movq o2 rbx -- %ebx := o2
   cmpq rbx rax -- compare %ebx and %eax
   sete al -- set al to 1 if %eax == %ebx
   movzbl al o -- %o := %al
+  comment "End Binary Equal"
 translateBinOp o TAC.Ineq o1 o2 = do
+  comment $
+    "Binary Not Equal: " ++ show o ++ " := " ++ show o1 ++ " != " ++ show o2
   movq o1 rax -- %eax := o1
   movq o2 rbx -- %ebx := o2
   cmpq rbx rax -- compare %ebx and %eax
   setne al -- set al to 1 if %eax != %ebx
   movzbl al o -- %o := %al
+  comment "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
 translateUnOp :: Operand -> UnOp -> Operand -> Analysis ()
 translateUnOp o Not o' = do
+  comment $ "Unary Not: " ++ show o ++ " := ! " ++ show o'
   movl o' eax
   cmpl (Imm 0) eax
   sete al
   movzbl al o
+  comment "End Unary Not"
 translateUnOp o Negate o' = do
+  comment $ "Unary Negate: " ++ show o ++ " := - " ++ show o'
   movl o' eax
   negl eax
   movl eax o
+  comment "End Unary Negate"
 
 translatePrint :: WType -> Analysis ()
 translatePrint WInt = do call printi
@@ -443,8 +548,44 @@ translateRead _ w =
   error $
     "Invalid type for read, only int and char are supported, got: " ++ show w
 
+translateLoadM
+  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
+translateLoadM v1 v2 off s = do
+  -- array ptr passed in R9, index in R10, and return into R9
+  o1 <- getReg' v1
+  o2 <- getOprand v2
+  offset <- getOprand off
+  movq o2 r9
+  movq offset r10
+  call (arrayLoad s)
+  movq r9 o1
+
+translateStore
+  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
+translateStore v1 off v2 s = do
+  -- array ptr passed in R9, index in R10, and value in R11
+  o1 <- getOprand v1
+  offset <- getOprand off
+  o2 <- getOprand v2
+  movq o1 r9
+  movq offset r10
+  movq o2 r11
+  call (arrayStore s)
+
 al :: Operand
 al = Reg Al
+
+r8 :: Operand
+r8 = Reg R8
+
+r9 :: Operand
+r9 = Reg R9
+
+r10 :: Operand
+r10 = Reg R10
+
+r11 :: Operand
+r11 = Reg R11
 
 rax :: Operand
 rax = Reg Rax
@@ -463,6 +604,9 @@ ecx = Reg Ecx
 
 edx :: Operand
 edx = Reg Edx
+
+leaq :: Operand -> Operand -> Analysis ()
+leaq o1 o2 = tellInstr (Leaq o1 o2)
 
 mov :: (a -> b -> Instr) -> a -> b -> Analysis ()
 mov m o r = tellInstr (m o r)
@@ -581,3 +725,33 @@ errDivByZero = R X86.ErrDivByZero
 
 lab :: X86.Label -> Analysis ()
 lab = tellInstr . Lab
+
+section :: Analysis ()
+section = tellInstr (Dir DirSection)
+
+rodata :: Analysis ()
+rodata = tellInstr (Dir DirRodata)
+
+int :: Integer -> Analysis ()
+int x = tellInstr (Dir (DirInt x))
+
+asciz :: String -> Analysis ()
+asciz s = tellInstr (Dir (DirAsciz s))
+
+text :: Analysis ()
+text = tellInstr (Dir DirText)
+
+comment :: String -> Analysis ()
+comment s = tellInstr (Comment s)
+
+arrayLoad :: (Eq a, Num a) => a -> X86.Label
+arrayLoad 1 = R ArrLoad1
+arrayLoad 4 = R ArrLoad4
+arrayLoad 8 = R ArrLoad8
+arrayLoad _ = error "Invalid size for array load"
+
+arrayStore :: (Eq a, Num a) => a -> X86.Label
+arrayStore 1 = R ArrStore1
+arrayStore 4 = R ArrStore4
+arrayStore 8 = R ArrStore8
+arrayStore _ = error "Invalid size for array store"

@@ -68,13 +68,15 @@ data BinOp
   | Ineq
   | And
   | Or
+  deriving (Show)
 
 -- | Unary operators in TAC
 data UnOp = Not | Negate
+  deriving (Show)
 
 -- | Variables in TAC, either temporary or named in the source code.
 data Var ident = Temp ident | Var ident
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -- | Offsets in TAC, either temporary or named in the source code.
 type Offset = Var
