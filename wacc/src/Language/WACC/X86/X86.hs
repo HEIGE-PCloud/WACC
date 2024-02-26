@@ -13,8 +13,12 @@ data Label = I Integer | R Runtime | S String
   deriving (Eq, Ord, Data, Show)
 
 data Runtime
-  = ArrLoad
-  | ArrStore
+  = ArrLoad1
+  | ArrLoad4
+  | ArrLoad8
+  | ArrStore1
+  | ArrStore4
+  | ArrStore8
   | PrintI
   | PrintB
   | PrintC
