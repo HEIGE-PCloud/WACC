@@ -437,6 +437,44 @@ errOutOfMemory =
 
 {-
 .section .rodata
+# length of .L._errOutOfBounds_str0
+	.int 42
+.L._errOutOfBounds_str0:
+	.asciz "fatal error: array index %d out of bounds\n"
+.text
+_errOutOfBounds:
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	leaq .L._errOutOfBounds_str0(%rip), %rdi
+	# on x86, al represents the number of SIMD registers used as variadic arguments
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movb $-1, %dil
+	call exit@plt
+-}
+errOutOfBounds :: Prog
+errOutOfBounds =
+  [ Dir DirSection
+  , Dir DirRodata
+  , Dir $ DirInt 42
+  , Lab (S ".L._errOutOfBounds_str0")
+  , Dir $ DirAsciz "fatal error: array index %d out of bounds\n"
+  , Dir DirText
+  , Lab (R ErrOutOfBounds)
+  , Andq (Imm (-16)) (Reg Rsp)
+  , Leaq (Mem (MRegL (S ".L._errOutOfBounds_str0") Rip)) (Reg Rdi)
+  , Movb (Imm 0) (Reg Al)
+  , Call cprintf
+  , Movq (Imm 0) (Reg Rdi)
+  , Call cfflush
+  , Movb (Imm (-1)) (Reg Dil)
+  , Call cexit
+  ]
+
+{-
+.section .rodata
 # length of .L._errOverflow_str0
 	.int 52
 .L._errOverflow_str0:

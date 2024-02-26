@@ -229,6 +229,12 @@ getLabel = do
   puts (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
+getOffset :: WType -> Analysis Integer
+getOffset WInt = pure 4
+getOffset WChar = pure 1
+getOffset WBool = pure 1
+getOffset _ = pure 8
+
 saveRegister :: [Register] -> Analysis ()
 saveRegister = mapM_ (tellInstr . Pushq . Reg)
 
@@ -254,7 +260,11 @@ translateTAC (UnInstr v1 op v2) =
     operand' <- getOprand v2
     translateUnOp operand op operand'
     comment "End UnInstr"
-translateTAC (Store v1 off v2 w) = undefined
+translateTAC (Store v1 off v2 w) = do
+  -- | > <var> := <var>[<Offset>]
+  comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
+  -- TODO: implement
+  comment "End Store"
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
   operand <- getReg' v
@@ -280,7 +290,10 @@ translateTAC (LoadCS v s) = do
   text
   leaq (Mem (MRegL l Rip)) o
   comment "End LoadCS"
-translateTAC (LoadM v1 v2 off w) = undefined
+translateTAC (LoadM v1 v2 off w) = do
+  comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
+  -- TODO: implement
+  comment "End LoadM"
 translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
   -- TODO: argument passing

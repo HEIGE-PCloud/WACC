@@ -24,6 +24,7 @@ data Runtime
   | ReadI
   | ReadC
   | ErrOutOfMemory
+  | ErrOutOfBounds
   | ErrOverflow
   | ErrDivByZero
   | Exit
