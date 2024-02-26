@@ -21,7 +21,7 @@ import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
 import Language.WACC.AST.WType
-  ( WType (WArray, WBool, WChar, WErasedPair, WInt, WKnownPair, WString)
+  ( WType (WBool, WChar, WInt, WString)
   )
 import Language.WACC.TAC.TAC
 import qualified Language.WACC.TAC.TAC as TAC
@@ -76,6 +76,8 @@ data TransST = TransST
   -- ^ Set of runtime functions which need to be included
   , freeRegs :: [Register]
   -- ^ Unused registers
+  , labelCounter :: Integer
+  -- ^ Counter for generating unique labels
   }
 
 -- | Reader maps labels to basic blocks. Writer holds output X86 program
@@ -112,7 +114,7 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
       execRWS
         funcRWS
         bs
-        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller)) -- Not empty regs list
+        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller) 0) -- Not empty regs list
     (n, startBlock) = M.findMin bs
 
     funcRWS = do
@@ -170,6 +172,7 @@ translateBlock l@(TAC.Label n) is = do
 mapLab :: TAC.Label Integer -> X86.Label
 mapLab (Label x) = I x
 
+tellInstr :: Instr -> Analysis ()
 tellInstr = tell . D.singleton
 
 isTranslated :: TAC.Label Integer -> Analysis Bool
@@ -219,6 +222,12 @@ getReg' v = do
     reg = Reg r
   puts (addAlloc v reg)
   return reg
+
+getLabel :: Analysis X86.Label
+getLabel = do
+  n <- gets labelCounter
+  puts (\x -> x {labelCounter = n + 1})
+  return (S (".L" ++ show n))
 
 saveRegister :: [Register] -> Analysis ()
 saveRegister = mapM_ (tellInstr . Pushq . Reg)
@@ -279,24 +288,24 @@ translateBinOp o Add o1 o2 = do
   movl o1 eax
   movl o2 ebx
   addl ebx eax
-  jo ErrOverflow
+  jo errOverflow
   movl ebx o
 translateBinOp o Sub o1 o2 = do
   movl o1 eax
   movl o2 ebx
   subl ebx eax
-  jo ErrOverflow
+  jo errOverflow
   movl ebx o
 translateBinOp o Mul o1 o2 = do
   movl o1 eax
   movl o2 ebx
   imull ebx eax
-  jo ErrOverflow
+  jo errOverflow
   movl ebx o
 translateBinOp o Div o1 o2 = do
   movl o1 eax -- %eax := o1
   cmpl (Imm 0) eax -- check for division by zero
-  je ErrDivByZero
+  je errDivByZero
   cltd -- sign extend eax into edx
   movl o2 ebx -- %ebx := o2
   idivl ebx -- divide edx:eax by ebx
@@ -304,13 +313,68 @@ translateBinOp o Div o1 o2 = do
 translateBinOp o Mod o1 o2 = do
   movl o1 eax -- %eax := o1
   cmpl (Imm 0) eax -- check for division by zero
-  je ErrDivByZero
+  je errDivByZero
   cltd -- sign extend eax into edx
   movl o2 ebx -- %ebx := o2
   idivl ebx -- divide edx:eax by ebx
   movl edx o -- %o := edx
-translateBinOp o And o1 o2 = undefined -- TODO: needs unique labels
-translateBinOp o Or o1 o2 = undefined
+  {-
+    cmpl $0, o1
+    je .L2
+    cmpl $0, o2
+    je .L2
+    movl $1, %eax
+    jmp .L3
+  .L2:
+    movl $0, %eax
+  .L3:
+    movzbl %al, %eax
+    movl %eax, o
+  -}
+translateBinOp o And o1 o2 = do
+  l2 <- getLabel
+  l3 <- getLabel
+  cmpl (Imm 0) o1
+  je l2
+  cmpl (Imm 0) o2
+  je l2
+  movl (Imm 1) eax
+  jmp l3
+  lab l2
+  movl (Imm 0) eax
+  lab l3
+  movzbl al eax
+  movl eax o
+{-
+  cmpl $0, o1
+  jne .L2
+  cmpl $0, o2
+  je .L3
+.L2:
+  movl $1, %eax
+  jmp .L4
+.L3:
+  movl $0, %eax
+.L4:
+  movzbl %al, %eax
+  movl %eax, o
+-}
+translateBinOp o Or o1 o2 = do
+  l2 <- getLabel
+  l3 <- getLabel
+  l4 <- getLabel
+  cmpl (Imm 0) o1
+  jne l2
+  cmpl (Imm 0) o2
+  je l3
+  lab l2
+  movl (Imm 1) eax
+  jmp l4
+  lab l3
+  movl (Imm 0) eax
+  lab l4
+  movzbl al eax
+  movl eax o
 translateBinOp o TAC.LT o1 o2 = do
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
@@ -439,11 +503,17 @@ cmpl o1 o2 = tellInstr (Cmpl o1 o2)
 cmpq :: Operand -> Operand -> Analysis ()
 cmpq o1 o2 = tellInstr (Cmpq o1 o2)
 
-jo :: X86.Runtime -> Analysis ()
-jo l = tellInstr (Jo (R l))
+jo :: X86.Label -> Analysis ()
+jo l = tellInstr (Jo l)
 
-je :: X86.Runtime -> Analysis ()
-je l = tellInstr (Je (R l))
+je :: X86.Label -> Analysis ()
+je l = tellInstr (Je l)
+
+jne :: X86.Label -> Analysis ()
+jne l = tellInstr (Jne l)
+
+jmp :: X86.Label -> Analysis ()
+jmp l = tellInstr (Jmp l)
 
 cltd :: Analysis ()
 cltd = tellInstr Cltd
@@ -513,3 +583,10 @@ prints = R X86.PrintS
 
 printLn :: X86.Label
 printLn = R X86.PrintLn
+
+errOverflow = R X86.ErrOverflow
+
+errDivByZero = R X86.ErrDivByZero
+
+lab :: X86.Label -> Analysis ()
+lab = tellInstr . Lab
