@@ -4,11 +4,11 @@
 module Test.Backend.TAC.ExprTest (exprTestGroup) where
 
 import Data.Char (ord)
-import Data.Functor.Foldable (embed, project)
-import Language.WACC.AST (ArrayIndex (..), Expr (WAtom), WAtom (..), WType (..))
+import Language.WACC.AST (ArrayIndex (..), Expr (WAtom), WAtom (..))
 import qualified Language.WACC.AST as AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.Expr
+import Language.WACC.TAC.FType
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking
@@ -33,8 +33,8 @@ temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
 temp7, temp8, temp9, temp10, temp11 :: Var Int
 (temp7 : temp8 : temp9 : temp10 : temp11 : _) = Temp <$> [7 ..]
 
-testIndexScaling :: String -> WType -> Int -> TestTree
-testIndexScaling tName wt tSize =
+testIndexScaling :: String -> BType -> Int -> TestTree
+testIndexScaling tName bt tSize =
   testProperty (unwords [tName, "array indices are scaled by", show tSize]) $
     \v i ->
       toTAC' (WAtom (ArrayElem (ArrayIndex v [intLit i] (BArray bt)) bt) bt)
@@ -43,11 +43,9 @@ testIndexScaling tName wt tSize =
            , LoadCI temp2 i
            , BinInstr temp3 temp2 Mul temp1
            , BinInstr temp4 temp3 Add temp0
-           , LoadM temp5 (Var v) temp4 (embed $ WErasedPair <$ project wt)
+           , LoadM temp5 (Var v) temp4 (flatten bt)
            ]
           temp5
-  where
-    bt = fix wt
 
 testBinOp
   :: String
@@ -92,12 +90,12 @@ exprTestGroup =
             toTAC' (varExpr v BInt) == [] (Var v)
         , testGroup
             "array indexing"
-            [ testIndexScaling "int" WInt 4
-            , testIndexScaling "bool" WChar 1
-            , testIndexScaling "char" WChar 1
-            , testIndexScaling "string" WString 8
-            , testIndexScaling "pair" WErasedPair 8
-            , testIndexScaling "array" (WArray WInt) 8
+            [ testIndexScaling "int" BInt 4
+            , testIndexScaling "bool" BBool 1
+            , testIndexScaling "char" BChar 1
+            , testIndexScaling "string" BString 8
+            , testIndexScaling "pair" BErasedPair 8
+            , testIndexScaling "array" (BArray BInt) 8
             , testProperty "indices are applied from left to right" $
                 \v i1 i2 ->
                   toTAC'
@@ -117,13 +115,13 @@ exprTestGroup =
                        , LoadCI temp2 i1
                        , BinInstr temp3 temp2 Mul temp1
                        , BinInstr temp4 temp3 Add temp0
-                       , LoadM temp5 (Var v) temp4 (WArray WErasedPair)
+                       , LoadM temp5 (Var v) temp4 FArray
                        , LoadCI temp6 4
                        , LoadCI temp7 4
                        , LoadCI temp8 i2
                        , BinInstr temp9 temp8 Mul temp7
                        , BinInstr temp10 temp9 Add temp6
-                       , LoadM temp11 temp5 temp10 WInt
+                       , LoadM temp11 temp5 temp10 FInt
                        ]
                       temp11
             ]
@@ -138,7 +136,7 @@ exprTestGroup =
               == [UnInstr temp0 Negate (Var v)] temp0
         , testProperty "len loads length stored at base address" $ \v ->
             toTAC' (AST.Len (varExpr v $ BArray BInt) BInt)
-              == [LoadCI temp0 0, LoadM temp1 (Var v) temp0 WInt] temp1
+              == [LoadCI temp0 0, LoadM temp1 (Var v) temp0 FInt] temp1
         , testProperty "ord generates no instructions" $ \v ->
             toTAC' (AST.Ord (varExpr v BChar) BInt) == [] (Var v)
         , testProperty "chr generates a bounds check" $ \v ->
