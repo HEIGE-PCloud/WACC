@@ -13,6 +13,7 @@ import Data.Semigroup (sconcat)
 import Language.WACC.AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.Expr (ExprTACs (..), loadCI)
+import Language.WACC.TAC.FType (flatten)
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking
@@ -34,8 +35,8 @@ instance
       , c8ts
       , c16ts
       , [ Malloc t (exprV c16ts)
-        , Store t (exprV c0ts) (exprV xts) undefined
-        , Store t (exprV c8ts) (exprV yts) undefined
+        , Store t (exprV c0ts) (exprV xts) (flatten $ getAnn x)
+        , Store t (exprV c8ts) (exprV yts) (flatten $ getAnn y)
         ]
           t
       ]
