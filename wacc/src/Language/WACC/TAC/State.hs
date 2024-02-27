@@ -14,6 +14,7 @@ module Language.WACC.TAC.State
   , completeBlock
   , getTarget
   , into
+  , tempWith
   )
 where
 
@@ -101,3 +102,14 @@ getTarget = ask
 -}
 into :: TACM ident lident a -> Var ident -> TACM ident lident a
 into action v = local (const v) action
+
+{- |
+@tempWith action@ executes @action@ targeting a fresh temporary variable, which
+is then returned.
+-}
+tempWith
+  :: (Enum ident) => TACM ident lident () -> TACM ident lident (Var ident)
+tempWith action = do
+  t <- freshTemp
+  action `into` t
+  pure t
