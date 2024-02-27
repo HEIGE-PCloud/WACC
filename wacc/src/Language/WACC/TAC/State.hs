@@ -43,7 +43,7 @@ Basic block labels are allocated starting from the given @lident@.
 -}
 runTACM
   :: (Num ident) => lident -> TACM ident lident a -> (a, Blocks ident lident)
-runTACM l action = evalRWS action (Temp (-1)) (TACMState 0 l mempty)
+runTACM l action = evalRWS action (Temp 0) (TACMState 1 l mempty)
 
 {- |
 Run a TAC translation action, returning only the generated basic blocks.
