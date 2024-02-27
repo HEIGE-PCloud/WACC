@@ -16,7 +16,7 @@ import Test
 import Prelude hiding (GT, LT)
 
 testTACM :: TACM Int Int a -> a
-testTACM = runTACM 0
+testTACM = fst . runTACM 0
 
 toTAC' :: Expr Int BType -> ExprTACs Int Int
 toTAC' = testTACM . toTAC
