@@ -57,12 +57,14 @@ module Language.WACC.X86.X86
   , caller
   , ATNT (..)
   , ATNTs (..)
+  , runtimeDeps
   )
 where
 
 import Data.Char (toLower)
 import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.List (intercalate)
+import Data.Set (Set, fromList)
 import Data.Typeable ()
 import Language.WACC.Error (quote)
 
@@ -92,6 +94,32 @@ data Runtime
   | ErrDivByZero
   | Exit
   deriving (Eq, Ord, Typeable, Data, Show)
+
+runtimeDeps :: Runtime -> Set Runtime
+runtimeDeps r = fromList (deps r)
+  where
+    deps :: Runtime -> [Runtime]
+    deps ArrLoad1 = ArrLoad1 : deps ErrOutOfBounds
+    deps ArrLoad4 = ArrLoad4 : deps ErrOutOfBounds
+    deps ArrLoad8 = ArrLoad8 : deps ErrOutOfBounds
+    deps ArrStore1 = ArrStore1 : deps ErrOutOfBounds
+    deps ArrStore4 = ArrStore4 : deps ErrOutOfBounds
+    deps ArrStore8 = ArrStore8 : deps ErrOutOfBounds
+    deps PrintI = [PrintI]
+    deps PrintB = [PrintB]
+    deps PrintC = [PrintC]
+    deps PrintS = [PrintS]
+    deps PrintP = [PrintP]
+    deps PrintLn = [PrintLn]
+    deps Free = [Free]
+    deps Malloc = Malloc : deps ErrOutOfMemory
+    deps ReadI = [ReadI]
+    deps ReadC = [ReadC]
+    deps ErrOutOfMemory = ErrOutOfMemory : deps PrintS
+    deps ErrOutOfBounds = ErrOutOfBounds : deps PrintS
+    deps ErrOverflow = ErrOverflow : deps PrintS
+    deps ErrDivByZero = ErrDivByZero : deps PrintS
+    deps Exit = [Exit]
 
 type Prog = [Instr]
 

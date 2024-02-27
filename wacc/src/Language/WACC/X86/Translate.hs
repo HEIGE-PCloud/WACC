@@ -36,6 +36,7 @@ import Language.WACC.X86.X86
   , argRegs
   , callee
   , caller
+  , runtimeDeps
   )
 import qualified Language.WACC.X86.X86 as X86
 
@@ -644,17 +645,23 @@ cmpl o1 o2 = tellInstr (Cmpl o1 o2)
 cmpq :: Operand -> Operand -> Analysis ()
 cmpq o1 o2 = tellInstr (Cmpq o1 o2)
 
+j :: (X86.Label -> Instr) -> X86.Label -> Analysis ()
+j s l@(R r) = do
+  tellInstr (s l)
+  useRuntimeFunc r
+j s l = tellInstr (s l)
+
 jo :: X86.Label -> Analysis ()
-jo l = tellInstr (Jo l)
+jo = j Jo
 
 je :: X86.Label -> Analysis ()
-je l = tellInstr (Je l)
+je = j Je
 
 jne :: X86.Label -> Analysis ()
-jne l = tellInstr (Jne l)
+jne = j Jne
 
 jmp :: X86.Label -> Analysis ()
-jmp l = tellInstr (Jmp l)
+jmp = j Jmp
 
 cltd :: Analysis ()
 cltd = tellInstr Cltd
@@ -684,7 +691,7 @@ negl :: Operand -> Analysis ()
 negl o = tellInstr (Negl o)
 
 call :: X86.Label -> Analysis ()
-call l = tellInstr (X86.Call l)
+call = j X86.Call
 
 arg1 :: Operand
 arg1 = Reg Rdi
@@ -714,9 +721,9 @@ printc :: X86.Label
 printc = R X86.PrintC
 
 printb :: X86.Label
-printp :: X86.Label
 printb = R X86.PrintB
 
+printp :: X86.Label
 printp = R X86.PrintP
 
 prints :: X86.Label
@@ -763,3 +770,6 @@ arrayStore 1 = R ArrStore1
 arrayStore 4 = R ArrStore4
 arrayStore 8 = R ArrStore8
 arrayStore _ = error "Invalid size for array store"
+
+useRuntimeFunc :: Runtime -> Analysis ()
+useRuntimeFunc r = puts (\x -> x {runtimeFns = S.union (runtimeDeps r) (runtimeFns x)})

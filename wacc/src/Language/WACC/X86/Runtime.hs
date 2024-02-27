@@ -6,24 +6,39 @@ import Language.WACC.X86.X86
 
 x86Examples :: [(Prog, String)]
 x86Examples =
-  [ (println, "println")
+  [ (arrLoad1, "arrLoad1")
+  , (arrLoad4, "arrLoad4")
+  , (arrLoad8, "arrLoad8")
+  , (arrStore1, "arrStore1")
+  , (arrStore4, "arrStore4")
+  , (arrStore8, "arrStore8")
+  , (printi, "printi")
+  , (printb, "printb")
+  , (printc, "printc")
+  , (printp, "printp")
+  , (prints, "prints")
+  , (println, "println")
   , (free, "free")
   , (malloc, "malloc")
-  , (errOverflow, "errOverflow")
-  , (errOutOfMemory, "errOutOfMemory")
-  , (readc, "readc")
   , (readi, "readi")
-  , (printp, "printp")
-  , (printc, "printc")
-  , (printb, "printb")
-  , (prints, "prints")
-  , (printi, "printi")
+  , (readc, "readc")
+  , (errOutOfMemory, "errOutOfMemory")
+  , (errOutOfBounds, "errOutOfBounds")
+  , (errOverflow, "errOverflow")
+  , (errDivByZero, "errDivByZero")
+  , (exit, "exit")
   ]
 
 runtimeLib :: M.Map Runtime (D.DList Instr)
 runtimeLib =
   M.fromList
-    [ (PrintI, D.fromList printi)
+    [ (ArrLoad1, D.fromList arrLoad1)
+    , (ArrLoad4, D.fromList arrLoad4)
+    , (ArrLoad8, D.fromList arrLoad8)
+    , (ArrStore1, D.fromList arrStore1)
+    , (ArrStore4, D.fromList arrStore4)
+    , (ArrStore8, D.fromList arrStore8)
+    , (PrintI, D.fromList printi)
     , (PrintB, D.fromList printb)
     , (PrintC, D.fromList printc)
     , (PrintS, D.fromList prints)
@@ -34,7 +49,10 @@ runtimeLib =
     , (ReadI, D.fromList readi)
     , (ReadC, D.fromList readc)
     , (ErrOutOfMemory, D.fromList errOutOfMemory)
+    , (ErrOutOfBounds, D.fromList errOutOfBounds)
     , (ErrOverflow, D.fromList errOverflow)
+    , (ErrDivByZero, D.fromList errDivByZero)
+    , (Exit, D.fromList exit)
     ]
 
 cprintf :: Label
