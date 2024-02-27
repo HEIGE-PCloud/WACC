@@ -11,11 +11,12 @@ module Language.WACC.TAC.State
   , freshLabel
   , collectTACs
   , completeBlock
+  , getTarget
   , into
   )
 where
 
-import Control.Monad.Trans.RWS (RWS, evalRWS, gets, local, modify, tell)
+import Control.Monad.Trans.RWS (RWS, ask, evalRWS, gets, local, modify, tell)
 import Data.DList (DList, toList)
 import Language.WACC.TAC.TAC (BasicBlock (..), Jump (..), TAC, Var (Temp))
 
@@ -79,6 +80,12 @@ completeBlock :: Jump ident lident -> TACM ident lident ()
 completeBlock j = do
   ts <- collectTACs
   tell $ pure BasicBlock {block = toList ts, nextBlock = j}
+
+{- |
+Read the target variable from the reader component.
+-}
+getTarget :: TACM ident lident (Var ident)
+getTarget = ask
 
 {- |
 @toTAC x `into` v@ translates @x@ and stores its result into @v@.
