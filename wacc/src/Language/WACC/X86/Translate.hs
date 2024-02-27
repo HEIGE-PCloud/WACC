@@ -306,9 +306,11 @@ translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
   -- push all registers on to stack
   os <- mapM getOprand vs
-  mapM_ (tellInstr . Pushq) (reverse os)
+  mapM_ pushq os
   -- call the function
   call (I l)
+  -- pop all registers off the stack
+  mapM_ popq (reverse os)
   comment "End Call"
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
@@ -646,6 +648,12 @@ cmpl o1 o2 = tellInstr (Cmpl o1 o2)
 
 cmpq :: Operand -> Operand -> Analysis ()
 cmpq o1 o2 = tellInstr (Cmpq o1 o2)
+
+pushq :: Operand -> Analysis ()
+pushq o = tellInstr (Pushq o)
+
+popq :: Operand -> Analysis ()
+popq o = tellInstr (Popq o)
 
 j :: (X86.Label -> Instr) -> X86.Label -> Analysis ()
 j s l@(R r) = do
