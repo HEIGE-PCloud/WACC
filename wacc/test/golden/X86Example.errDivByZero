@@ -1,8 +1,7 @@
 .section .rodata
 .int 40
 .L._errDivZero_str0:
-.asciz "fatal error: division or modulo by zero
-"
+.asciz "fatal error: division or modulo by zero\n"
 .text
 _errdivbyzero:
 andq $-16, %rsp

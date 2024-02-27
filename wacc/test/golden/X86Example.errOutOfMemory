@@ -1,8 +1,7 @@
 .section .rodata
 .int 27
 .L._errOutOfMemory_str0:
-.asciz "fatal error: out of memory
-"
+.asciz "fatal error: out of memory\n"
 .text
 _erroutofmemory:
 andq $-16, %rsp

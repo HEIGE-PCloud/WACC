@@ -1,8 +1,7 @@
 .section .rodata
 .int 42
 .L._errOutOfBounds_str0:
-.asciz "fatal error: array index %d out of bounds
-"
+.asciz "fatal error: array index %d out of bounds\n"
 .text
 _erroutofbounds:
 andq $-16, %rsp

@@ -1,8 +1,7 @@
 .section .rodata
 .int 52
 .L._errOverflow_str0:
-.asciz "fatal error: integer overflow or underflow occurred
-"
+.asciz "fatal error: integer overflow or underflow occurred\n"
 .text
 _erroverflow:
 andq $-16, %rsp
