@@ -9,6 +9,7 @@ module Language.WACC.TAC.State
   , evalTACM
   , freshTemp
   , freshLabel
+  , putTACs
   , collectTACs
   , completeBlock
   , getTarget
@@ -64,6 +65,14 @@ freshLabel :: (Enum lident) => TACM ident lident lident
 freshLabel = gets nextLabel <* modify incrLabel
   where
     incrLabel st@TACMState {nextLabel} = st {nextLabel = succ nextLabel}
+
+{- |
+Append some TAC instructions to the state.
+-}
+putTACs :: DList (TAC ident lident) -> TACM ident lident ()
+putTACs ts = modify appendTACs
+  where
+    appendTACs st@TACMState {tacs} = st {tacs = tacs <> ts}
 
 {- |
 Collect TAC instructions from the state.
