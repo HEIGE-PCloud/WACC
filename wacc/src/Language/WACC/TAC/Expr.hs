@@ -7,7 +7,7 @@
 {- |
 TAC translation actions for WACC expressions.
 -}
-module Language.WACC.TAC.Expr (loadCI) where
+module Language.WACC.TAC.Expr () where
 
 import Data.Bool (bool)
 import Data.Char (ord)
@@ -25,7 +25,7 @@ import Language.WACC.TypeChecking (BType (..))
 import Prelude hiding (GT, LT)
 
 {- |
-Load an integer constant into a fresh temporary variable.
+Load an integer constant using 'LoadCI'.
 -}
 loadCI :: Int -> TACM ident lident ()
 loadCI x = do
@@ -77,12 +77,12 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (Ident _ _) _) = pure ()
   toTAC (WAtom (ArrayElem (ArrayIndex v xs t) _) _) = do
     target <- getTarget
-    offset <- tempWith (loadCI $ sizeOf FInt)
+    offset <- loadConst (sizeOf FInt)
     let
       mkIndexTACs v' x t' = do
         let
           ft = flatten t'
-        scalar <- tempWith (loadCI $ sizeOf ft)
+        scalar <- loadConst (sizeOf ft)
         index <- tempWith (toTAC x)
         temp1 <- freshTemp
         temp2 <- freshTemp
@@ -103,7 +103,7 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) = do
     array <- tempWith (toTAC x)
-    offset <- tempWith (loadCI 0)
+    offset <- loadConst 0
     target <- getTarget
     putTACs [LoadM target array offset FInt]
   toTAC (AST.Ord x _) = toTAC x

@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 
 {- |
 TAC translation monad and actions.
@@ -15,12 +16,18 @@ module Language.WACC.TAC.State
   , getTarget
   , into
   , tempWith
+  , loadConst
   )
 where
 
 import Control.Monad.Trans.RWS (RWS, ask, evalRWS, gets, local, modify, tell)
 import Data.DList (DList, toList)
-import Language.WACC.TAC.TAC (BasicBlock (..), Jump (..), TAC, Var (Temp))
+import Language.WACC.TAC.TAC
+  ( BasicBlock (..)
+  , Jump (..)
+  , TAC (LoadCI)
+  , Var (Temp)
+  )
 
 data TACMState ident lident = TACMState
   { nextTemp :: ident
@@ -89,7 +96,7 @@ Collect TAC instructions from the state into a basic block.
 completeBlock :: Jump ident lident -> TACM ident lident ()
 completeBlock j = do
   ts <- collectTACs
-  tell $ pure BasicBlock {block = toList ts, nextBlock = j}
+  tell [BasicBlock {block = toList ts, nextBlock = j}]
 
 {- |
 Read the target variable from the reader component.
@@ -113,3 +120,10 @@ tempWith action = do
   t <- freshTemp
   action `into` t
   pure t
+
+{- |
+@loadConst x@ loads @x@ into a fresh temporary variable, which is then returned.
+-}
+loadConst x = tempWith $ do
+  target <- getTarget
+  putTACs [LoadCI target x]
