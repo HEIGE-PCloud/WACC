@@ -115,7 +115,7 @@ exprTestGroup =
                        , LoadCI temp2 i1
                        , BinInstr temp3 temp2 Mul temp1
                        , BinInstr temp4 temp3 Add temp0
-                       , LoadM temp5 (Var v) temp4 FArray
+                       , LoadM temp5 (Var v) temp4 FPtr
                        , LoadCI temp6 4
                        , LoadCI temp7 4
                        , LoadCI temp8 i2

@@ -8,8 +8,8 @@ module Language.WACC.TAC.FType
   , pattern FInt
   , pattern FBool
   , pattern FChar
-  , pattern FArray
-  , pattern FPair
+  , pattern FString
+  , pattern FPtr
   , sizeOf
   , flatten
   )
@@ -46,18 +46,18 @@ pattern FChar :: FType
 pattern FChar = WCharF
 
 {- |
-Flattened WACC array.
+Flattened 'Language.WACC.AST.WType.WString'.
 -}
-pattern FArray :: FType
-pattern FArray = WStringF
+pattern FString :: FType
+pattern FString = WStringF
 
 {- |
-Flattened WACC pair.
+Flattened WACC array or pair.
 -}
-pattern FPair :: FType
-pattern FPair = WErasedPairF
+pattern FPtr :: FType
+pattern FPtr = WErasedPairF
 
-{-# COMPLETE FInt, FBool, FChar, FArray, FPair #-}
+{-# COMPLETE FInt, FBool, FChar, FString, FPtr #-}
 
 {- |
 Get the size of an 'FType' in bytes.
@@ -66,8 +66,8 @@ sizeOf :: FType -> Int
 sizeOf FInt = 4
 sizeOf FBool = 1
 sizeOf FChar = 1
-sizeOf FArray = 8
-sizeOf FPair = 8
+sizeOf FString = 8
+sizeOf FPtr = 8
 
 {- |
 Flatten a 'BType' into an 'FType'.
@@ -76,8 +76,8 @@ flatten :: BType -> FType
 flatten BInt = FInt
 flatten BBool = FBool
 flatten BChar = FChar
-flatten BString = FArray
-flatten BErasedPair = FPair
-flatten (BKnownPair _ _) = FPair
-flatten (BArray _) = FArray
+flatten BString = FString
+flatten BErasedPair = FPtr
+flatten (BKnownPair _ _) = FPtr
+flatten (BArray _) = FPtr
 flatten BAny = error "attempted to flatten BAny"
