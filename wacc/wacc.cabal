@@ -38,6 +38,7 @@ library
       Language.WACC.TAC.Class
       Language.WACC.TAC.Expr
       Language.WACC.TAC.FType
+      Language.WACC.TAC.LValue
       Language.WACC.TAC.RValue
       Language.WACC.TAC.State
       Language.WACC.TAC.TAC
