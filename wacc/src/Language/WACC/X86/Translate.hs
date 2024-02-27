@@ -217,28 +217,12 @@ translateNext (TAC.Ret var) = do
 addRaxloc :: Var Integer -> Operand -> TransST -> TransST
 addRaxloc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
--- | Free a register if none are available by pushing the swapReg onto stack
-getReg :: Analysis Register
-getReg = do
-  rss <- gets freeRegs
-  case rss of
-    [] -> do
-      tellInstr (Pushq (Reg swapReg))
-      swapVar <- gets ((B.!> Reg swapReg) . alloc)
-      puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
-      stackAddr <- gets ((* 4) . stackVarNum)
-      puts (addRaxloc swapVar (Mem (MRegI stackAddr Rbp)))
-      return swapReg
-    (r : rs) -> do
-      puts (\x -> x {freeRegs = rs})
-      return r
-
 allocate :: Var Integer -> Analysis Operand
 allocate v = do
   -- increase the stackVarNum
   puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
   -- insert the variable into the allocation map
-  stackAddr <- gets ((* 8) . stackVarNum)
+  stackAddr <- gets ((* (-8)) . stackVarNum)
   puts (addRaxloc v (Mem (MRegI stackAddr Rbp)))
   return (Mem (MRegI stackAddr Rbp))
 
@@ -319,9 +303,11 @@ translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
   -- push all registers on to stack
   os <- mapM getOprand vs
-  mapM_ (tellInstr . Pushq) (reverse os)
+  mapM_ pushq os
   -- call the function
   call (I l)
+  -- pop all registers off the stack
+  mapM_ popq (reverse os)
   comment "End Call"
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
@@ -659,6 +645,12 @@ cmpl o1 o2 = tellInstr (Cmpl o1 o2)
 
 cmpq :: Operand -> Operand -> Analysis ()
 cmpq o1 o2 = tellInstr (Cmpq o1 o2)
+
+pushq :: Operand -> Analysis ()
+pushq o = tellInstr (Pushq o)
+
+popq :: Operand -> Analysis ()
+popq o = tellInstr (Popq o)
 
 j :: (X86.Label -> Instr) -> X86.Label -> Analysis ()
 j s l@(R r) = do
