@@ -135,7 +135,7 @@ translateFunc (Func _ vs bs) = (runtimeFns st, is)
     (nStart, startBlock) = M.findMin bs
 
     funcRWS = do
-      mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
+      -- mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
       tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
       mapM_ setupRegArgs (zip vs argRegs)
       puts
@@ -151,7 +151,7 @@ translateFunc (Func _ vs bs) = (runtimeFns st, is)
       translateBlocks (TAC.Label nStart) startBlock -- translate main part of code
       svn <- gets stackVarNum
       tellInstr (X86.Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
-      mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
+      -- mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
       -- assigning arg vars to registers
     setupRegArgs :: (Var Integer, Register) -> Analysis ()
     setupRegArgs (v, r) = puts (addRaxloc v (Reg r))
@@ -312,7 +312,8 @@ translateTAC (LoadCS v s) = do
   lab l
   asciz s
   text
-  leaq (Mem (MRegL l Rip)) o
+  leaq (Mem (MRegL l Rip)) rax
+  movq rax o
   comment "End LoadCS"
 translateTAC (LoadM v1 v2 off w) = do
   comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
