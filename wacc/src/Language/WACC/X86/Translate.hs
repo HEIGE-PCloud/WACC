@@ -220,28 +220,12 @@ translateNext (TAC.Ret var) = do
 addRaxloc :: Var Integer -> Operand -> TransST -> TransST
 addRaxloc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
--- | Free a register if none are available by pushing the swapReg onto stack
-getReg :: Analysis Register
-getReg = do
-  rss <- gets freeRegs
-  case rss of
-    [] -> do
-      tellInstr (Pushq (Reg swapReg))
-      swapVar <- gets ((B.!> Reg swapReg) . alloc)
-      puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
-      stackAddr <- gets ((* 4) . stackVarNum)
-      puts (addRaxloc swapVar (Mem (MRegI stackAddr Rbp)))
-      return swapReg
-    (r : rs) -> do
-      puts (\x -> x {freeRegs = rs})
-      return r
-
 allocate :: Var Integer -> Analysis Operand
 allocate v = do
   -- increase the stackVarNum
   puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
   -- insert the variable into the allocation map
-  stackAddr <- gets ((* 8) . stackVarNum)
+  stackAddr <- gets ((* (-8)) . stackVarNum)
   puts (addRaxloc v (Mem (MRegI stackAddr Rbp)))
   return (Mem (MRegI stackAddr Rbp))
 
