@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Language.WACC.X86.Translate where
 
@@ -115,7 +116,7 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
         funcRWS
         bs
         (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller) 0) -- Not empty regs list
-    (n, startBlock) = M.findMin bs
+    (nStart, startBlock) = M.findMin bs
 
     funcRWS = do
       mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
@@ -131,14 +132,16 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
             (drop (length argRegs) vs)
             (map (\x -> (-x) - toInteger (length callee)) [0 ..])
         )
-      translateBlocks (TAC.Label n) startBlock -- translate main part of code
+      translateBlocks (TAC.Label nStart) startBlock -- translate main part of code
       svn <- gets stackVarNum
-      tellInstr (Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
-      mapM (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
+      tellInstr (X86.Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
+      mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
+      -- assigning arg vars to registers
     setupRegArgs :: (Var Integer, Register) -> Analysis ()
-    setupRegArgs (v, r) = puts (addAlloc v (Reg r))
+    setupRegArgs (v, r) = puts (addRaxloc v (Reg r))
+    -- assigning extra arg vars to stack
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
-    setupStackArgs (v, n) = puts (addAlloc v (Mem (MRegI n Rbp)))
+    setupStackArgs (v, n) = puts (addRaxloc v (Mem (MRegI n Rbp)))
 
 -- | translate each statement of the block. then figure out which block to go to
 translateBlocks
@@ -164,7 +167,7 @@ translateBlock
   :: TAC.Label Integer
   -> [TAC Integer Integer]
   -> Analysis ()
-translateBlock l@(TAC.Label n) is = do
+translateBlock l is = do
   puts (setTranslated l) -- include label in translated set
   tellInstr (Lab (mapLab l))
   mapM_ translateTAC is
@@ -187,29 +190,31 @@ translateNext (Jump l1@(Label n)) = do
   nextBlock <- asks (! n)
   t <- isTranslated l1
   (if t then tellInstr (Jmp (mapLab l1)) else translateBlocks l1 nextBlock)
-translateNext (CJump v l1 l2@(TAC.Label n2)) = do
+translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
-  tellInstr (Cmpq operand (Imm 0))
+  tellInstr (X86.Cmpq operand (Imm 0))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
   t <- isTranslated l1
   (if t then pure () else translateNext (Jump l1))
-translateNext (TAC.Ret var) = pure ()
+translateNext (TAC.Ret var) = do
+  retVal <- gets ((B.! var) . alloc)
+  tellInstr (Movl retVal (Reg Rax))
 
-addAlloc :: Var Integer -> Operand -> TransST -> TransST
-addAlloc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
+addRaxloc :: Var Integer -> Operand -> TransST -> TransST
+addRaxloc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
 -- | Free a register if none are available by pushing the swapReg onto stack
 getReg :: Analysis Register
 getReg = do
-  rs <- gets freeRegs
-  case rs of
+  rss <- gets freeRegs
+  case rss of
     [] -> do
       tellInstr (Pushq (Reg swapReg))
       swapVar <- gets ((B.!> Reg swapReg) . alloc)
       puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
       stackAddr <- gets ((* 4) . stackVarNum)
-      puts (addAlloc swapVar (Mem (MRegI stackAddr Rbp)))
+      puts (addRaxloc swapVar (Mem (MRegI stackAddr Rbp)))
       return swapReg
     (r : rs) -> do
       puts (\x -> x {freeRegs = rs})
@@ -220,7 +225,7 @@ getReg' v = do
   r <- getReg
   let
     reg = Reg r
-  puts (addAlloc v reg)
+  puts (addRaxloc v reg)
   return reg
 
 getLabel :: Analysis X86.Label
@@ -573,7 +578,7 @@ translateStore v1 off v2 s = do
   call (arrayStore s)
 
 al :: Operand
-al = Reg Al
+al = Reg Rax
 
 r8 :: Operand
 r8 = Reg R8
@@ -594,16 +599,16 @@ rbx :: Operand
 rbx = Reg Rbx
 
 eax :: Operand
-eax = Reg Eax
+eax = Reg Rax
 
 ebx :: Operand
-ebx = Reg Ebx
+ebx = Reg Rbx
 
 ecx :: Operand
-ecx = Reg Ecx
+ecx = Reg Rcx
 
 edx :: Operand
-edx = Reg Edx
+edx = Reg Rdx
 
 leaq :: Operand -> Operand -> Analysis ()
 leaq o1 o2 = tellInstr (Leaq o1 o2)
