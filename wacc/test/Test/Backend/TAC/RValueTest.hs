@@ -21,6 +21,9 @@ testTACM = fst . runTACM 0
 toTAC' :: RValue Int Int BType -> DList (TAC Int Int)
 toTAC' = testTACM . (*> collectTACs) . fnToTAC
 
+intLit :: (Integral a) => a -> Expr Int BType
+intLit x = WAtom (IntLit (toInteger x) BInt) BInt
+
 temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
 temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
 
@@ -62,8 +65,7 @@ rvalueTestGroup =
     [ testGroup
         "expressions"
         [ testProperty "int literals are loaded using LoadCI" $ \i ->
-            toTAC' (RVExpr (WAtom (IntLit (toInteger i) BInt) BInt) BInt)
-              == [LoadCI temp0 i]
+            toTAC' (RVExpr (intLit i) BInt) == [LoadCI temp0 i]
         , testProperty "string literals are loaded using LoadCS" $ \s ->
             toTAC' (RVExpr (WAtom (StringLit s BString) BString) BString)
               == [LoadCS temp0 s]
@@ -101,5 +103,28 @@ rvalueTestGroup =
             (const Null)
             (\v () -> LoadCI v 0)
             8
+        ]
+    , testProperty "new pairs allocate 16 bytes" $ \i1 i2 ->
+        toTAC' (RVNewPair (intLit i1) (intLit i2) (BKnownPair BInt BInt))
+          == [ LoadCI temp1 i1
+             , LoadCI temp2 i2
+             , LoadCI temp3 0
+             , LoadCI temp4 8
+             , LoadCI temp5 16
+             , Malloc temp0 temp5
+             , Store temp0 temp3 temp1 FInt
+             , Store temp0 temp4 temp2 FInt
+             ]
+    , testGroup
+        "function calls"
+        [ testProperty "nullary function calls are executed using Call" $ \f ->
+            toTAC' (RVCall f [] BInt) == [Call temp0 (Label f) []]
+        , testProperty "function arguments are evaluated before the Call" $
+            \f i1 i2 ->
+              toTAC' (RVCall f [intLit i1, intLit i2] BInt)
+                == [ LoadCI temp1 i1
+                   , LoadCI temp2 i2
+                   , Call temp0 (Label f) [temp1, temp2]
+                   ]
         ]
     ]
