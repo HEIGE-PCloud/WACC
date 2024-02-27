@@ -5,32 +5,7 @@
 module Language.WACC.X86.X86
   ( Directive (..)
   , Instr
-    ( Lab
-    , Je
-    , Jo
-    , Jl
-    , Jge
-    , Jne
-    , Jmp
-    , Call
-    , Cltd
-    , Ret
-    , Cmovl
-    , Cmovge
-    , Sete
-    , Setne
-    , Setl
-    , Setle
-    , Setg
-    , Setge
-    , Negl
-    , Pushq
-    , Popq
-    , Movslq
-    , Movsbq
-    , Movzbl
-    , Dir
-    , Comment
+    ( ..
     , Movq
     , Movl
     , Movb
@@ -40,7 +15,6 @@ module Language.WACC.X86.X86
     , Addq
     , Addl
     , Imull
-    , Idivl
     , Andq
     , Cmpq
     , Cmpl
