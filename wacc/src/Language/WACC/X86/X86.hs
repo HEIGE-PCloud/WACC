@@ -40,7 +40,6 @@ import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.List (intercalate)
 import Data.Set (Set, fromList)
 import Data.Typeable ()
-import Language.WACC.Error (quote)
 
 data Label = I Integer | R Runtime | S String
   deriving (Eq, Ord, Data, Show)
@@ -376,7 +375,7 @@ formatBinOp name s op1 op2 =
 
 instance ATNT Directive where
   formatA d@(DirInt x) = unwords [dirName d, show x]
-  formatA d@(DirAsciz str) = unwords [dirName d, quote str]
+  formatA d@(DirAsciz str) = unwords [dirName d, show str]
   formatA d@(DirGlobl l) = unwords [dirName d, formatA l]
   formatA d@(DirSection) = unwords [dirName d, ".rodata"]
   formatA d = dirName d

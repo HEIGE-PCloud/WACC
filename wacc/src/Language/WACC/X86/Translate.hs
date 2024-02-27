@@ -150,8 +150,10 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
             (map (\x -> (-x) - toInteger (length callee)) [0 ..])
         )
       translateBlocks (TAC.Label l) startBlock -- Translate main part of code
-      svn <- gets stackVarNum
-      tellInstr (X86.Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
+      -- restore stack pointer
+      movq rbp rsp
+      -- tellInstr (X86.Addq (Imm (svn * 8)) (Reg Rsp)) -- effectively delete local variables on stack
+      tellInstr X86.Ret -- return
       -- mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
       -- assigning arg vars to registers
     setupRegArgs :: (Var Integer, Register) -> Analysis ()
@@ -579,6 +581,12 @@ translateStore v1 off v2 s = do
   movq offset r10
   movq o2 r11
   call (arrayStore s)
+
+rbp :: Operand
+rbp = Reg Rbp
+
+rsp :: Operand
+rsp = Reg Rsp
 
 al :: Operand
 al = Reg Rax
