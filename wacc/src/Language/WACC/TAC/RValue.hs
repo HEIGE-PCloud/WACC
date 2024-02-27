@@ -56,3 +56,7 @@ instance
       , Store target fstOffset temp1 (flatten $ getAnn x)
       , Store target sndOffset temp2 (flatten $ getAnn y)
       ]
+  fnToTAC (RVCall f xs _) = do
+    args <- mapM (tempWith . toTAC) xs
+    target <- getTarget
+    putTACs [Call target (Label f) args]
