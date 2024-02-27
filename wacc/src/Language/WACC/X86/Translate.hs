@@ -1,5 +1,4 @@
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE PatternSynonyms #-}
 
 module Language.WACC.X86.Translate where
 
@@ -220,13 +219,22 @@ getReg = do
       puts (\x -> x {freeRegs = rs})
       return r
 
-getReg' :: Var Integer -> Analysis Operand
-getReg' v = do
-  r <- getReg
-  let
-    reg = Reg r
-  puts (addRaxloc v reg)
-  return reg
+allocate :: Var Integer -> Analysis Operand
+allocate v = do
+  -- increase the stackVarNum
+  puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
+  -- insert the variable into the allocation map
+  stackAddr <- gets ((* 8) . stackVarNum)
+  puts (addRaxloc v (Mem (MRegI stackAddr Rbp)))
+  return (Mem (MRegI stackAddr Rbp))
+
+allocate' :: Var Integer -> Analysis Operand
+allocate' v = do
+  -- check if the variable is already allocated
+  alloc' <- gets (B.lookup v . alloc)
+  case alloc' of
+    Just o -> return o
+    Nothing -> allocate v
 
 getLabel :: Analysis X86.Label
 getLabel = do
@@ -253,7 +261,7 @@ translateTAC :: TAC Integer Integer -> Analysis ()
 translateTAC (BinInstr v1 v2 op v3) = do
   comment $
     "BinInstr: " ++ show v1 ++ " := " ++ show v2 ++ " " ++ show op ++ " " ++ show v3
-  operand <- getReg' v1
+  operand <- allocate' v1
   operand1 <- getOprand v2
   operand2 <- getOprand v3
   translateBinOp operand op operand1 operand2
@@ -261,7 +269,7 @@ translateTAC (BinInstr v1 v2 op v3) = do
 translateTAC (UnInstr v1 op v2) =
   do
     comment $ "UnInstr: " ++ show v1 ++ " := " ++ show op ++ " " ++ show v2
-    operand <- getReg' v1
+    operand <- allocate' v1
     operand' <- getOprand v2
     translateUnOp operand op operand'
     comment "End UnInstr"
@@ -272,7 +280,7 @@ translateTAC (Store v1 off v2 w) = do
   comment "End Store"
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
-  operand <- getReg' v
+  operand <- allocate' v
   movq (Imm (fromIntegral i)) operand
   comment "End LoadCI"
 {-
@@ -285,7 +293,7 @@ leaq .L.str0(%rip), o
 -}
 translateTAC (LoadCS v s) = do
   comment $ "LoadCS: " ++ show v ++ " := " ++ show s
-  o <- getReg' v
+  o <- allocate' v
   l <- getLabel
   section
   rodata
@@ -326,12 +334,12 @@ translateTAC (TAC.Exit v) = do
   comment "End Exit"
 translateTAC (Read v w) = do
   comment $ "Read: " ++ show v ++ " := read"
-  operand <- getReg' v
+  operand <- allocate' v
   translateRead operand w
   comment "End Read"
 translateTAC (TAC.Malloc lv rv) = do
   comment $ "Malloc: " ++ show lv ++ " := malloc " ++ show rv
-  operand <- getReg' lv
+  operand <- allocate' lv
   operand' <- getOprand rv
   movq operand' arg1
   call (R X86.Malloc)
@@ -557,7 +565,7 @@ translateLoadM
   :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
 translateLoadM v1 v2 off s = do
   -- array ptr passed in R9, index in R10, and return into R9
-  o1 <- getReg' v1
+  o1 <- allocate' v1
   o2 <- getOprand v2
   offset <- getOprand off
   movq o2 r9
