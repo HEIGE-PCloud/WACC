@@ -1,5 +1,4 @@
-.section
-.rodata
+.section .rodata
 .int 27
 .L._errOutOfMemory_str0:
 .asciz "fatal error: out of memory

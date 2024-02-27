@@ -1,5 +1,4 @@
-.section
-.rodata
+.section .rodata
 .int 52
 .L._errOverflow_str0:
 .asciz "fatal error: integer overflow or underflow occurred

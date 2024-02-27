@@ -70,8 +70,8 @@ translateProg p = D.toList $ preamble `D.append` D.concat is `D.append` D.concat
       D.fromList
         [ Dir $ DirGlobl (S "main")
         , Dir DirSection
-        , Dir DirRodata
         , Dir DirText
+        , Lab (S "main")
         ]
 
 {- | When registers run out and values in the stack are
@@ -307,7 +307,6 @@ translateTAC (LoadCS v s) = do
   o <- allocate' v
   l <- getLabel
   section
-  rodata
   int (fromIntegral $ length s)
   lab l
   asciz s
@@ -761,9 +760,6 @@ lab = tellInstr . Lab
 
 section :: Analysis ()
 section = tellInstr (Dir DirSection)
-
-rodata :: Analysis ()
-rodata = tellInstr (Dir DirRodata)
 
 int :: Integer -> Analysis ()
 int x = tellInstr (Dir (DirInt x))

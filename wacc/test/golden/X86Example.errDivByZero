@@ -1,0 +1,12 @@
+.section .rodata
+.int 40
+.L._errDivZero_str0:
+.asciz "fatal error: division or modulo by zero
+"
+.text
+_errdivbyzero:
+andq $-16, %rsp
+leaq .L._errDivZero_str0(%rip), %rdi
+call _prints
+movb $-1, %dil
+call exit@plt

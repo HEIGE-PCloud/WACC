@@ -99,7 +99,6 @@ _printi:
 printi :: Prog
 printi =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 2
   , Lab (S ".L._printi_str0")
   , Dir $ DirAsciz "%d"
@@ -146,7 +145,6 @@ _prints:
 prints :: Prog
 prints =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 4
   , Lab (S ".L._prints_str0")
   , Dir $ DirAsciz "%.*s"
@@ -208,7 +206,6 @@ _printb:
 printb :: Prog
 printb =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 5
   , Lab (S ".L._printb_str0")
   , Dir $ DirAsciz "false"
@@ -267,7 +264,6 @@ _printc:
 printc :: Prog
 printc =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 2
   , Lab (S ".L._printc_str0")
   , Dir $ DirAsciz "%c"
@@ -314,7 +310,6 @@ _printp:
 printp :: Prog
 printp =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 2
   , Lab (S ".L._printp_str0")
   , Dir $ DirAsciz "%p"
@@ -356,7 +351,6 @@ _println:
 println :: Prog
 println =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 0
   , Lab (S ".L._println_str0")
   , Dir $ DirAsciz ""
@@ -440,7 +434,6 @@ _errOutOfMemory:
 errOutOfMemory :: Prog
 errOutOfMemory =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 27
   , Lab (S ".L._errOutOfMemory_str0")
   , Dir $ DirAsciz "fatal error: out of memory\n"
@@ -475,7 +468,6 @@ _errOutOfBounds:
 errOutOfBounds :: Prog
 errOutOfBounds =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 42
   , Lab (S ".L._errOutOfBounds_str0")
   , Dir $ DirAsciz "fatal error: array index %d out of bounds\n"
@@ -509,7 +501,6 @@ _errOverflow:
 errOverflow :: Prog
 errOverflow =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 52
   , Lab (S ".L._errOverflow_str0")
   , Dir $ DirAsciz "fatal error: integer overflow or underflow occurred\n"
@@ -541,7 +532,6 @@ _errDivZero:
 errDivByZero :: Prog
 errDivByZero =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 40
   , Lab (S ".L._errDivZero_str0")
   , Dir $ DirAsciz "fatal error: division or modulo by zero\n"
@@ -586,7 +576,6 @@ _readi:
 readi :: Prog
 readi =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 2
   , Lab (S ".L._readi_str0")
   , Dir $ DirAsciz "%d"
@@ -640,7 +629,6 @@ ret
 readc :: Prog
 readc =
   [ Dir DirSection
-  , Dir DirRodata
   , Dir $ DirInt 3
   , Lab (S ".L._readc_str0")
   , Dir $ DirAsciz " %c"

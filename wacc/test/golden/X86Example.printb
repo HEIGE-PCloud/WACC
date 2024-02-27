@@ -1,5 +1,4 @@
-.section
-.rodata
+.section .rodata
 .int 5
 .L._printb_str0:
 .asciz "false"
