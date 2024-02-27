@@ -29,10 +29,10 @@ varExpr :: Int -> BType -> Expr Int BType
 varExpr v t = WAtom (Ident v t) t
 
 temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
-(temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _) = Temp <$> [0 ..]
+temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
 
 temp7, temp8, temp9, temp10 :: Var Int
-(temp7 : temp8 : temp9 : temp10 : _) = Temp <$> [7 ..]
+temp7 : temp8 : temp9 : temp10 : _ = Temp <$> [7 ..]
 
 testIndexScaling :: String -> BType -> Int -> TestTree
 testIndexScaling tName bt tSize =
