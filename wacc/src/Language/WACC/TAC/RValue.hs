@@ -19,10 +19,7 @@ import Language.WACC.TypeChecking
 
 type instance TACIdent (RValue fnident ident a) = ident
 
-instance
-  (Enum fnident, Enum ident)
-  => FnToTAC (RValue fnident ident BType)
-  where
+instance (Enum ident) => FnToTAC (RValue fnident ident BType) where
   type TACFnRepr (RValue fnident ident BType) = ()
   type TACFnIdent (RValue fnident ident BType) = fnident
   fnToTAC (RVExpr x _) = toTAC x
