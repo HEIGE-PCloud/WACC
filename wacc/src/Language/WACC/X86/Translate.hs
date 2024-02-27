@@ -125,17 +125,18 @@ Local Regs: 1
 .
 -}
 translateFunc :: Func Integer Integer -> (Set Runtime, DList Instr)
-translateFunc (Func _ vs bs) = (runtimeFns st, is)
+translateFunc (Func l vs bs) = (runtimeFns st, is)
   where
     (st, is) =
       execRWS
         funcRWS
         bs
         (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller) 0) -- Not empty regs list
-    (nStart, startBlock) = M.findMin bs
+    startBlock = bs M.! l
 
     funcRWS = do
       -- mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
+      tellInstr (Lab (I l)) -- label for the function = label of the first block
       tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
       mapM_ setupRegArgs (zip vs argRegs)
       puts
@@ -148,7 +149,7 @@ translateFunc (Func _ vs bs) = (runtimeFns st, is)
             (drop (length argRegs) vs)
             (map (\x -> (-x) - toInteger (length callee)) [0 ..])
         )
-      translateBlocks (TAC.Label nStart) startBlock -- translate main part of code
+      translateBlocks (TAC.Label l) startBlock -- Translate main part of code
       svn <- gets stackVarNum
       tellInstr (X86.Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
       -- mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
@@ -159,13 +160,16 @@ translateFunc (Func _ vs bs) = (runtimeFns st, is)
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
     setupStackArgs (v, n) = puts (addRaxloc v (Mem (MRegI n Rbp)))
 
--- | translate each statement of the block. then figure out which block to go to
+{- | translate each statement of the block. then figure out which block to go to
+labels are printed right before this function is called
+-}
 translateBlocks
   :: TAC.Label Integer
   -> BasicBlock Integer Integer
   -> Analysis ()
 translateBlocks l (BasicBlock is next) = do
-  translateBlock l is
+  puts (setTranslated l) -- include label in translated set
+  mapM_ translateTAC is
   translateNext next
 
 -- | modify the state of the RWS monad
@@ -177,16 +181,6 @@ puts f = do
 -- | Mark the block as translated, so its not re-translated
 setTranslated :: TAC.Label Integer -> TransST -> TransST
 setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated}
-
--- | translate each TAC statement
-translateBlock
-  :: TAC.Label Integer
-  -> [TAC Integer Integer]
-  -> Analysis ()
-translateBlock l is = do
-  puts (setTranslated l) -- include label in translated set
-  tellInstr (Lab (mapLab l))
-  mapM_ translateTAC is
 
 mapLab :: TAC.Label Integer -> X86.Label
 mapLab (Label x) = I x
@@ -205,7 +199,10 @@ translateNext :: Jump Integer Integer -> Analysis ()
 translateNext (Jump l1@(Label n)) = do
   nextBlock <- asks (! n)
   t <- isTranslated l1
-  (if t then tellInstr (Jmp (mapLab l1)) else translateBlocks l1 nextBlock)
+  ( if t
+      then tellInstr (Jmp (mapLab l1))
+      else (tellInstr (Lab (mapLab l1)) >> translateBlocks l1 nextBlock)
+    )
 translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
   tellInstr (X86.Cmpq operand (Imm 0))
