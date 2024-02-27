@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Language.WACC.X86.Translate where
 
@@ -8,8 +9,6 @@ import Control.Monad.RWS
   , execRWS
   , get
   , gets
-  , local
-  , modify
   , put
   , tell
   )
@@ -18,7 +17,7 @@ import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
 import Data.List ((\\))
-import Data.Map (Map, findMin, (!))
+import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -32,7 +31,7 @@ import Language.WACC.X86.X86
   , Memory (..)
   , Operand (..)
   , Prog
-  , Register (R10, Rbp, Rsp)
+  , Register (R10, Rax, Rbp, Rsp)
   , Runtime (..)
   , argRegs
   , callee
@@ -112,28 +111,30 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
         funcRWS
         bs
         (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller)) -- Not empty regs list
-    (n, startBlock) = M.findMin bs
+    (nStart, startBlock) = M.findMin bs
 
     funcRWS = do
-      mapM (tellInstr . Pushq . Reg) callee -- callee saving registers
+      mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
       tellInstr (X86.Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
-      mapM setupRegArgs (zip vs argRegs)
+      mapM_ setupRegArgs (zip vs argRegs)
       puts
         ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ (drop (length vs) argRegs)} -- mark extra arg regs as usable
         )
       -- \| if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
-      mapM
+      mapM_
         setupStackArgs
         ( zip
             (drop (length argRegs) vs)
             (map (\x -> (-x) - toInteger (length callee)) [0 ..])
         )
-      translateBlocks (TAC.Label n) startBlock -- translate main part of code
+      translateBlocks (TAC.Label nStart) startBlock -- translate main part of code
       svn <- gets stackVarNum
       tellInstr (X86.Addq (Imm (-svn)) (Reg Rsp)) -- effectively delete local variables on stack
-      mapM (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
+      mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
+      -- assigning arg vars to registers
     setupRegArgs :: (Var Integer, Register) -> Analysis ()
     setupRegArgs (v, r) = puts (addAlloc v (Reg r))
+    -- assigning extra arg vars to stack
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
     setupStackArgs (v, n) = puts (addAlloc v (Mem (MRegI n Rbp)))
 
@@ -161,15 +162,16 @@ translateBlock
   :: TAC.Label Integer
   -> [TAC Integer Integer]
   -> Analysis ()
-translateBlock l@(TAC.Label n) is = do
+translateBlock l is = do
   puts (setTranslated l) -- include label in translated set
   tellInstr (Lab (mapLab l))
-  mapM translateTAC is
+  mapM_ translateTAC is
   return ()
 
 mapLab :: (TAC.Label Integer) -> X86.Label
 mapLab (Label x) = I x
 
+tellInstr :: Instr -> Analysis ()
 tellInstr = tell . D.singleton
 
 isTranslated :: TAC.Label Integer -> Analysis Bool
@@ -186,7 +188,7 @@ translateNext (Jump l1@(Label n)) = do
   case t of
     False -> translateBlocks l1 nextBlock
     True -> tellInstr (Jmp (mapLab l1))
-translateNext (CJump v l1 l2@(TAC.Label n2)) = do
+translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
   tellInstr (X86.Cmpq operand (Imm 0))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
@@ -195,7 +197,9 @@ translateNext (CJump v l1 l2@(TAC.Label n2)) = do
   case t of
     False -> translateNext (Jump l1)
     True -> pure ()
-translateNext (TAC.Ret var) = pure ()
+translateNext (TAC.Ret var) = do
+  retVal <- gets ((B.! var) . alloc)
+  tellInstr (Movl retVal (Reg Rax))
 
 addAlloc :: Var Integer -> Operand -> TransST -> TransST
 addAlloc v o x@(TransST {alloc}) = x {alloc = (B.insert v o) alloc}
@@ -203,8 +207,8 @@ addAlloc v o x@(TransST {alloc}) = x {alloc = (B.insert v o) alloc}
 -- | Free a register if none are available by pushing the swapReg onto stack
 getReg :: Analysis Register
 getReg = do
-  rs <- gets freeRegs
-  case rs of
+  rss <- gets freeRegs
+  case rss of
     [] -> do
       tellInstr (Pushq (Reg swapReg))
       swapVar <- gets ((B.!> (Reg swapReg)) . alloc)

@@ -2,7 +2,46 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-module Language.WACC.X86.X86 where
+module Language.WACC.X86.X86
+  ( Directive (..)
+  , Instr
+    ( Movq
+    , Movl
+    , Movb
+    , Leaq
+    , Subq
+    , Addq
+    , Andq
+    , Cmpq
+    , Cmpl
+    , Cmpb
+    , Lab
+    , Je
+    , Jo
+    , Jne
+    , Jmp
+    , Call
+    , Ret
+    , Pushq
+    , Popq
+    , Movslq
+    , Movsbq
+    , Dir
+    , Comment
+    )
+  , Label (..)
+  , Memory (..)
+  , Operand (..)
+  , Prog
+  , Register (..)
+  , Runtime (..)
+  , argRegs
+  , callee
+  , caller
+  , ATNT (..)
+  , ATNTs (..)
+  )
+where
 
 import Data.Char (toLower)
 import Data.Data (Data (toConstr), Typeable, showConstr)
@@ -175,7 +214,7 @@ paren :: String -> String
 paren x = "(" ++ x ++ ")"
 
 instance ATNTs Memory where
-  formatAs s (MI x) = paren (show x)
+  formatAs _ (MI x) = paren (formatA x)
   formatAs s (MReg r) = paren (formatAs s r)
   formatAs s (MTwoReg r1 r2) = paren (intercalate ", " (map (formatAs s) [r1, r2]))
   formatAs s (MScale r1 r2 sc) = paren (intercalate ", " (map (formatAs s) [r1, r2] ++ [formatA sc]))
@@ -187,7 +226,7 @@ instance ATNTs Memory where
   formatAs s (MRegL l r) = formatA l ++ paren (formatAs s r)
 
 instance ATNTs Operand where
-  formatAs s (Imm x) = '$' : formatA x
+  formatAs _ (Imm x) = '$' : formatA x
   formatAs s (Reg r) = formatAs s r
   formatAs _ (Mem m) = formatAs Q m -- memory access always 64 bit
 
