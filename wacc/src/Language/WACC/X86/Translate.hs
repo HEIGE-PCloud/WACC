@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Language.WACC.X86.Translate where
 
@@ -11,7 +12,7 @@ import Control.Monad.RWS
   , put
   , tell
   )
-import Data.Bimap hiding (map, (!))
+import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
@@ -21,7 +22,24 @@ import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
 import Language.WACC.TAC.FType
+  ( FType
+  , sizeOf
+  , pattern FBool
+  , pattern FChar
+  , pattern FInt
+  , pattern FString
+  )
 import Language.WACC.TAC.TAC
+  ( BasicBlock (BasicBlock)
+  , BinOp (Add, And, Div, Mod, Mul, Or, Sub)
+  , Func (..)
+  , Jump (CJump, Jump)
+  , Label (Label)
+  , TAC (BinInstr, LoadCI, LoadCS, LoadM, Print, Read, Store, UnInstr)
+  , TACProgram
+  , UnOp (..)
+  , Var
+  )
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.Runtime (runtimeLib)
 import Language.WACC.X86.X86

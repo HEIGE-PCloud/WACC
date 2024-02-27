@@ -295,22 +295,22 @@ partitionReg r@R12 = Post (show r)
 partitionReg r@R13 = Post (show r)
 partitionReg r@R14 = Post (show r)
 partitionReg r@R15 = Post (show r)
-partitionReg r = let 'R' : cs = show r in Pre cs -- remove the 'R' at the start
+partitionReg r = Pre $ tail (show r) -- remove the 'R' at the start
 
 instance ATNTs Register where
   formatAs Q r = '%' : map toLower (show r)
   formatAs L r =
     '%' : case partitionReg r of
-      Post (str) -> str ++ "d"
-      Pre (str) -> 'e' : str
+      Post str -> str ++ "d"
+      Pre str -> 'e' : str
   formatAs W r =
     '%' : case partitionReg r of
-      Post (str) -> str ++ "w"
-      Pre (str) -> str
+      Post str -> str ++ "w"
+      Pre str -> str
   formatAs B r =
     '%' : case partitionReg r of
-      Post (str) -> str ++ "b"
-      Pre (str) -> lower str
+      Post str -> str ++ "b"
+      Pre str -> lower str
     where
       lower "ax" = "al"
       lower "bx" = "bl"
@@ -393,7 +393,7 @@ formatUnOp i s op = unwords [instrName i, formatAs s op]
 formatLab :: Instr -> Label -> String
 formatLab i l = unwords [instrName i, formatA l]
 
-formatBinOp :: (ATNTs a, ATNTs b) => Name -> Size -> a -> b -> [Char]
+formatBinOp :: (ATNTs a, ATNTs b) => Name -> Size -> a -> b -> String
 formatBinOp name s op1 op2 =
   map toLower (show name ++ show s)
     ++ " "
