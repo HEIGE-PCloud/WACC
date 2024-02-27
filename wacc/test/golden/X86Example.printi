@@ -1,5 +1,4 @@
-.section
-.rodata
+.section .rodata
 .int 2
 .L._printi_str0:
 .asciz "%d"
