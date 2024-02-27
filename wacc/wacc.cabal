@@ -35,6 +35,10 @@ library
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
       Language.WACC.Semantic.Scope
+      Language.WACC.TAC.Class
+      Language.WACC.TAC.Expr
+      Language.WACC.TAC.FType
+      Language.WACC.TAC.State
       Language.WACC.TAC.TAC
       Language.WACC.TypeChecking
       Language.WACC.TypeChecking.BType
@@ -96,6 +100,8 @@ test-suite wacc-test
   other-modules:
       Test
       Test.Backend.IntegrationTest
+      Test.Backend.TAC
+      Test.Backend.TAC.ExprTest
       Test.Backend.Test
       Test.Backend.X86.GoldenTest
       Test.Backend.X86.Test

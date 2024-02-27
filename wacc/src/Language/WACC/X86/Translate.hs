@@ -20,9 +20,7 @@ import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
 import qualified Data.Set as S
-import Language.WACC.AST.WType
-  ( WType (WBool, WChar, WInt, WString)
-  )
+import Language.WACC.TAC.FType
 import Language.WACC.TAC.TAC
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.Runtime (runtimeLib)
@@ -108,7 +106,7 @@ Local Regs: 1
 .
 -}
 translateFunc :: Func Integer Integer -> (Set Runtime, DList Instr)
-translateFunc (Func l vs bs) = (runtimeFns st, is)
+translateFunc (Func _ vs bs) = (runtimeFns st, is)
   where
     (st, is) =
       execRWS
@@ -242,12 +240,6 @@ getLabel = do
   puts (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
-getSize :: WType -> Int
-getSize WInt = 4
-getSize WChar = 1
-getSize WBool = 1
-getSize _ = 8
-
 saveRegister :: [Register] -> Analysis ()
 saveRegister = mapM_ (tellInstr . Pushq . Reg)
 
@@ -276,7 +268,7 @@ translateTAC (UnInstr v1 op v2) =
 translateTAC (Store v1 off v2 w) = do
   -- \| > <var> := <var>[<Offset>]
   comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  translateStore v1 off v2 (getSize w)
+  translateStore v1 off v2 (sizeOf w)
   comment "End Store"
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
@@ -305,7 +297,7 @@ translateTAC (LoadCS v s) = do
   comment "End LoadCS"
 translateTAC (LoadM v1 v2 off w) = do
   comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  translateLoadM v1 v2 off (getSize w)
+  translateLoadM v1 v2 off (sizeOf w)
   comment "End LoadM"
 translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
@@ -351,6 +343,7 @@ translateTAC (TAC.Free v) = do
   movq operand arg1
   call (R X86.Free)
   comment "End Free"
+translateTAC (TAC.CheckBounds {}) = undefined
 
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
@@ -543,18 +536,18 @@ translateUnOp o Negate o' = do
   movl eax o
   comment "End Unary Negate"
 
-translatePrint :: WType -> Analysis ()
-translatePrint WInt = do call printi
-translatePrint WBool = do call printb
-translatePrint WChar = do call printc
-translatePrint WString = do call prints
+translatePrint :: FType -> Analysis ()
+translatePrint FInt = do call printi
+translatePrint FBool = do call printb
+translatePrint FChar = do call printc
+translatePrint FString = do call prints
 translatePrint _ = do call printp
 
-translateRead :: Operand -> WType -> Analysis ()
-translateRead o WInt = do
+translateRead :: Operand -> FType -> Analysis ()
+translateRead o FInt = do
   call (R X86.ReadI)
   movq argRet o
-translateRead o WChar = do
+translateRead o FChar = do
   call (R X86.ReadC)
   movq argRet o
 translateRead _ w =
@@ -732,8 +725,10 @@ prints = R X86.PrintS
 printLn :: X86.Label
 printLn = R X86.PrintLn
 
+errOverflow :: X86.Label
 errOverflow = R X86.ErrOverflow
 
+errDivByZero :: X86.Label
 errDivByZero = R X86.ErrDivByZero
 
 lab :: X86.Label -> Analysis ()

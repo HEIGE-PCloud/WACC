@@ -7,9 +7,9 @@ compile:
 build-test:
 	stack build --test --no-run-tests
 
-test: 
+test:
 	stack test \
-		--test-arguments --hide-successes \
+		$(if $(SHOW_ALL),, --test-arguments --hide-successes) \
 		--test-arguments --timeout=1m \
 		--test-arguments --xml=../rspec.xml \
 		--test-arguments --quickcheck-max-size=10 \
@@ -64,6 +64,9 @@ backend-test: compile
 
 backend-integration-test: compile
 	$(MAKE) test PATTERN="0 ~ /backend\.integrationTest/"
+
+tac-test:
+	$(MAKE) test PATTERN="0 ~ /TAC/"
 
 x86-golden-test:
 	$(MAKE) test PATTERN="0 ~ /x86\.goldenTest/"
