@@ -124,6 +124,7 @@ tempWith action = do
 {- |
 @loadConst x@ loads @x@ into a fresh temporary variable, which is then returned.
 -}
+loadConst :: (Enum ident) => Int -> TACM ident lident (Var ident)
 loadConst x = tempWith $ do
   target <- getTarget
   putTACs [LoadCI target x]
