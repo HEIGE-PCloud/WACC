@@ -53,7 +53,10 @@ instance (Enum ident) => FnToTAC (RValue fnident ident BType) where
       , Store target fstOffset temp1 (flatten $ getAnn x)
       , Store target sndOffset temp2 (flatten $ getAnn y)
       ]
+  -- TODO: RVPairElem requires LValue translation.
+  fnToTAC (RVPairElem _ _) = undefined
   fnToTAC (RVCall f xs _) = do
     args <- mapM (tempWith . toTAC) xs
     target <- getTarget
     putTACs [Call target (Label f) args]
+  fnToTAC _ = error "attempted to translate ill-typed array literal"
