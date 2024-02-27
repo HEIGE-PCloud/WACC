@@ -18,7 +18,7 @@ data TAC ident lident
     BinInstr (Var ident) (Var ident) BinOp (Var ident)
   | -- | > <var> := <unop> <var>
     UnInstr (Var ident) UnOp (Var ident)
-  | -- | > <var> := <var>[<Offset>]
+  | -- | > <var>[<offset>] := <var>
     Store (Var ident) (Offset ident) (Var ident) FType
   | -- | > <var> := Int
     LoadCI (Var ident) Int
