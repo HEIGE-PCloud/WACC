@@ -24,23 +24,22 @@ import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking (BType (..))
 import Prelude hiding (GT, LT)
 
+{- |
+Load an integer constant using 'LoadCI'.
+-}
 loadCI :: Int -> TACM ident lident ()
 loadCI x = do
   t <- getTarget
   putTACs [LoadCI t x]
 
-unOp
-  :: (Enum ident, Enum lident)
-  => UnOp
-  -> Expr ident BType
-  -> TACM ident lident ()
+unOp :: (Enum ident) => UnOp -> Expr ident BType -> TACM ident lident ()
 unOp op x = do
   temp <- tempWith (toTAC x)
   t <- getTarget
   putTACs [UnInstr t op temp]
 
 binInstr
-  :: (Enum ident, Enum lident)
+  :: (Enum ident)
   => Expr ident BType
   -> (Var ident -> Var ident -> Var ident -> TAC ident lident)
   -> Expr ident BType
@@ -52,7 +51,7 @@ binInstr x instr y = do
   putTACs [instr t temp1 temp2]
 
 binOp
-  :: (Enum ident, Enum lident)
+  :: (Enum ident)
   => Expr ident BType
   -> BinOp
   -> Expr ident BType
@@ -74,12 +73,12 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (Ident _ _) _) = pure ()
   toTAC (WAtom (ArrayElem (ArrayIndex v xs t) _) _) = do
     target <- getTarget
-    offset <- tempWith (loadCI $ sizeOf FInt)
+    offset <- loadConst (sizeOf FInt)
     let
       mkIndexTACs v' x t' = do
         let
           ft = flatten t'
-        scalar <- tempWith (loadCI $ sizeOf ft)
+        scalar <- loadConst (sizeOf ft)
         index <- tempWith (toTAC x)
         temp1 <- freshTemp
         temp2 <- freshTemp
@@ -100,7 +99,7 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
   toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) = do
     array <- tempWith (toTAC x)
-    offset <- tempWith (loadCI 0)
+    offset <- loadConst 0
     target <- getTarget
     putTACs [LoadM target array offset FInt]
   toTAC (AST.Ord x _) = toTAC x
