@@ -163,13 +163,13 @@ instance ATNTs Register where
   formatAs B r =
     '%' : case partitionReg r of
       Post (str) -> str ++ "b"
-      Pre (str) -> lower str (head str)
+      Pre (str) -> lower str
     where
-      lower _ 'a' = "al"
-      lower _ 'b' = "bl"
-      lower _ 'c' = "cl"
-      lower _ 'd' = "dl"
-      lower str _ = str ++ "l"
+      lower "ax" = "al"
+      lower "bx" = "bl"
+      lower "cx" = "cl"
+      lower "dx" = "dl"
+      lower str = str ++ "l"
 
 paren :: String -> String
 paren x = "(" ++ x ++ ")"
@@ -189,7 +189,7 @@ instance ATNTs Memory where
 instance ATNTs Operand where
   formatAs s (Imm x) = '$' : formatA x
   formatAs s (Reg r) = formatAs s r
-  formatAs s (Mem m) = formatAs s m
+  formatAs _ (Mem m) = formatAs Q m -- memory access always 64 bit
 
 {- |
 use magic to get name of the constructor as a string and make it lower case
