@@ -8,7 +8,7 @@
 {- |
 TAC translation actions for WACC @lvalue@s and @rvalue@s.
 -}
-module Language.WACC.TAC.Value (LVMode (..)) where
+module Language.WACC.TAC.Value (LVMode (..), lvToTAC) where
 
 import Control.Monad (zipWithM_)
 import Language.WACC.AST (LValue (..), PairElem (..), RValue (..), getAnn)
@@ -79,6 +79,9 @@ instance (Enum ident) => ToTAC (LValue ident BType) where
       loadOffset = loadConst (pairElemOffset pe)
       ft = flatten t
 
+{- |
+Translate an @lvalue@ in a single action.
+-}
 lvToTAC
   :: (Enum ident)
   => LValue ident BType

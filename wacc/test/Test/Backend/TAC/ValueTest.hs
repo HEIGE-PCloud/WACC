@@ -22,7 +22,7 @@ toTAC' :: RValue Int Int BType -> DList (TAC Int Int)
 toTAC' = testTACM . (*> collectTACs) . fnToTAC
 
 lvToTAC' :: LValue Int BType -> LVMode Int Int -> DList (TAC Int Int)
-lvToTAC' lv mode = testTACM $ (toTAC lv >>= ($ mode)) *> collectTACs
+lvToTAC' lv mode = testTACM $ lvToTAC lv mode *> collectTACs
 
 intLit :: (Integral a) => a -> Expr Int BType
 intLit x = WAtom (IntLit (toInteger x) BInt) BInt
