@@ -116,6 +116,23 @@ rvalueTestGroup =
              , Store temp0 temp4 temp2 FInt
              ]
     , testGroup
+        "pair elements"
+        [ testProperty "first element is loaded with offset 0" $ \v ->
+            toTAC'
+              ( RVPairElem
+                  (FstElem (LVIdent v (BKnownPair BInt BInt)) BInt)
+                  BInt
+              )
+              == [LoadCI temp2 0, LoadM temp0 temp1 temp2 FInt]
+        , testProperty "second element is loaded with offset 8" $ \v ->
+            toTAC'
+              ( RVPairElem
+                  (SndElem (LVIdent v (BKnownPair BInt BInt)) BInt)
+                  BInt
+              )
+              == [LoadCI temp2 8, LoadM temp0 temp1 temp2 FInt]
+        ]
+    , testGroup
         "function calls"
         [ testProperty "nullary function calls are executed using Call" $ \f ->
             toTAC' (RVCall f [] BInt) == [Call temp0 (Label f) []]
