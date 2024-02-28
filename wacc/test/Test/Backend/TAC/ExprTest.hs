@@ -107,16 +107,16 @@ exprTestGroup =
                         BInt
                     )
                     == [ LoadCI temp1 4
-                       , LoadCI temp3 8
-                       , LoadCI temp4 i1
-                       , BinInstr temp5 temp4 Mul temp3
-                       , BinInstr temp6 temp5 Add temp1
-                       , LoadM temp2 (Var v) temp6 FPtr
+                       , LoadCI temp2 8
+                       , LoadCI temp3 i1
+                       , BinInstr temp4 temp3 Mul temp2
+                       , BinInstr temp5 temp4 Add temp1
+                       , LoadM temp6 (Var v) temp5 FPtr
                        , LoadCI temp7 4
                        , LoadCI temp8 i2
                        , BinInstr temp9 temp8 Mul temp7
                        , BinInstr temp10 temp9 Add temp1
-                       , LoadM temp0 temp2 temp10 FInt
+                       , LoadM temp0 temp6 temp10 FInt
                        ]
             ]
         ]

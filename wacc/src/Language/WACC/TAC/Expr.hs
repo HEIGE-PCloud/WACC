@@ -33,36 +33,41 @@ generator:
 
 > type
 >   TACRepr (ArrayIndex ident BType) lident =
->     Maybe (Var ident -> Expr ident BType -> BType -> TACM ident lident ())
+>     Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
 >     -> TACM ident lident ()
 -}
 instance (Enum ident) => ToTAC (ArrayIndex ident BType) where
   type
     TACRepr (ArrayIndex ident BType) lident =
-      Maybe (Var ident -> Expr ident BType -> BType -> TACM ident lident ())
+      Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
       -> TACM ident lident ()
   toTAC (ArrayIndex v xs t) = pure $ \mf -> do
     target <- getTarget
     offset <- loadConst (sizeOf FInt)
     let
-      mkIndexTACs v' x t' = do
-        let
-          ft = flatten t'
+      loadOffset v' offset' t' = do
+        target' <- getTarget
+        putTACs [LoadM target' v' offset' t']
+      mkOffsetTACs x ft = do
         scalar <- loadConst (sizeOf ft)
         index <- tempWith (toTAC x)
         temp1 <- freshTemp
         temp2 <- freshTemp
-        target' <- getTarget
         putTACs
           [ BinInstr temp1 index Mul scalar
           , BinInstr temp2 temp1 Add offset
-          , LoadM target' v' temp2 ft
           ]
-      chainIndexTACs v' [x] (BArray t') =
-        (fromMaybe mkIndexTACs mf) v' x t' `into` target
+        pure temp2
+      chainIndexTACs v' [x] (BArray t') = do
+        let
+          ft = flatten t'
+        offset' <- mkOffsetTACs x ft
+        (fromMaybe loadOffset mf) v' offset' ft `into` target
       chainIndexTACs v' (x : xs') (BArray t') = do
-        temp <- freshTemp
-        mkIndexTACs v' x t' `into` temp
+        let
+          ft = flatten t'
+        offset' <- mkOffsetTACs x ft
+        temp <- tempWith (loadOffset v' offset' ft)
         chainIndexTACs temp xs' t'
       chainIndexTACs _ _ _ = error "attempted to translate invalid ArrayIndex"
     chainIndexTACs (Var v) xs t
