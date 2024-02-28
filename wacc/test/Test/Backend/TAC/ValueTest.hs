@@ -2,16 +2,16 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
-module Test.Backend.TAC.RValueTest (rvalueTestGroup) where
+module Test.Backend.TAC.ValueTest (rvalueTestGroup) where
 
 import Data.Char (ord)
 import Data.DList (DList)
 import Language.WACC.AST
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.FType
-import Language.WACC.TAC.RValue ()
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
+import Language.WACC.TAC.Value ()
 import Language.WACC.TypeChecking
 import Test
 

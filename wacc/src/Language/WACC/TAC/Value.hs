@@ -1,21 +1,32 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
-TAC translation actions for WACC @rvalue@s.
+TAC translation actions for WACC @lvalue@s and @rvalue@s.
 -}
-module Language.WACC.TAC.RValue where
+module Language.WACC.TAC.Value () where
 
 import Control.Monad (zipWithM_)
-import Language.WACC.AST
+import Language.WACC.AST (LValue (..), RValue (..), getAnn)
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.Expr ()
 import Language.WACC.TAC.FType
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking
+
+type instance TACIdent (LValue ident a) = ident
+
+instance (Enum ident) => ToTAC (LValue ident BType) where
+  type
+    TACRepr (LValue ident BType) lident =
+      Maybe (RValue lident ident BType) -> TACM ident lident ()
+  toTAC (LVIdent v t) = pure $ \case
+    Just rv -> fnToTAC rv `into` Var v
+    Nothing -> putTACs [Read (Var v) (flatten t)]
 
 type instance TACIdent (RValue fnident ident a) = ident
 
