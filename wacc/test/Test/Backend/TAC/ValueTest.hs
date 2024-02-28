@@ -2,16 +2,16 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
-module Test.Backend.TAC.ValueTest (rvalueTestGroup) where
+module Test.Backend.TAC.ValueTest (lvalueTestGroup, rvalueTestGroup) where
 
 import Data.Char (ord)
 import Data.DList (DList)
-import Language.WACC.AST
+import Language.WACC.AST hiding (Read)
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.FType
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
-import Language.WACC.TAC.Value ()
+import Language.WACC.TAC.Value
 import Language.WACC.TypeChecking
 import Test
 
@@ -21,8 +21,14 @@ testTACM = fst . runTACM 0
 toTAC' :: RValue Int Int BType -> DList (TAC Int Int)
 toTAC' = testTACM . (*> collectTACs) . fnToTAC
 
+lvToTAC' :: LValue Int BType -> LVMode Int Int -> DList (TAC Int Int)
+lvToTAC' lv mode = testTACM $ (toTAC lv >>= ($ mode)) *> collectTACs
+
 intLit :: (Integral a) => a -> Expr Int BType
 intLit x = WAtom (IntLit (toInteger x) BInt) BInt
+
+lvStore :: (Integral a) => a -> LVMode Int Int
+lvStore = LVStore . flip RVExpr BInt . intLit
 
 temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
 temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
@@ -57,6 +63,22 @@ testArrayElemSizes tName bt mkAtom mkTAC tSize =
            ]
   where
     ft = flatten bt
+
+lvalueTestGroup :: TestTree
+lvalueTestGroup =
+  testGroup
+    "lvalues"
+    [ testGroup
+        "identifiers"
+        [ testProperty "loading an identifier generates no instructions" $ \v ->
+            lvToTAC' (LVIdent v BInt) LVLoad == []
+        , testProperty "reading into an identifier uses Read" $ \v ->
+            lvToTAC' (LVIdent v BInt) LVRead == [Read (Var v) FInt]
+        , testProperty "storing into an identifier generates no instructions" $
+            \v i ->
+              lvToTAC' (LVIdent v BInt) (lvStore i) == [LoadCI (Var v) i]
+        ]
+    ]
 
 rvalueTestGroup :: TestTree
 rvalueTestGroup =
