@@ -35,6 +35,13 @@ data LVMode ident lident
 
 type instance TACIdent (LValue ident a) = ident
 
+{- |
+This instance takes an additional 'LVMode' parameter:
+
+> type
+>   TACRepr (LValue ident BType) lident =
+>     LVMode ident lident -> TACM ident lident ()
+-}
 instance (Enum ident) => ToTAC (LValue ident BType) where
   type
     TACRepr (LValue ident BType) lident =
