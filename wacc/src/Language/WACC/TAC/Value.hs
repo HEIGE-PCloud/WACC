@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
@@ -51,6 +52,17 @@ instance (Enum ident) => ToTAC (LValue ident BType) where
     LVLoad -> pure ()
     LVRead -> putTACs [Read (Var v) (flatten t)]
     LVStore rv -> fnToTAC rv `into` Var v
+  toTAC (LVArrayElem ai _) = pure $ \case
+    LVLoad -> toTAC ai >>= ($ Nothing)
+    LVRead -> toTAC ai >>= ($ Just readBaseCase)
+    LVStore rv -> toTAC ai >>= ($ Just (storeBaseCase rv))
+    where
+      readBaseCase v offset ft = do
+        temp <- freshTemp
+        putTACs [Read temp ft, Store v offset temp ft]
+      storeBaseCase rv v offset ft = do
+        temp <- tempWith (fnToTAC rv)
+        putTACs [Store v offset temp ft]
   toTAC (LVPairElem pe t) = pure $ \case
     LVLoad -> toTAC pe
     LVRead -> do
