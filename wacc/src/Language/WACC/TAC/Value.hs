@@ -18,6 +18,10 @@ import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking
 
+pairElemOffset :: PairElem ident a -> Int
+pairElemOffset (FstElem _ _) = 0
+pairElemOffset (SndElem _ _) = 8
+
 {- |
 TAC translation modes for WACC @lvalue@s.
 -}
@@ -40,6 +44,42 @@ instance (Enum ident) => ToTAC (LValue ident BType) where
     LVLoad -> pure ()
     LVRead -> putTACs [Read (Var v) (flatten t)]
     LVStore rv -> fnToTAC rv `into` Var v
+  toTAC (LVPairElem pe t) = pure $ \case
+    LVLoad -> toTAC pe
+    LVRead -> do
+      offset <- loadOffset
+      temp <- freshTemp
+      target <- getTarget
+      putTACs [Read temp ft, Store target offset temp ft]
+    LVStore rv -> do
+      offset <- loadOffset
+      temp <- tempWith (fnToTAC rv)
+      target <- getTarget
+      putTACs [Store target offset temp ft]
+    where
+      loadOffset = loadConst (pairElemOffset pe)
+      ft = flatten t
+
+lvToTAC
+  :: (Enum ident)
+  => LValue ident BType
+  -> LVMode ident lident
+  -> TACM ident lident ()
+lvToTAC lv mode = toTAC lv >>= ($ mode)
+
+type instance TACIdent (PairElem ident a) = ident
+
+instance (Enum ident) => ToTAC (PairElem ident BType) where
+  type TACRepr (PairElem ident BType) lident = ()
+  toTAC pe = do
+    let
+      lv = case pe of
+        FstElem lv' _ -> lv'
+        SndElem lv' _ -> lv'
+    pair <- tempWith (lvToTAC lv LVLoad)
+    target <- getTarget
+    offset <- loadConst (pairElemOffset pe)
+    putTACs [LoadM target pair offset (flatten $ getAnn pe)]
 
 type instance TACIdent (RValue fnident ident a) = ident
 
@@ -77,18 +117,7 @@ instance (Enum ident) => FnToTAC (RValue fnident ident BType) where
       , Store target fstOffset temp1 (flatten $ getAnn x)
       , Store target sndOffset temp2 (flatten $ getAnn y)
       ]
-  fnToTAC (RVPairElem (FstElem lv t) _) = do
-    tlv <- toTAC lv
-    pair <- tempWith (tlv LVLoad)
-    target <- getTarget
-    offset <- loadConst 0
-    putTACs [LoadM target pair offset (flatten t)]
-  fnToTAC (RVPairElem (SndElem lv t) _) = do
-    tlv <- toTAC lv
-    pair <- tempWith (tlv LVLoad)
-    target <- getTarget
-    offset <- loadConst 8
-    putTACs [LoadM target pair offset (flatten t)]
+  fnToTAC (RVPairElem pe _) = toTAC pe
   fnToTAC (RVCall f xs _) = do
     args <- mapM (tempWith . toTAC) xs
     target <- getTarget
