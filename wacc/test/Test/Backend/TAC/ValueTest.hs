@@ -43,33 +43,17 @@ temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
 temp7, temp8, temp9, temp10, temp11 :: Var Int
 temp7 : temp8 : temp9 : temp10 : temp11 : _ = Temp <$> [7 ..]
 
-testArrayElemSizes
-  :: (Arbitrary a, Show a)
+testPairProperty
+  :: (Testable prop)
   => String
-  -> BType
-  -> (a -> BType -> WAtom Int BType)
-  -> (Var Int -> a -> TAC Int Int)
-  -> Int
+  -> ((LValue ident ann -> ann -> PairElem ident ann) -> Int -> prop)
   -> TestTree
-testArrayElemSizes tName bt mkAtom mkTAC tSize =
-  testProperty (unwords [tName, "array elements use", show tSize ++ "B"]) $
-    \e1 e2 ->
-      toTAC'
-        (RVArrayLit (flip WAtom bt . flip mkAtom bt <$> [e1, e2]) (BArray bt))
-        == [ LoadCI temp1 (4 + 2 * tSize)
-           , LoadCI temp2 2
-           , LoadCI temp3 0
-           , Malloc temp0 temp1
-           , Store temp0 temp3 temp2 FInt
-           , mkTAC temp4 e1
-           , LoadCI temp5 4
-           , Store temp0 temp5 temp4 ft
-           , mkTAC temp6 e2
-           , LoadCI temp7 (4 + tSize)
-           , Store temp0 temp7 temp6 ft
-           ]
-  where
-    ft = flatten bt
+testPairProperty propName mkProp =
+  testGroup
+    propName
+    [ testProperty "FstElem" (mkProp FstElem 0)
+    , testProperty "SndElem" (mkProp SndElem 8)
+    ]
 
 lvalueTestGroup :: TestTree
 lvalueTestGroup =
@@ -148,7 +132,71 @@ lvalueTestGroup =
                    , Store temp6 temp10 temp11 FInt
                    ]
         ]
+    , testGroup
+        "pair elements"
+        [ testPairProperty "loading a pair element uses LoadM" $
+            \mkPairElem offset v ->
+              lvToTAC'
+                ( LVPairElem
+                    (mkPairElem (LVIdent v $ BKnownPair BInt BInt) BInt)
+                    BInt
+                )
+                LVLoad
+                == [LoadCI temp2 offset, LoadM temp0 temp1 temp2 FInt]
+        , testPairProperty "reading into a pair element uses Read" $
+            \mkPairElem offset v ->
+              lvToTAC'
+                ( LVPairElem
+                    (mkPairElem (LVIdent v $ BKnownPair BInt BInt) BInt)
+                    BInt
+                )
+                LVRead
+                == [ LoadCI temp1 offset
+                   , Read temp2 FInt
+                   , Store temp0 temp1 temp2 FInt
+                   ]
+        , testPairProperty "storing into a pair element uses Store" $
+            \mkPairElem offset v x ->
+              lvToTAC'
+                ( LVPairElem
+                    (mkPairElem (LVIdent v $ BKnownPair BInt BInt) BInt)
+                    BInt
+                )
+                (lvStore x)
+                == [ LoadCI temp1 offset
+                   , LoadCI temp2 x
+                   , Store temp0 temp1 temp2 FInt
+                   ]
+        ]
     ]
+
+testArrayElemSizes
+  :: (Arbitrary a, Show a)
+  => String
+  -> BType
+  -> (a -> BType -> WAtom Int BType)
+  -> (Var Int -> a -> TAC Int Int)
+  -> Int
+  -> TestTree
+testArrayElemSizes tName bt mkAtom mkTAC tSize =
+  testProperty (unwords [tName, "array elements use", show tSize ++ "B"]) $
+    \e1 e2 ->
+      toTAC'
+        (RVArrayLit (flip WAtom bt . flip mkAtom bt <$> [e1, e2]) (BArray bt))
+        == [ LoadCI temp1 (4 + 2 * tSize)
+           , LoadCI temp2 2
+           , LoadCI temp3 0
+           , Malloc temp0 temp1
+           , Store temp0 temp3 temp2 FInt
+           , mkTAC temp4 e1
+           , LoadCI temp5 4
+           , Store temp0 temp5 temp4 ft
+           , mkTAC temp6 e2
+           , LoadCI temp7 (4 + tSize)
+           , Store temp0 temp7 temp6 ft
+           ]
+  where
+    ft = flatten bt
 
 rvalueTestGroup :: TestTree
 rvalueTestGroup =
