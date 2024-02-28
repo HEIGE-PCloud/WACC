@@ -1,5 +1,4 @@
-.section
-.rodata
+.section .rodata
 .int 3
 .L._readc_str0:
 .asciz " %c"

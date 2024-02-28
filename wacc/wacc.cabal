@@ -50,6 +50,7 @@ library
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
       Language.WACC.X86.Runtime
+      Language.WACC.X86.Translate
       Language.WACC.X86.X86
   other-modules:
       Paths_wacc
@@ -58,6 +59,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j
   build-depends:
       base >=4.7 && <5
+    , bimap
     , cmdargs
     , containers
     , dlist
@@ -79,6 +81,7 @@ executable compile
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bimap
     , cmdargs
     , containers
     , dlist
@@ -100,6 +103,8 @@ test-suite wacc-test
       Test.Backend.IntegrationTest
       Test.Backend.TAC
       Test.Backend.TAC.ExprTest
+      Test.Backend.TAC.RValueTest
+      Test.Backend.TAC.TranslationTest
       Test.Backend.Test
       Test.Backend.X86.GoldenTest
       Test.Backend.X86.Test
@@ -129,6 +134,7 @@ test-suite wacc-test
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , bimap
     , bytestring
     , cmdargs
     , containers
