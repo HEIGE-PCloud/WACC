@@ -18,6 +18,7 @@ dependencies:
   - filepath
   - cmdargs
   - raw-strings-qq
+  - bimap
 
 ghc-options:
   - -Wall

@@ -1,0 +1,14 @@
+.section .rodata
+.int 42
+.L._errOutOfBounds_str0:
+.asciz "fatal error: array index %d out of bounds\n"
+.text
+_erroutofbounds:
+andq $-16, %rsp
+leaq .L._errOutOfBounds_str0(%rip), %rdi
+movb $0, %al
+call printf@plt
+movq $0, %rdi
+call fflush@plt
+movb $-1, %dil
+call exit@plt
