@@ -6,7 +6,14 @@ module Test.Backend.TAC.ValueTest (lvalueTestGroup, rvalueTestGroup) where
 
 import Data.Char (ord)
 import Data.DList (DList)
-import Language.WACC.AST hiding (Read)
+import Language.WACC.AST
+  ( ArrayIndex (..)
+  , Expr (WAtom)
+  , LValue (..)
+  , PairElem (..)
+  , RValue (..)
+  , WAtom (..)
+  )
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.FType
 import Language.WACC.TAC.State
@@ -27,14 +34,14 @@ lvToTAC' lv mode = testTACM $ lvToTAC lv mode *> collectTACs
 intLit :: (Integral a) => a -> Expr Int BType
 intLit x = WAtom (IntLit (toInteger x) BInt) BInt
 
-lvStore :: (Integral a) => a -> LVMode Int Int
+lvStore :: Int -> LVMode Int Int
 lvStore = LVStore . flip RVExpr BInt . intLit
 
 temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
 temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
 
-temp7 :: Var Int
-temp7 = Temp 7
+temp7, temp8, temp9, temp10, temp11 :: Var Int
+temp7 : temp8 : temp9 : temp10 : temp11 : _ = Temp <$> [7 ..]
 
 testArrayElemSizes
   :: (Arbitrary a, Show a)
@@ -77,6 +84,69 @@ lvalueTestGroup =
         , testProperty "storing into an identifier generates no instructions" $
             \v i ->
               lvToTAC' (LVIdent v BInt) (lvStore i) == [LoadCI (Var v) i]
+        ]
+    , testGroup
+        "array elements"
+        [ testProperty "loading an array element uses LoadM" $ \v i1 i2 ->
+            lvToTAC'
+              ( LVArrayElem
+                  (ArrayIndex v [intLit i1, intLit i2] (BArray $ BArray BInt))
+                  BInt
+              )
+              LVLoad
+              == [ LoadCI temp1 4
+                 , LoadCI temp2 8
+                 , LoadCI temp3 i1
+                 , BinInstr temp4 temp3 Mul temp2
+                 , BinInstr temp5 temp4 Add temp1
+                 , LoadM temp6 (Var v) temp5 FPtr
+                 , LoadCI temp7 4
+                 , LoadCI temp8 i2
+                 , BinInstr temp9 temp8 Mul temp7
+                 , BinInstr temp10 temp9 Add temp1
+                 , LoadM temp0 temp6 temp10 FInt
+                 ]
+        , testProperty "reading into an array element uses Read" $ \v i1 i2 ->
+            lvToTAC'
+              ( LVArrayElem
+                  (ArrayIndex v [intLit i1, intLit i2] (BArray $ BArray BInt))
+                  BInt
+              )
+              LVRead
+              == [ LoadCI temp1 4
+                 , LoadCI temp2 8
+                 , LoadCI temp3 i1
+                 , BinInstr temp4 temp3 Mul temp2
+                 , BinInstr temp5 temp4 Add temp1
+                 , LoadM temp6 (Var v) temp5 FPtr
+                 , LoadCI temp7 4
+                 , LoadCI temp8 i2
+                 , BinInstr temp9 temp8 Mul temp7
+                 , BinInstr temp10 temp9 Add temp1
+                 , Read temp11 FInt
+                 , Store temp6 temp10 temp11 FInt
+                 ]
+        , testProperty "storing into an array element uses Store" $
+            \v i1 i2 x ->
+              lvToTAC'
+                ( LVArrayElem
+                    (ArrayIndex v [intLit i1, intLit i2] (BArray $ BArray BInt))
+                    BInt
+                )
+                (lvStore x)
+                == [ LoadCI temp1 4
+                   , LoadCI temp2 8
+                   , LoadCI temp3 i1
+                   , BinInstr temp4 temp3 Mul temp2
+                   , BinInstr temp5 temp4 Add temp1
+                   , LoadM temp6 (Var v) temp5 FPtr
+                   , LoadCI temp7 4
+                   , LoadCI temp8 i2
+                   , BinInstr temp9 temp8 Mul temp7
+                   , BinInstr temp10 temp9 Add temp1
+                   , LoadCI temp11 x
+                   , Store temp6 temp10 temp11 FInt
+                   ]
         ]
     ]
 
