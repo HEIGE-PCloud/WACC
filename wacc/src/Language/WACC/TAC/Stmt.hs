@@ -4,15 +4,12 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeFamilies #-}
 
+{- |
+TAC Translation actions for WACC @Stmt@s.
+-}
 module Language.WACC.TAC.Stmt where
 
 import Data.DList
--- import Data.Either (Either)
-
--- import Language.WACC.TAC.Expr (ExprTACs (..))
--- import Language.WACC.TAC.FType (flatten)
--- import Language.WACC.TAC.RValue
-
 import qualified Data.List.NonEmpty as NE
 import Language.WACC.AST.Stmt (Stmts (..))
 import qualified Language.WACC.AST.Stmt as AST
@@ -42,24 +39,35 @@ type instance TACIdent (AST.Stmt fnident ident BType) = ident
 
 type instance TACIdent (AST.Stmts fnident ident BType) = ident
 
+{- |
+TAC translation result for a WACC @Stmt@ translation action.
+-}
 data StmtTACs ident fnident
-  = Blocks
+  = -- | Basic Block translation with result left open with @Jump@ for continuation.
+    Blocks
       ( Jump ident fnident
         -> TACM ident fnident (DList (BasicBlock ident fnident), Jump ident fnident)
       )
-  | BlockTerminal (Jump ident fnident)
+  | -- | Jump Translation for terminal instructions like @Ret@ and @Exit@.
+    BlockTerminal (Jump ident fnident)
 
+{- |
+Defines instance of @FnToTAC@ for WACC @Stmt@s. This instance is used to translate WACC @Stmt@s AST Nodes to TAC.
+-}
 instance
   (Enum fnident, Enum ident, Ord fnident)
   => FnToTAC (AST.Stmt fnident ident BType)
   where
+  -- \| TAC translation result for a WACC @Stmt@ translation action, with @Jump@ continuation.
   type
     TACFnRepr (AST.Stmt fnident ident BType) =
       Maybe
         (StmtTACs ident fnident)
 
+  -- \| Label identifier type derived from @fnident@ type parameter of @AST.Stmt@.
   type TACFnIdent (AST.Stmt fnident ident BType) = fnident
 
+  -- \| Translates a WACC @Stmt@ AST Node to TAC.
   fnToTAC (AST.Skip _) = pure Nothing
   fnToTAC (AST.Decl _ x rv _) = Nothing <$ fnToTAC rv `into` Var x
   fnToTAC (AST.Asgn lv rv _) = Nothing <$ lvToTAC lv (LVStore rv)
@@ -104,16 +112,24 @@ instance
     (fb, fl) <- fa j
     pure (fb, Jump fl)
 
+{- |
+Defines instance of @FnToTAC@ for WACC @Stmts@s. This instance is used to translate WACC @Stmts@s AST Nodes to TAC.
+-}
 instance
   (Enum fnident, Enum ident, Ord fnident)
   => FnToTAC (AST.Stmts fnident ident BType)
   where
+  -- \| Label identifier type derived from @fnident@ type parameter of @AST.Stmts@.
   type TACFnIdent (AST.Stmts fnident ident BType) = fnident
+
+  -- \| TAC translation result for a WACC @Stmts@ translation action, with @Jump@ continuation.
   type
     TACFnRepr (AST.Stmts fnident ident BType) =
       ( Jump ident fnident
         -> TACM ident fnident (DList (BasicBlock ident fnident), Label fnident)
       )
+
+  -- \| Translates a WACC @Stmts@ AST Node to TAC.
   fnToTAC stmts = do
     l <- freshLabel
     (fnToTAC' l . NE.toList . unwrap) stmts
