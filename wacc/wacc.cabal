@@ -39,6 +39,7 @@ library
       Language.WACC.TAC.Expr
       Language.WACC.TAC.FType
       Language.WACC.TAC.State
+      Language.WACC.TAC.Stmt
       Language.WACC.TAC.TAC
       Language.WACC.TAC.Value
       Language.WACC.TypeChecking

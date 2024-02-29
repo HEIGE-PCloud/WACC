@@ -41,8 +41,6 @@ data TAC ident lident
     --
     -- where type annotates which println function to use
     PrintLn (Var ident) FType
-  | -- |  > exit <var>
-    Exit (Var ident)
   | -- |
     -- > <var> := read
     --
@@ -105,6 +103,8 @@ data Jump ident lident
     --
     -- Return @var@ to the caller block and continue execution there.
     Ret (Var ident)
+  | -- |  > exit <var>
+    Exit (Var ident)
   deriving (Eq, Show)
 
 -- | Block labels in TAC for basic blocks.
