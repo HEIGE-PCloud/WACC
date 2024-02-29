@@ -82,13 +82,13 @@ data BinOp
 data UnOp = Not | Negate deriving (Eq, Show)
 
 -- | Variables in TAC, either temporary or named in the source code.
-data Var ident = Temp ident | Var ident deriving (Eq, Show)
+data Var ident = Temp ident | Var ident deriving (Eq, Show, Ord)
 
 -- | Offsets in TAC, either temporary or named in the source code.
 type Offset = Var
 
 -- | Labels in TAC for jumps and function calls to other basic blocks.
-newtype Label lident = Label lident deriving (Eq, Show)
+newtype Label lident = Label lident deriving (Eq, Show, Ord)
 
 -- | Jump instructions in TAC Basic Blocks for control flow.
 data Jump ident lident

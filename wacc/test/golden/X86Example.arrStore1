@@ -1,0 +1,12 @@
+_arrstore1:
+pushq %rbx
+cmpl $0, %R10d
+cmovl %r10, %rsi
+jl _erroutofbounds
+movl -4(%r9), %ebx
+cmpl %ebx, %R10d
+cmovge %r10, %rsi
+jge _erroutofbounds
+movb %al, (%r9, %r10, 1)
+popq %rbx
+ret

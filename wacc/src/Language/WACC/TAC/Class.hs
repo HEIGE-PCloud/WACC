@@ -21,7 +21,7 @@ class ToTAC a where
   type TACRepr a lident
 
   -- | Translate an AST node.
-  toTAC :: (Enum lident) => a -> TACM (TACIdent a) lident (TACRepr a lident)
+  toTAC :: a -> TACM (TACIdent a) lident (TACRepr a lident)
 
 {- |
 AST nodes containing function identifiers which can be translated into

@@ -1,0 +1,8 @@
+_exit:
+pushq %rbp
+movq %rsp, %rbp
+andq $-16, %rsp
+call exit@plt
+movq %rbp, %rsp
+popq %rbp
+ret
