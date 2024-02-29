@@ -17,7 +17,6 @@ exitBlock :: BasicBlock Integer Integer
 exitBlock =
   BasicBlock
     [ LoadCI (Var 0) 0
-    , Exit (Var 0)
     ]
     (Ret (Var 0))
 
