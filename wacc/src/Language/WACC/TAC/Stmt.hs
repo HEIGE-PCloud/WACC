@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -6,17 +8,28 @@ module Language.WACC.TAC.Stmt where
 
 import Data.DList
 -- import Data.Either (Either)
-import qualified Language.WACC.AST as AST
-import Language.WACC.TAC.Class
+
 -- import Language.WACC.TAC.Expr (ExprTACs (..))
 -- import Language.WACC.TAC.FType (flatten)
 -- import Language.WACC.TAC.RValue
 
+import qualified Data.List.NonEmpty as NE
+import Language.WACC.AST.Stmt (Stmts (..))
+import qualified Language.WACC.AST.Stmt as AST
+import Language.WACC.TAC.Class
 import Language.WACC.TAC.FType (flatten)
-import Language.WACC.TAC.State (TACM, freshLabel, freshTemp, into, putTACs)
+import Language.WACC.TAC.State
+  ( TACM
+  , appendBlock
+  , collectTACs
+  , completeBlock
+  , freshLabel
+  , into
+  , putTACs
+  , tempWith
+  )
 import Language.WACC.TAC.TAC
   ( BasicBlock (..)
-  , BlockLabel (..)
   , Jump (..)
   , Label (..)
   , TAC (..)
@@ -27,11 +40,19 @@ import Language.WACC.TypeChecking (BType)
 
 type instance TACIdent (AST.Stmt fnident ident BType) = ident
 
+type instance TACIdent (AST.Stmts fnident ident BType) = ident
+
 data StmtTACs ident fnident
-  = Blocks (DList (Label fnident -> BasicBlock ident fnident))
+  = Blocks
+      ( Jump ident fnident
+        -> TACM ident fnident (DList (BasicBlock ident fnident), Jump ident fnident)
+      )
   | BlockTerminal (Jump ident fnident)
 
-instance (Enum fnident, Enum ident) => FnToTAC (AST.Stmt fnident ident BType) where
+instance
+  (Enum fnident, Enum ident, Ord fnident)
+  => FnToTAC (AST.Stmt fnident ident BType)
+  where
   type
     TACFnRepr (AST.Stmt fnident ident BType) =
       Maybe
@@ -39,39 +60,21 @@ instance (Enum fnident, Enum ident) => FnToTAC (AST.Stmt fnident ident BType) wh
 
   type TACFnIdent (AST.Stmt fnident ident BType) = fnident
 
-  fnToTAC (AST.Skip ann) = do
-    putTACs mempty
-    pure Nothing
-  fnToTAC (AST.Decl _ x rv _) = do
-    fnToTAC rv `into` Var x
-    pure Nothing
-  fnToTAC (AST.Asgn lv rv ann) = do
-    f <- toTAC lv
-    f (LVStore rv)
-    pure Nothing
-  fnToTAC (AST.Read lv ann) = do
-    f <- toTAC lv
-    f LVRead
-    pure Nothing
-  fnToTAC (AST.Free e ann) = do
-    t <- freshTemp
-    toTAC e `into` t
+  fnToTAC (AST.Skip _) = pure Nothing
+  fnToTAC (AST.Decl _ x rv _) = Nothing <$ fnToTAC rv `into` Var x
+  fnToTAC (AST.Asgn lv rv _) = Nothing <$ lvToTAC lv (LVStore rv)
+  fnToTAC (AST.Read lv _) = Nothing <$ lvToTAC lv LVRead
+  fnToTAC (AST.Free e _) = do
+    t <- tempWith (toTAC e)
     putTACs [Free t]
     pure Nothing
-  fnToTAC (AST.Return e ann) = do
-    t <- freshTemp
-    toTAC e `into` t
-    pure $ Just $ BlockTerminal $ Ret t
-  fnToTAC (AST.IfElse e s1 s2 ann) = undefined
-  fnToTAC (AST.While x s ann) = undefined
+  fnToTAC (AST.Return e _) = Just . BlockTerminal . Ret <$> tempWith (toTAC e)
   fnToTAC (AST.Print x ann) = do
-    t <- freshTemp
-    toTAC x `into` t
+    t <- tempWith (toTAC x)
     putTACs [Print t (flatten ann)]
     pure Nothing
   fnToTAC (AST.PrintLn x ann) = do
-    t <- freshTemp
-    toTAC x `into` t
+    t <- tempWith (toTAC x)
     putTACs [PrintLn t (flatten ann)]
     pure Nothing
   fnToTAC (AST.Exit e ann) = do
