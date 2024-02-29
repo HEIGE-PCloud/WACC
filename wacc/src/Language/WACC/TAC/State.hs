@@ -22,10 +22,13 @@ where
 
 import Control.Monad.Trans.RWS (RWS, ask, evalRWS, gets, local, modify, tell)
 import Data.DList (DList, toList)
+import Data.Map (Map, empty, insert)
 import Language.WACC.TAC.TAC
   ( BasicBlock (..)
   , Jump (..)
+  , Label
   , TAC (LoadCI)
+  , TACProgram
   , Var (Temp)
   )
 
@@ -33,6 +36,7 @@ data TACMState ident lident = TACMState
   { nextTemp :: ident
   , nextLabel :: lident
   , tacs :: DList (TAC ident lident)
+  , funcBlocks :: Map lident (BasicBlock ident lident)
   }
 
 type Blocks ident lident = DList (BasicBlock ident lident)
@@ -41,7 +45,7 @@ type Blocks ident lident = DList (BasicBlock ident lident)
 TAC translation monad.
 -}
 type TACM ident lident =
-  RWS (Var ident) (Blocks ident lident) (TACMState ident lident)
+  RWS (Var ident) (TACProgram ident lident) (TACMState ident lident)
 
 {- |
 Run a TAC translation action.
@@ -49,19 +53,20 @@ Run a TAC translation action.
 Basic block labels are allocated starting from the given @lident@.
 -}
 runTACM
-  :: (Num ident) => lident -> TACM ident lident a -> (a, Blocks ident lident)
-runTACM l action = evalRWS action (Temp 0) (TACMState 1 l mempty)
+  :: (Num ident) => lident -> TACM ident lident a -> (a, TACProgram ident lident)
+runTACM l action = evalRWS action (Temp 0) (TACMState 1 l mempty empty)
 
 {- |
 Run a TAC translation action, returning only the generated basic blocks.
 -}
-evalTACM :: (Num ident) => lident -> TACM ident lident a -> Blocks ident lident
+evalTACM
+  :: (Num ident) => lident -> TACM ident lident a -> TACProgram ident lident
 evalTACM l = snd . runTACM l
 
 {- |
 Get a fresh temporary variable.
 -}
-freshTemp :: (Enum ident) => TACM ident lident (Var ident)
+freshTemp :: (Enum ident, Ord lident) => TACM ident lident (Var ident)
 freshTemp = Temp <$> gets nextTemp <* modify incrTemp
   where
     incrTemp st@TACMState {nextTemp} = st {nextTemp = succ nextTemp}
@@ -69,7 +74,7 @@ freshTemp = Temp <$> gets nextTemp <* modify incrTemp
 {- |
 Get a fresh basic block label.
 -}
-freshLabel :: (Enum lident) => TACM ident lident lident
+freshLabel :: (Enum lident, Ord lident) => TACM ident lident lident
 freshLabel = gets nextLabel <* modify incrLabel
   where
     incrLabel st@TACMState {nextLabel} = st {nextLabel = succ nextLabel}
@@ -77,7 +82,7 @@ freshLabel = gets nextLabel <* modify incrLabel
 {- |
 Append some TAC instructions to the state.
 -}
-putTACs :: DList (TAC ident lident) -> TACM ident lident ()
+putTACs :: (Ord lident) => DList (TAC ident lident) -> TACM ident lident ()
 putTACs ts = modify appendTACs
   where
     appendTACs st@TACMState {tacs} = st {tacs = tacs <> ts}
@@ -85,7 +90,7 @@ putTACs ts = modify appendTACs
 {- |
 Collect TAC instructions from the state.
 -}
-collectTACs :: TACM ident lident (DList (TAC ident lident))
+collectTACs :: (Ord lident) => TACM ident lident (DList (TAC ident lident))
 collectTACs = gets tacs <* modify dropTACs
   where
     dropTACs st = st {tacs = mempty}
@@ -93,15 +98,18 @@ collectTACs = gets tacs <* modify dropTACs
 {- |
 Collect TAC instructions from the state into a basic block.
 -}
-completeBlock :: Jump ident lident -> TACM ident lident ()
-completeBlock j = do
+completeBlock
+  :: (Ord lident) => Jump ident lident -> lident -> TACM ident lident ()
+completeBlock j l = do
   ts <- collectTACs
-  tell [BasicBlock {block = toList ts, nextBlock = j}]
+  let
+    appendBlock st@TACMState {funcBlocks} = st {funcBlocks = insert l (BasicBlock (toList ts) j) funcBlocks}
+  modify appendBlock
 
 {- |
 Read the target variable from the reader component.
 -}
-getTarget :: TACM ident lident (Var ident)
+getTarget :: (Ord lident) => TACM ident lident (Var ident)
 getTarget = ask
 
 {- |
@@ -115,7 +123,9 @@ into action v = local (const v) action
 is then returned.
 -}
 tempWith
-  :: (Enum ident) => TACM ident lident () -> TACM ident lident (Var ident)
+  :: (Enum ident, Ord lident)
+  => TACM ident lident ()
+  -> TACM ident lident (Var ident)
 tempWith action = do
   t <- freshTemp
   action `into` t
@@ -124,7 +134,7 @@ tempWith action = do
 {- |
 @loadConst x@ loads @x@ into a fresh temporary variable, which is then returned.
 -}
-loadConst :: (Enum ident) => Int -> TACM ident lident (Var ident)
+loadConst :: (Enum ident, Ord lident) => Int -> TACM ident lident (Var ident)
 loadConst x = tempWith $ do
   target <- getTarget
   putTACs [LoadCI target x]
