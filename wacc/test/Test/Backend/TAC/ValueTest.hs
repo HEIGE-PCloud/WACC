@@ -61,7 +61,12 @@ lvalueTestGroup =
     "lvalues"
     [ testGroup
         "identifiers"
-        [ testProperty "loading an identifier generates no instructions" $ \v ->
+        [ testProperty "loading the same identifier generates no instructions" $
+            \v ->
+              testTACM
+                (lvToTAC (LVIdent v BInt) LVLoad `into` Var v *> collectTACs)
+                === []
+        , testProperty "loading a different identifier uses Move" $ \v ->
             lvToTAC' (LVIdent v BInt) LVLoad === [Move temp0 (Var v)]
         , testProperty "reading into an identifier uses Read" $ \v ->
             lvToTAC' (LVIdent v BInt) LVRead === [Read (Var v) FInt]

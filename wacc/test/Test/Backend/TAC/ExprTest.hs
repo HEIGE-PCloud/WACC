@@ -87,8 +87,14 @@ exprTestGroup =
                 toTAC' (WAtom (Null BErasedPair) BErasedPair)
                   @?= [LoadCI temp0 0]
             ]
-        , testProperty "identifiers are copied using Move" $ \v ->
-            toTAC' (varExpr v BInt) === [Move temp0 (Var v)]
+        , testGroup
+            "identifiers"
+            [ testProperty "same identifier generates no instructions" $ \v ->
+                testTACM (toTAC (varExpr v BInt) `into` Var v *> collectTACs)
+                  === []
+            , testProperty "distinct identifiers are copied using Move" $ \v ->
+                toTAC' (varExpr v BInt) === [Move temp0 (Var v)]
+            ]
         , testGroup
             "array indexing"
             [ testIndexScaling "int" BInt 4
