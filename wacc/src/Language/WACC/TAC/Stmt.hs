@@ -84,3 +84,44 @@ instance
   fnToTAC (AST.While e s ann) = undefined
   fnToTAC (AST.BeginEnd s ann) = undefined
 
+instance
+  (Enum fnident, Enum ident, Ord fnident)
+  => FnToTAC (AST.Stmts fnident ident BType)
+  where
+  type TACFnIdent (AST.Stmts fnident ident BType) = fnident
+  type
+    TACFnRepr (AST.Stmts fnident ident BType) =
+      ( Jump ident fnident
+        -> TACM ident fnident (DList (BasicBlock ident fnident), Label fnident)
+      )
+  fnToTAC stmts = do
+    l <- freshLabel
+    (fnToTAC' l . NE.toList . unwrap) stmts
+    where
+      fnToTAC'
+        :: (Enum fnident, Enum ident, Ord fnident)
+        => fnident
+        -> [AST.Stmt fnident ident BType]
+        -> TACM
+            ident
+            fnident
+            ( Jump ident fnident
+              -> TACM ident fnident (DList (BasicBlock ident fnident), Label fnident)
+            )
+      fnToTAC' kp (x : xs) =
+        fnToTAC x >>= \case
+          Nothing -> fnToTAC' kp xs
+          Just (BlockTerminal j) -> do
+            completeBlock j kp
+            l <- freshLabel
+            fnToTAC' l xs
+          Just (Blocks f) -> do
+            ts <- collectTACs
+            fl <- freshLabel
+            g <- fnToTAC' fl xs
+            pure $ \j -> do
+              (bs, fj) <- f j
+              appendBlock (BasicBlock (toList ts) fj) kp
+              (bs', _) <- g j
+              pure (bs <> bs', Label kp)
+      fnToTAC' kp [] = pure $ \j -> (mempty, Label kp) <$ completeBlock j kp
