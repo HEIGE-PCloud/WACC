@@ -77,12 +77,32 @@ instance
     t <- tempWith (toTAC x)
     putTACs [PrintLn t (flatten ann)]
     pure Nothing
-  fnToTAC (AST.Exit e ann) = do
-    t <- freshTemp
-    toTAC e `into` t
-    pure $ Just $ BlockTerminal $ Exit t
-  fnToTAC (AST.While e s ann) = undefined
-  fnToTAC (AST.BeginEnd s ann) = undefined
+  fnToTAC (AST.Exit e _) = Just . BlockTerminal . Exit <$> tempWith (toTAC e)
+  fnToTAC (AST.IfElse e s1 s2 _) = do
+    t <- tempWith (toTAC e)
+    fa <- fnToTAC s1
+    ga <- fnToTAC s2
+    pure $ Just $ Blocks $ \j -> do
+      (fb, fl) <- fa j
+      (gb, gl) <- ga j
+      pure (fb <> gb, CJump t fl gl)
+  fnToTAC (AST.While e s _) = do
+    t <- tempWith (toTAC e)
+    fa <- fnToTAC s
+    pure $ Just $ Blocks $ \j -> do
+      (fb, fl) <- fa j
+      j' <- case j of
+        Jump l -> pure $ CJump t fl l
+        cj@(CJump {}) -> do
+          l <- freshLabel
+          appendBlock (BasicBlock [] cj) l
+          pure $ CJump t fl (Label l)
+        _ -> pure j
+      pure (fb, j')
+  fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
+    fa <- fnToTAC s
+    (fb, fl) <- fa j
+    pure (fb, Jump fl)
 
 instance
   (Enum fnident, Enum ident, Ord fnident)
