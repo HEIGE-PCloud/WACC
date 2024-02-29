@@ -17,6 +17,7 @@ module Language.WACC.TAC.State
   , into
   , tempWith
   , loadConst
+  , move
   )
 where
 
@@ -25,7 +26,7 @@ import Data.DList (DList, toList)
 import Language.WACC.TAC.TAC
   ( BasicBlock (..)
   , Jump (..)
-  , TAC (LoadCI)
+  , TAC (LoadCI, Move)
   , Var (Temp)
   )
 
@@ -128,3 +129,11 @@ loadConst :: (Enum ident) => Int -> TACM ident lident (Var ident)
 loadConst x = tempWith $ do
   target <- getTarget
   putTACs [LoadCI target x]
+
+{- |
+@move dest src@ generates @'Move' dest src@ only if @dest@ and @src@ differ.
+-}
+move :: (Eq ident) => Var ident -> Var ident -> TACM ident lident ()
+move dest src
+  | dest == src = pure ()
+  | otherwise = putTACs [Move dest src]

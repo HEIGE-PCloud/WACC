@@ -39,13 +39,13 @@ testIndexScaling tName bt tSize =
   testProperty (unwords [tName, "array indices are scaled by", show tSize]) $
     \v i ->
       toTAC' (WAtom (ArrayElem (ArrayIndex v [intLit i] (BArray bt)) bt) bt)
-        == [ LoadCI temp1 4
-           , LoadCI temp2 tSize
-           , LoadCI temp3 i
-           , BinInstr temp4 temp3 Mul temp2
-           , BinInstr temp5 temp4 Add temp1
-           , LoadM temp0 (Var v) temp5 (flatten bt)
-           ]
+        === [ LoadCI temp1 4
+            , LoadCI temp2 tSize
+            , LoadCI temp3 i
+            , BinInstr temp4 temp3 Mul temp2
+            , BinInstr temp5 temp4 Add temp1
+            , LoadM temp0 (Var v) temp5 (flatten bt)
+            ]
 
 testBinOp
   :: String
@@ -58,7 +58,10 @@ testBinOp
 testBinOp name astOp tacOp t1 t2 t3 =
   testProperty (unwords [name, "generates", show tacOp]) $ \v1 v2 ->
     toTAC' (astOp (varExpr v1 t1) (varExpr v2 t2) t3)
-      == [BinInstr temp0 temp1 tacOp temp2]
+      === [ Move temp1 (Var v1)
+          , Move temp2 (Var v2)
+          , BinInstr temp0 temp1 tacOp temp2
+          ]
 
 exprTestGroup :: TestTree
 exprTestGroup =
@@ -69,21 +72,29 @@ exprTestGroup =
         [ testGroup
             "literals"
             [ testProperty "int literals are loaded using LoadCI" $ \i ->
-                toTAC' (intLit i) == [LoadCI temp0 i]
+                toTAC' (intLit i) === [LoadCI temp0 i]
             , testCase "false is 0" $
                 toTAC' (WAtom (BoolLit False BBool) BBool) @?= [LoadCI temp0 0]
             , testCase "true is 1" $
                 toTAC' (WAtom (BoolLit True BBool) BBool) @?= [LoadCI temp0 1]
             , testProperty "char literals are loaded using LoadCI" $ \c ->
-                toTAC' (WAtom (CharLit c BChar) BChar) == [LoadCI temp0 $ ord c]
+                toTAC' (WAtom (CharLit c BChar) BChar)
+                  === [LoadCI temp0 $ ord c]
             , testProperty "string literals are loaded using LoadCS" $ \s ->
-                toTAC' (WAtom (StringLit s BString) BString) == [LoadCS temp0 s]
+                toTAC' (WAtom (StringLit s BString) BString)
+                  === [LoadCS temp0 s]
             , testCase "null is 0" $
                 toTAC' (WAtom (Null BErasedPair) BErasedPair)
                   @?= [LoadCI temp0 0]
             ]
-        , testProperty "identifiers generate no instructions" $ \v ->
-            toTAC' (varExpr v BInt) == []
+        , testGroup
+            "identifiers"
+            [ testProperty "same identifier generates no instructions" $ \v ->
+                testTACM (toTAC (varExpr v BInt) `into` Var v *> collectTACs)
+                  === []
+            , testProperty "distinct identifiers are copied using Move" $ \v ->
+                toTAC' (varExpr v BInt) === [Move temp0 (Var v)]
+            ]
         , testGroup
             "array indexing"
             [ testIndexScaling "int" BInt 4
@@ -106,36 +117,39 @@ exprTestGroup =
                         )
                         BInt
                     )
-                    == [ LoadCI temp1 4
-                       , LoadCI temp2 8
-                       , LoadCI temp3 i1
-                       , BinInstr temp4 temp3 Mul temp2
-                       , BinInstr temp5 temp4 Add temp1
-                       , LoadM temp6 (Var v) temp5 FPtr
-                       , LoadCI temp7 4
-                       , LoadCI temp8 i2
-                       , BinInstr temp9 temp8 Mul temp7
-                       , BinInstr temp10 temp9 Add temp1
-                       , LoadM temp0 temp6 temp10 FInt
-                       ]
+                    === [ LoadCI temp1 4
+                        , LoadCI temp2 8
+                        , LoadCI temp3 i1
+                        , BinInstr temp4 temp3 Mul temp2
+                        , BinInstr temp5 temp4 Add temp1
+                        , LoadM temp6 (Var v) temp5 FPtr
+                        , LoadCI temp7 4
+                        , LoadCI temp8 i2
+                        , BinInstr temp9 temp8 Mul temp7
+                        , BinInstr temp10 temp9 Add temp1
+                        , LoadM temp0 temp6 temp10 FInt
+                        ]
             ]
         ]
     , testGroup
         "unary expressions"
         [ testProperty "!_ generates Not" $ \v ->
             toTAC' (AST.Not (varExpr v BBool) BBool)
-              == [UnInstr temp0 Not temp1]
+              === [Move temp1 (Var v), UnInstr temp0 Not temp1]
         , testProperty "-_ generates Negate" $ \v ->
             toTAC' (AST.Negate (varExpr v BInt) BInt)
-              == [UnInstr temp0 Negate temp1]
+              === [Move temp1 (Var v), UnInstr temp0 Negate temp1]
         , testProperty "len loads length stored at base address" $ \v ->
             toTAC' (AST.Len (varExpr v $ BArray BInt) BInt)
-              == [LoadCI temp2 0, LoadM temp0 temp1 temp2 FInt]
+              === [ Move temp1 (Var v)
+                  , LoadCI temp2 0
+                  , LoadM temp0 temp1 temp2 FInt
+                  ]
         , testProperty "ord generates no instructions" $ \v ->
-            toTAC' (AST.Ord (varExpr v BChar) BInt) == []
+            toTAC' (AST.Ord (varExpr v BChar) BInt) === [Move temp0 (Var v)]
         , testProperty "chr generates a bounds check" $ \v ->
             toTAC' (AST.Chr (varExpr v BInt) BChar)
-              == [CheckBounds 0 temp0 127]
+              === [Move temp0 (Var v), CheckBounds 0 temp0 127]
         ]
     , testGroup
         "binary expressions"

@@ -61,13 +61,18 @@ lvalueTestGroup =
     "lvalues"
     [ testGroup
         "identifiers"
-        [ testProperty "loading an identifier generates no instructions" $ \v ->
-            lvToTAC' (LVIdent v BInt) LVLoad == []
+        [ testProperty "loading the same identifier generates no instructions" $
+            \v ->
+              testTACM
+                (lvToTAC (LVIdent v BInt) LVLoad `into` Var v *> collectTACs)
+                === []
+        , testProperty "loading a different identifier uses Move" $ \v ->
+            lvToTAC' (LVIdent v BInt) LVLoad === [Move temp0 (Var v)]
         , testProperty "reading into an identifier uses Read" $ \v ->
-            lvToTAC' (LVIdent v BInt) LVRead == [Read (Var v) FInt]
+            lvToTAC' (LVIdent v BInt) LVRead === [Read (Var v) FInt]
         , testProperty "storing into an identifier generates no instructions" $
             \v i ->
-              lvToTAC' (LVIdent v BInt) (lvStore i) == [LoadCI (Var v) i]
+              lvToTAC' (LVIdent v BInt) (lvStore i) === [LoadCI (Var v) i]
         ]
     , testGroup
         "array elements"
@@ -78,18 +83,18 @@ lvalueTestGroup =
                   BInt
               )
               LVLoad
-              == [ LoadCI temp1 4
-                 , LoadCI temp2 8
-                 , LoadCI temp3 i1
-                 , BinInstr temp4 temp3 Mul temp2
-                 , BinInstr temp5 temp4 Add temp1
-                 , LoadM temp6 (Var v) temp5 FPtr
-                 , LoadCI temp7 4
-                 , LoadCI temp8 i2
-                 , BinInstr temp9 temp8 Mul temp7
-                 , BinInstr temp10 temp9 Add temp1
-                 , LoadM temp0 temp6 temp10 FInt
-                 ]
+              === [ LoadCI temp1 4
+                  , LoadCI temp2 8
+                  , LoadCI temp3 i1
+                  , BinInstr temp4 temp3 Mul temp2
+                  , BinInstr temp5 temp4 Add temp1
+                  , LoadM temp6 (Var v) temp5 FPtr
+                  , LoadCI temp7 4
+                  , LoadCI temp8 i2
+                  , BinInstr temp9 temp8 Mul temp7
+                  , BinInstr temp10 temp9 Add temp1
+                  , LoadM temp0 temp6 temp10 FInt
+                  ]
         , testProperty "reading into an array element uses Read" $ \v i1 i2 ->
             lvToTAC'
               ( LVArrayElem
@@ -97,19 +102,19 @@ lvalueTestGroup =
                   BInt
               )
               LVRead
-              == [ LoadCI temp1 4
-                 , LoadCI temp2 8
-                 , LoadCI temp3 i1
-                 , BinInstr temp4 temp3 Mul temp2
-                 , BinInstr temp5 temp4 Add temp1
-                 , LoadM temp6 (Var v) temp5 FPtr
-                 , LoadCI temp7 4
-                 , LoadCI temp8 i2
-                 , BinInstr temp9 temp8 Mul temp7
-                 , BinInstr temp10 temp9 Add temp1
-                 , Read temp11 FInt
-                 , Store temp6 temp10 temp11 FInt
-                 ]
+              === [ LoadCI temp1 4
+                  , LoadCI temp2 8
+                  , LoadCI temp3 i1
+                  , BinInstr temp4 temp3 Mul temp2
+                  , BinInstr temp5 temp4 Add temp1
+                  , LoadM temp6 (Var v) temp5 FPtr
+                  , LoadCI temp7 4
+                  , LoadCI temp8 i2
+                  , BinInstr temp9 temp8 Mul temp7
+                  , BinInstr temp10 temp9 Add temp1
+                  , Read temp11 FInt
+                  , Store temp6 temp10 temp11 FInt
+                  ]
         , testProperty "storing into an array element uses Store" $
             \v i1 i2 x ->
               lvToTAC'
@@ -118,19 +123,19 @@ lvalueTestGroup =
                     BInt
                 )
                 (lvStore x)
-                == [ LoadCI temp1 4
-                   , LoadCI temp2 8
-                   , LoadCI temp3 i1
-                   , BinInstr temp4 temp3 Mul temp2
-                   , BinInstr temp5 temp4 Add temp1
-                   , LoadM temp6 (Var v) temp5 FPtr
-                   , LoadCI temp7 4
-                   , LoadCI temp8 i2
-                   , BinInstr temp9 temp8 Mul temp7
-                   , BinInstr temp10 temp9 Add temp1
-                   , LoadCI temp11 x
-                   , Store temp6 temp10 temp11 FInt
-                   ]
+                === [ LoadCI temp1 4
+                    , LoadCI temp2 8
+                    , LoadCI temp3 i1
+                    , BinInstr temp4 temp3 Mul temp2
+                    , BinInstr temp5 temp4 Add temp1
+                    , LoadM temp6 (Var v) temp5 FPtr
+                    , LoadCI temp7 4
+                    , LoadCI temp8 i2
+                    , BinInstr temp9 temp8 Mul temp7
+                    , BinInstr temp10 temp9 Add temp1
+                    , LoadCI temp11 x
+                    , Store temp6 temp10 temp11 FInt
+                    ]
         ]
     , testGroup
         "pair elements"
@@ -142,7 +147,10 @@ lvalueTestGroup =
                     BInt
                 )
                 LVLoad
-                == [LoadCI temp2 offset, LoadM temp0 temp1 temp2 FInt]
+                === [ Move temp1 (Var v)
+                    , LoadCI temp2 offset
+                    , LoadM temp0 temp1 temp2 FInt
+                    ]
         , testPairProperty "reading into a pair element uses Read" $
             \mkPairElem offset v ->
               lvToTAC'
@@ -151,10 +159,10 @@ lvalueTestGroup =
                     BInt
                 )
                 LVRead
-                == [ LoadCI temp1 offset
-                   , Read temp2 FInt
-                   , Store temp0 temp1 temp2 FInt
-                   ]
+                === [ LoadCI temp1 offset
+                    , Read temp2 FInt
+                    , Store temp0 temp1 temp2 FInt
+                    ]
         , testPairProperty "storing into a pair element uses Store" $
             \mkPairElem offset v x ->
               lvToTAC'
@@ -163,10 +171,10 @@ lvalueTestGroup =
                     BInt
                 )
                 (lvStore x)
-                == [ LoadCI temp1 offset
-                   , LoadCI temp2 x
-                   , Store temp0 temp1 temp2 FInt
-                   ]
+                === [ LoadCI temp1 offset
+                    , LoadCI temp2 x
+                    , Store temp0 temp1 temp2 FInt
+                    ]
         ]
     ]
 
@@ -183,18 +191,18 @@ testArrayElemSizes tName bt mkAtom mkTAC tSize =
     \e1 e2 ->
       toTAC'
         (RVArrayLit (flip WAtom bt . flip mkAtom bt <$> [e1, e2]) (BArray bt))
-        == [ LoadCI temp1 (4 + 2 * tSize)
-           , LoadCI temp2 2
-           , LoadCI temp3 0
-           , Malloc temp0 temp1
-           , Store temp0 temp3 temp2 FInt
-           , mkTAC temp4 e1
-           , LoadCI temp5 4
-           , Store temp0 temp5 temp4 ft
-           , mkTAC temp6 e2
-           , LoadCI temp7 (4 + tSize)
-           , Store temp0 temp7 temp6 ft
-           ]
+        === [ LoadCI temp1 (4 + 2 * tSize)
+            , LoadCI temp2 2
+            , LoadCI temp3 0
+            , Malloc temp0 temp1
+            , Store temp0 temp3 temp2 FInt
+            , mkTAC temp4 e1
+            , LoadCI temp5 4
+            , Store temp0 temp5 temp4 ft
+            , mkTAC temp6 e2
+            , LoadCI temp7 (4 + tSize)
+            , Store temp0 temp7 temp6 ft
+            ]
   where
     ft = flatten bt
 
@@ -205,12 +213,13 @@ rvalueTestGroup =
     [ testGroup
         "expressions"
         [ testProperty "int literals are loaded using LoadCI" $ \i ->
-            toTAC' (RVExpr (intLit i) BInt) == [LoadCI temp0 i]
+            toTAC' (RVExpr (intLit i) BInt) === [LoadCI temp0 i]
         , testProperty "string literals are loaded using LoadCS" $ \s ->
             toTAC' (RVExpr (WAtom (StringLit s BString) BString) BString)
-              == [LoadCS temp0 s]
+              === [LoadCS temp0 s]
         , testProperty "identifiers generate no instructions" $ \v ->
-            toTAC' (RVExpr (WAtom (Ident v BInt) BInt) BInt) == []
+            toTAC' (RVExpr (WAtom (Ident v BInt) BInt) BInt)
+              === [Move temp0 (Var v)]
         ]
     , testGroup
         "array literals"
@@ -246,42 +255,36 @@ rvalueTestGroup =
         ]
     , testProperty "new pairs allocate 16 bytes" $ \i1 i2 ->
         toTAC' (RVNewPair (intLit i1) (intLit i2) (BKnownPair BInt BInt))
-          == [ LoadCI temp1 i1
-             , LoadCI temp2 i2
-             , LoadCI temp3 0
-             , LoadCI temp4 8
-             , LoadCI temp5 16
-             , Malloc temp0 temp5
-             , Store temp0 temp3 temp1 FInt
-             , Store temp0 temp4 temp2 FInt
-             ]
-    , testGroup
-        "pair elements"
-        [ testProperty "first element is loaded with offset 0" $ \v ->
-            toTAC'
-              ( RVPairElem
-                  (FstElem (LVIdent v (BKnownPair BInt BInt)) BInt)
-                  BInt
-              )
-              == [LoadCI temp2 0, LoadM temp0 temp1 temp2 FInt]
-        , testProperty "second element is loaded with offset 8" $ \v ->
-            toTAC'
-              ( RVPairElem
-                  (SndElem (LVIdent v (BKnownPair BInt BInt)) BInt)
-                  BInt
-              )
-              == [LoadCI temp2 8, LoadM temp0 temp1 temp2 FInt]
-        ]
+          === [ LoadCI temp1 i1
+              , LoadCI temp2 i2
+              , LoadCI temp3 0
+              , LoadCI temp4 8
+              , LoadCI temp5 16
+              , Malloc temp0 temp5
+              , Store temp0 temp3 temp1 FInt
+              , Store temp0 temp4 temp2 FInt
+              ]
+    , testPairProperty "pair elements are loaded with correct offsets" $
+        \mkPairElem offset v ->
+          toTAC'
+            ( RVPairElem
+                (mkPairElem (LVIdent v (BKnownPair BInt BInt)) BInt)
+                BInt
+            )
+            === [ Move temp1 (Var v)
+                , LoadCI temp2 offset
+                , LoadM temp0 temp1 temp2 FInt
+                ]
     , testGroup
         "function calls"
         [ testProperty "nullary function calls are executed using Call" $ \f ->
-            toTAC' (RVCall f [] BInt) == [Call temp0 (Label f) []]
+            toTAC' (RVCall f [] BInt) === [Call temp0 (Label f) []]
         , testProperty "function arguments are evaluated before the Call" $
             \f i1 i2 ->
               toTAC' (RVCall f [intLit i1, intLit i2] BInt)
-                == [ LoadCI temp1 i1
-                   , LoadCI temp2 i2
-                   , Call temp0 (Label f) [temp1, temp2]
-                   ]
+                === [ LoadCI temp1 i1
+                    , LoadCI temp2 i2
+                    , Call temp0 (Label f) [temp1, temp2]
+                    ]
         ]
     ]

@@ -57,6 +57,8 @@ data TAC ident lident
     --
     -- Throw a runtime error if the assertion fails.
     CheckBounds Int (Var ident) Int
+  | -- | > <var> := <var>
+    Move (Var ident) (Var ident)
   deriving (Eq, Show)
 
 -- | Binary operators in TAC
