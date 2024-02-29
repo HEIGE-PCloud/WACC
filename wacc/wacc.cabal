@@ -108,6 +108,7 @@ test-suite wacc-test
       Test.Backend.Test
       Test.Backend.X86.GoldenTest
       Test.Backend.X86.Test
+      Test.Backend.X86.TranslateTest
       Test.Common
       Test.Frontend.IntegrationTest
       Test.Frontend.Parser.GoldenTest

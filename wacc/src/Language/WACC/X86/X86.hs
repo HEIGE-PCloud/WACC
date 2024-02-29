@@ -139,7 +139,7 @@ data Instr
   | Movzbl Operand Operand
   | Dir Directive
   | Comment String
-  deriving (Typeable, Data, Show)
+  deriving (Eq, Typeable, Data, Show)
 
 pattern Movq :: Operand -> Operand -> Instr
 pattern Movq op1 op2 = BinOp Mov Q op1 op2
@@ -187,7 +187,7 @@ data Directive
   | DirText
   | DirSection
   | DirGlobl Label
-  deriving (Typeable, Data, Show)
+  deriving (Eq, Typeable, Data, Show)
 
 data Operand = Imm Integer | Reg Register | Mem Memory
   deriving (Eq, Ord, Data, Show)

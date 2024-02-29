@@ -3,6 +3,7 @@
 
 module Language.WACC.X86.Translate where
 
+import Control.Monad (unless)
 import Control.Monad.RWS
   ( RWS
   , asks
@@ -142,7 +143,7 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
       puts
         ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ drop (length vs) argRegs} -- mark extra arg regs as usable
         )
-      -- \| if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
+      -- if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
       mapM_
         setupStackArgs
         ( zip
@@ -153,7 +154,7 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
       -- restore stack pointer
       movq rbp rsp
       -- tellInstr (X86.Addq (Imm (svn * 8)) (Reg Rsp)) -- effectively delete local variables on stack
-      tellInstr X86.Ret -- return
+      unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
       -- mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
       -- assigning arg vars to registers
     setupRegArgs :: (Var Integer, Register) -> Analysis ()
