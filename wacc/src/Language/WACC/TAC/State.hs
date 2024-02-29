@@ -12,6 +12,7 @@ module Language.WACC.TAC.State
   , freshLabel
   , putTACs
   , collectTACs
+  , appendBlock
   , completeBlock
   , getTarget
   , into
@@ -96,15 +97,22 @@ collectTACs = gets tacs <* modify dropTACs
     dropTACs st = st {tacs = mempty}
 
 {- |
+Inserts a basic block into the current function map.
+-}
+appendBlock
+  :: (Ord lident) => BasicBlock ident lident -> lident -> TACM ident lident ()
+appendBlock bb l = modify appendBlock'
+  where
+    appendBlock' st@TACMState {funcBlocks} = st {funcBlocks = insert l bb funcBlocks}
+
+{- |
 Collect TAC instructions from the state into a basic block.
 -}
 completeBlock
   :: (Ord lident) => Jump ident lident -> lident -> TACM ident lident ()
 completeBlock j l = do
   ts <- collectTACs
-  let
-    appendBlock st@TACMState {funcBlocks} = st {funcBlocks = insert l (BasicBlock (toList ts) j) funcBlocks}
-  modify appendBlock
+  appendBlock (BasicBlock (toList ts) j) l
 
 {- |
 Read the target variable from the reader component.
