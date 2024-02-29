@@ -62,7 +62,7 @@ lvalueTestGroup =
     [ testGroup
         "identifiers"
         [ testProperty "loading an identifier generates no instructions" $ \v ->
-            lvToTAC' (LVIdent v BInt) LVLoad === []
+            lvToTAC' (LVIdent v BInt) LVLoad === [Move temp0 (Var v)]
         , testProperty "reading into an identifier uses Read" $ \v ->
             lvToTAC' (LVIdent v BInt) LVRead === [Read (Var v) FInt]
         , testProperty "storing into an identifier generates no instructions" $
@@ -142,7 +142,10 @@ lvalueTestGroup =
                     BInt
                 )
                 LVLoad
-                === [LoadCI temp2 offset, LoadM temp0 temp1 temp2 FInt]
+                === [ Move temp1 (Var v)
+                    , LoadCI temp2 offset
+                    , LoadM temp0 temp1 temp2 FInt
+                    ]
         , testPairProperty "reading into a pair element uses Read" $
             \mkPairElem offset v ->
               lvToTAC'
@@ -210,7 +213,8 @@ rvalueTestGroup =
             toTAC' (RVExpr (WAtom (StringLit s BString) BString) BString)
               === [LoadCS temp0 s]
         , testProperty "identifiers generate no instructions" $ \v ->
-            toTAC' (RVExpr (WAtom (Ident v BInt) BInt) BInt) === []
+            toTAC' (RVExpr (WAtom (Ident v BInt) BInt) BInt)
+              === [Move temp0 (Var v)]
         ]
     , testGroup
         "array literals"
@@ -255,23 +259,17 @@ rvalueTestGroup =
               , Store temp0 temp3 temp1 FInt
               , Store temp0 temp4 temp2 FInt
               ]
-    , testGroup
-        "pair elements"
-        [ testProperty "first element is loaded with offset 0" $ \v ->
-            toTAC'
-              ( RVPairElem
-                  (FstElem (LVIdent v (BKnownPair BInt BInt)) BInt)
-                  BInt
-              )
-              === [LoadCI temp2 0, LoadM temp0 temp1 temp2 FInt]
-        , testProperty "second element is loaded with offset 8" $ \v ->
-            toTAC'
-              ( RVPairElem
-                  (SndElem (LVIdent v (BKnownPair BInt BInt)) BInt)
-                  BInt
-              )
-              === [LoadCI temp2 8, LoadM temp0 temp1 temp2 FInt]
-        ]
+    , testPairProperty "pair elements are loaded with correct offsets" $
+        \mkPairElem offset v ->
+          toTAC'
+            ( RVPairElem
+                (mkPairElem (LVIdent v (BKnownPair BInt BInt)) BInt)
+                BInt
+            )
+            === [ Move temp1 (Var v)
+                , LoadCI temp2 offset
+                , LoadM temp0 temp1 temp2 FInt
+                ]
     , testGroup
         "function calls"
         [ testProperty "nullary function calls are executed using Call" $ \f ->
