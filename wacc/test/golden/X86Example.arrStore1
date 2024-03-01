@@ -1,10 +1,10 @@
 _arrstore1:
 pushq %rbx
-cmpl $0, %R10d
+cmpl $0, %r10d
 cmovl %r10, %rsi
 jl _erroutofbounds
 movl -4(%r9), %ebx
-cmpl %ebx, %R10d
+cmpl %ebx, %r10d
 cmovge %r10, %rsi
 jge _erroutofbounds
 movb %al, (%r9, %r10, 1)

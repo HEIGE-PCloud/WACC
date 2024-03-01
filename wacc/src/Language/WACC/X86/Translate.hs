@@ -1,22 +1,23 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module Language.WACC.X86.Translate where
 
+import Control.Monad (unless)
 import Control.Monad.RWS
   ( RWS
   , asks
   , execRWS
-  , get
   , gets
-  , put
+  , modify
   , tell
   )
 import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
-import Data.List ((\\))
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
@@ -42,30 +43,16 @@ import Language.WACC.TAC.TAC
   )
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.Runtime (runtimeLib)
-import Language.WACC.X86.X86
-  ( Directive (..)
-  , Instr (..)
-  , Label (..)
-  , Memory (..)
-  , Operand (..)
-  , Prog
-  , Register (..)
-  , Runtime (..)
-  , argRegs
-  , callee
-  , caller
-  , runtimeDeps
-  )
-import qualified Language.WACC.X86.X86 as X86
+import Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
-translateProg :: TACProgram Integer Integer -> Prog
-translateProg p = D.toList $ preamble `D.append` D.concat is `D.append` D.concat runtime
+translateProg :: TACProgram Integer Integer -> Program
+translateProg p = D.toList $ preamble <> D.concat is <> D.concat runtime
   where
-    runtime :: [DList Instr]
+    runtime :: [DList Instruction]
     runtime = (runtimeLib !) <$> S.toList (S.unions runtimeLs)
     (runtimeLs, is) = unzip $ map translateFunc (M.elems p)
-    preamble :: DList Instr
+    preamble :: DList Instruction
     preamble =
       D.fromList
         [ Dir $ DirGlobl (S "main")
@@ -78,12 +65,11 @@ translateProg p = D.toList $ preamble `D.append` D.concat is `D.append` D.concat
 required for a computation, they put in this register.
 A caller saved register.
 -}
-swapReg :: Register
 swapReg = R10
 
 -- | The state of RWS monad for translation of each function
 data TransST = TransST
-  { alloc :: Bimap (Var Integer) Operand
+  { alloc :: Bimap (Var Integer) X86.OperandQMM
   -- ^ bijection between variables in TAC to register/memory in X86
   , translated :: Set (TAC.Label Integer)
   -- ^ Set of basic blocks that have been translated
@@ -91,8 +77,6 @@ data TransST = TransST
   -- ^ The number of stack variables used so far (not incl. saving callee saved reg)
   , runtimeFns :: Set Runtime
   -- ^ Set of runtime functions which need to be included
-  , freeRegs :: [Register]
-  -- ^ Unused registers
   , labelCounter :: Integer
   -- ^ Counter for generating unique labels
   }
@@ -101,8 +85,11 @@ data TransST = TransST
 type Analysis =
   RWS
     (Map Integer (BasicBlock Integer Integer))
-    (DList Instr)
+    (DList Instruction)
     TransST
+
+stackElemSize :: Integer
+stackElemSize = 8
 
 {- | Rbp points to the location just before the first stack variable of a frame
 This means the last callee saved register pushed onto the stack
@@ -110,57 +97,36 @@ This means the last callee saved register pushed onto the stack
 Assuming stack looks like this: (initial value of Rsp and constant value of Rbp)
 
 --------------
-Extra Arg: 1
+Args: 1
 .
 .
-Extra Arg: n     <-- Rsp
+Args: n     <-- Rsp , Rbp
 --------------
-Callee Saved: 1
-.
-.
-Callee Saved: m  <-- Rbp
--------------
 Local Regs: 1
 .
 .
 -}
-translateFunc :: TACFunc Integer Integer -> (Set Runtime, DList Instr)
+translateFunc :: TACFunc Integer Integer -> (Set Runtime, DList Instruction)
 translateFunc (TACFunc l vs bs) = (runtimeFns st, is)
   where
     (st, is) =
       execRWS
         funcRWS
         bs
-        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller) 0) -- Not empty regs list
+        (TransST B.empty S.empty 0 S.empty 0) -- Not empty regs list
     startBlock = bs M.! l
 
     funcRWS = do
-      -- mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
       tellInstr (Lab (I l)) -- label for the function = label of the first block
-      tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
-      mapM_ setupRegArgs (zip vs argRegs)
-      puts
-        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ drop (length vs) argRegs} -- mark extra arg regs as usable
-        )
-      -- \| if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
-      mapM_
-        setupStackArgs
-        ( zip
-            (drop (length argRegs) vs)
-            (map (\x -> (-x) - toInteger (length callee)) [0 ..])
-        )
+      movq rsp rbp -- set the stack base pointer
+      -- if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
+      mapM_ setupStackArgs (zip vs [0 ..])
       translateBlocks (TAC.Label l) startBlock -- Translate main part of code
-      -- restore stack pointer
-      movq rbp rsp
-      -- tellInstr (X86.Addq (Imm (svn * 8)) (Reg Rsp)) -- effectively delete local variables on stack
-      tellInstr X86.Ret -- return
-      -- mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
-      -- assigning arg vars to registers
-    setupRegArgs :: (Var Integer, Register) -> Analysis ()
-    setupRegArgs (v, r) = puts (addRaxloc v (Reg r))
-    -- assigning extra arg vars to stack
+      movq rbp rsp -- restore stack pointer
+      unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
+      -- assigning arg vars to stack
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
-    setupStackArgs (v, n) = puts (addRaxloc v (Mem (MRegI n Rbp)))
+    setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI (stackElemSize * n) Rbp)))
 
 {- | translate each statement of the block. then figure out which block to go to
 labels are printed right before this function is called
@@ -170,15 +136,9 @@ translateBlocks
   -> BasicBlock Integer Integer
   -> Analysis ()
 translateBlocks l (BasicBlock is next) = do
-  puts (setTranslated l) -- include label in translated set
+  modify (setTranslated l) -- include label in translated set
   mapM_ translateTAC is
   translateNext next
-
--- | modify the state of the RWS monad
-puts :: (Monoid w) => (s -> s) -> RWS r w s ()
-puts f = do
-  s <- get
-  put (f s)
 
 -- | Mark the block as translated, so its not re-translated
 setTranslated :: TAC.Label Integer -> TransST -> TransST
@@ -187,7 +147,7 @@ setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated
 mapLab :: TAC.Label Integer -> X86.Label
 mapLab (Label x) = I x
 
-tellInstr :: Instr -> Analysis ()
+tellInstr :: Instruction -> Analysis ()
 tellInstr = tell . D.singleton
 
 isTranslated :: TAC.Label Integer -> Analysis Bool
@@ -203,11 +163,11 @@ translateNext (Jump l1@(Label n)) = do
   t <- isTranslated l1
   ( if t
       then tellInstr (Jmp (mapLab l1))
-      else (tellInstr (Lab (mapLab l1)) >> translateBlocks l1 nextBlock)
+      else tellInstr (Lab (mapLab l1)) >> translateBlocks l1 nextBlock
     )
 translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
-  tellInstr (X86.Cmpq operand (Imm 0))
+  tellInstr (Cmpq operand (Imm (IntLitQ 0)))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
   t <- isTranslated l1
@@ -216,75 +176,62 @@ translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
   tellInstr (Movl retVal (Reg Rax))
 
-addRaxloc :: Var Integer -> Operand -> TransST -> TransST
-addRaxloc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
+bindVarToLoc :: Var Integer -> X86.OperandQMM -> TransST -> TransST
+bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
-allocate :: Var Integer -> Analysis Operand
+allocate :: Var Integer -> Analysis X86.OperandQMM
 allocate v = do
   -- increase the stackVarNum
-  puts (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
+  modify (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
   -- insert the variable into the allocation map
   stackAddr <- gets ((* (-8)) . stackVarNum)
-  puts (addRaxloc v (Mem (MRegI stackAddr Rbp)))
+  modify (bindVarToLoc v (Mem (MRegI stackAddr Rbp)))
   return (Mem (MRegI stackAddr Rbp))
 
-allocate' :: Var Integer -> Analysis Operand
+-- | Sanity check. Variable must not already be allocated in three address code
+allocate' :: Var Integer -> Analysis X86.OperandQMM
 allocate' v = do
-  -- check if the variable is already allocated
   alloc' <- gets (B.lookup v . alloc)
   case alloc' of
-    Just o -> return o
+    Just _ -> error "allocate': Variable already allocated"
     Nothing -> allocate v
 
 getLabel :: Analysis X86.Label
 getLabel = do
   n <- gets labelCounter
-  puts (\x -> x {labelCounter = n + 1})
+  modify (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
-saveRegister :: [Register] -> Analysis ()
-saveRegister = mapM_ (tellInstr . Pushq . Reg)
+getOperand :: Var Integer -> Analysis X86.OperandQMM
+getOperand v = gets ((B.! v) . alloc)
 
-restoreRegister :: [Register] -> Analysis ()
-restoreRegister = mapM_ (tellInstr . Popq . Reg)
+-------------------------------------
 
-getOprand :: Var Integer -> Analysis Operand
-getOprand v = gets ((B.! v) . alloc)
-
+-- | Translate a TAC statement to X86 Instructions
 translateTAC :: TAC Integer Integer -> Analysis ()
 translateTAC (BinInstr v1 v2 op v3) = do
   comment $
     "BinInstr: " ++ show v1 ++ " := " ++ show v2 ++ " " ++ show op ++ " " ++ show v3
   operand <- allocate' v1
-  operand1 <- getOprand v2
-  operand2 <- getOprand v3
+  operand1 <- getOperand v2
+  operand2 <- getOperand v3
   translateBinOp operand op operand1 operand2
   comment "End BinInstr"
-translateTAC (UnInstr v1 op v2) =
-  do
-    comment $ "UnInstr: " ++ show v1 ++ " := " ++ show op ++ " " ++ show v2
-    operand <- allocate' v1
-    operand' <- getOprand v2
-    translateUnOp operand op operand'
-    comment "End UnInstr"
+translateTAC (UnInstr v1 op v2) = do
+  comment $ "UnInstr: " ++ show v1 ++ " := " ++ show op ++ " " ++ show v2
+  operand <- allocate' v1
+  operand' <- getOperand v2
+  translateUnOp operand op operand'
+  comment "End UnInstr"
 translateTAC (Store v1 off v2 w) = do
-  -- \| > <var> := <var>[<Offset>]
   comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
   translateStore v1 off v2 (sizeOf w)
   comment "End Store"
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
   operand <- allocate' v
-  movq (Imm (fromIntegral i)) operand
+  movq (Imm (IntLitQ $ fromIntegral i)) operand
   comment "End LoadCI"
-{-
-.section .rodata
-	.int 11
-.L.str0:
-	.asciz "hello world"
-.text
-leaq .L.str0(%rip), o
--}
 translateTAC (LoadCS v s) = do
   comment $ "LoadCS: " ++ show v ++ " := " ++ show s
   o <- allocate' v
@@ -304,16 +251,16 @@ translateTAC (LoadM v1 v2 off w) = do
 translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
   -- push all registers on to stack
-  os <- mapM getOprand vs
-  mapM_ pushq os
+  os <- mapM getOperand vs
+  mapM_ pushq (reverse os)
   -- call the function
   call (I l)
   -- pop all registers off the stack
-  mapM_ popq (reverse os)
+  mapM_ popq os
   comment "End Call"
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
-  operand <- getOprand v
+  operand <- getOperand v
   movq operand arg1
   translatePrint w
   comment "End Print"
@@ -325,7 +272,7 @@ translateTAC (TAC.PrintLn v w) = do
 {-
 translateTAC (TAC.Exit v) = do
   comment $ "Exit: exit " ++ show v
-  operand <- getOprand v
+  operand <- getOperand v
   movq operand arg1
   call (R X86.Exit)
   comment "End Exit"
@@ -338,23 +285,27 @@ translateTAC (Read v w) = do
 translateTAC (TAC.Malloc lv rv) = do
   comment $ "Malloc: " ++ show lv ++ " := malloc " ++ show rv
   operand <- allocate' lv
-  operand' <- getOprand rv
+  operand' <- getOperand rv
   movq operand' arg1
   call (R X86.Malloc)
   movq argRet operand
   comment "End Malloc"
 translateTAC (TAC.Free v) = do
   comment $ "Free: free " ++ show v
-  operand <- getOprand v
+  operand <- getOperand v
   movq operand arg1
   call (R X86.Free)
   comment "End Free"
 translateTAC (TAC.CheckBounds {}) = undefined
+translateTAC (TAC.Move {}) = undefined
+
+-------------------------------------
 
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
 -}
-translateBinOp :: Operand -> BinOp -> Operand -> Operand -> Analysis ()
+translateBinOp
+  :: X86.OperandQMM -> BinOp -> X86.OperandQMM -> X86.OperandQMM -> Analysis ()
 translateBinOp o Add o1 o2 = do
   comment $ "Binary Addition: " ++ show o ++ " := " ++ show o1 ++ " + " ++ show o2
   movl o1 eax
@@ -384,7 +335,7 @@ translateBinOp o Mul o1 o2 = do
 translateBinOp o Div o1 o2 = do
   comment $ "Binary Division: " ++ show o ++ " := " ++ show o1 ++ " / " ++ show o2
   movl o1 eax -- %eax := o1
-  cmpl (Imm 0) eax -- check for division by zero
+  cmpl (Imm (IntLitD 0)) eax -- check for division by zero
   je errDivByZero
   cltd -- sign extend eax into edx
   movl o2 ebx -- %ebx := o2
@@ -394,70 +345,43 @@ translateBinOp o Div o1 o2 = do
 translateBinOp o Mod o1 o2 = do
   comment $ "Binary Modulo: " ++ show o ++ " := " ++ show o1 ++ " % " ++ show o2
   movl o1 eax -- %eax := o1
-  cmpl (Imm 0) eax -- check for division by zero
+  cmpl (Imm (IntLitD 0)) eax -- check for division by zero
   je errDivByZero
   cltd -- sign extend eax into edx
   movl o2 ebx -- %ebx := o2
   idivl ebx -- divide edx:eax by ebx
   movl edx o -- %o := edx
   comment "End Binary Modulo"
-{-
-  cmpl $0, o1
-  je .L2
-  cmpl $0, o2
-  je .L2
-  movl $1, %eax
-  jmp .L3
-.L2:
-  movl $0, %eax
-.L3:
-  movzbl %al, %eax
-  movl %eax, o
--}
 translateBinOp o And o1 o2 = do
   comment $ "Binary And: " ++ show o ++ " := " ++ show o1 ++ " && " ++ show o2
   l2 <- getLabel
   l3 <- getLabel
-  cmpl (Imm 0) o1
+  cmpl (Imm (IntLitD 0)) o1
   je l2
-  cmpl (Imm 0) o2
+  cmpl (Imm (IntLitD 0)) o2
   je l2
-  movl (Imm 1) eax
+  movl (Imm (IntLitD 1)) eax
   jmp l3
   lab l2
-  movl (Imm 0) eax
+  movl (Imm (IntLitD 0)) eax
   lab l3
   movzbl al eax
   movl eax o
   comment "End Binary And"
-{-
-  cmpl $0, o1
-  jne .L2
-  cmpl $0, o2
-  je .L3
-.L2:
-  movl $1, %eax
-  jmp .L4
-.L3:
-  movl $0, %eax
-.L4:
-  movzbl %al, %eax
-  movl %eax, o
--}
 translateBinOp o Or o1 o2 = do
   comment $ "Binary Or: " ++ show o ++ " := " ++ show o1 ++ " || " ++ show o2
   l2 <- getLabel
   l3 <- getLabel
   l4 <- getLabel
-  cmpl (Imm 0) o1
+  cmpl (Imm (IntLitD 32)) o1
   jne l2
-  cmpl (Imm 0) o2
+  cmpl (Imm (IntLitD 32)) o2
   je l3
   lab l2
-  movl (Imm 1) eax
+  movl (Imm (IntLitD 1)) eax
   jmp l4
   lab l3
-  movl (Imm 0) eax
+  movl (Imm (IntLitD 0)) eax
   lab l4
   movzbl al eax
   movl eax o
@@ -527,11 +451,11 @@ translateBinOp o TAC.Ineq o1 o2 = do
   comment "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
-translateUnOp :: Operand -> UnOp -> Operand -> Analysis ()
+translateUnOp :: X86.OperandQMM -> UnOp -> X86.OperandQMM -> Analysis ()
 translateUnOp o Not o' = do
   comment $ "Unary Not: " ++ show o ++ " := ! " ++ show o'
   movl o' eax
-  cmpl (Imm 0) eax
+  cmpl (Imm (IntLitD 32)) eax
   sete al
   movzbl al o
   comment "End Unary Not"
@@ -543,13 +467,13 @@ translateUnOp o Negate o' = do
   comment "End Unary Negate"
 
 translatePrint :: FType -> Analysis ()
-translatePrint FInt = do call printi
-translatePrint FBool = do call printb
-translatePrint FChar = do call printc
-translatePrint FString = do call prints
-translatePrint _ = do call printp
+translatePrint FInt = call printi
+translatePrint FBool = call printb
+translatePrint FChar = call printc
+translatePrint FString = call prints
+translatePrint _ = call printp
 
-translateRead :: Operand -> FType -> Analysis ()
+translateRead :: X86.OperandQMM -> FType -> Analysis ()
 translateRead o FInt = do
   call (R X86.ReadI)
   movq argRet o
@@ -565,8 +489,8 @@ translateLoadM
 translateLoadM v1 v2 off s = do
   -- array ptr passed in R9, index in R10, and return into R9
   o1 <- allocate' v1
-  o2 <- getOprand v2
-  offset <- getOprand off
+  o2 <- getOperand v2
+  offset <- getOperand off
   movq o2 r9
   movq offset r10
   call (arrayLoad s)
@@ -576,159 +500,103 @@ translateStore
   :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
 translateStore v1 off v2 s = do
   -- array ptr passed in R9, index in R10, and value in R11
-  o1 <- getOprand v1
-  offset <- getOprand off
-  o2 <- getOprand v2
+  o1 <- getOperand v1
+  offset <- getOperand off
+  o2 <- getOperand v2
   movq o1 r9
   movq offset r10
   movq o2 r11
   call (arrayStore s)
 
-rbp :: Operand
 rbp = Reg Rbp
 
-rsp :: Operand
 rsp = Reg Rsp
 
-al :: Operand
-al = Reg Rax
+al = Reg Al
 
-r8 :: Operand
 r8 = Reg R8
 
-r9 :: Operand
 r9 = Reg R9
 
-r10 :: Operand
 r10 = Reg R10
 
-r11 :: Operand
 r11 = Reg R11
 
-rax :: Operand
 rax = Reg Rax
 
-rbx :: Operand
 rbx = Reg Rbx
 
-eax :: Operand
-eax = Reg Rax
+eax = Reg Eax
 
-ebx :: Operand
-ebx = Reg Rbx
+ebx = Reg Ebx
 
-ecx :: Operand
-ecx = Reg Rcx
+ecx = Reg Ecx
 
-edx :: Operand
-edx = Reg Rdx
+edx = Reg Edx
 
-leaq :: Operand -> Operand -> Analysis ()
 leaq o1 o2 = tellInstr (Leaq o1 o2)
 
-mov :: (a -> b -> Instr) -> a -> b -> Analysis ()
 mov m o r = tellInstr (m o r)
 
-movl :: Operand -> Operand -> Analysis ()
 movl = mov Movl
 
-movq :: Operand -> Operand -> Analysis ()
 movq = mov Movq
 
-movzbl :: Operand -> Operand -> Analysis ()
 movzbl o r = tellInstr (Movzbl o r)
 
-addl :: Operand -> Operand -> Analysis ()
 addl o1 o2 = tellInstr (Addl o1 o2)
 
-subl :: Operand -> Operand -> Analysis ()
 subl o1 o2 = tellInstr (Subl o1 o2)
 
-imull :: Operand -> Operand -> Analysis ()
 imull o1 o2 = tellInstr (Imull o1 o2)
 
-idivl :: Operand -> Analysis ()
 idivl o = tellInstr (Idivl o)
 
-cmpl :: Operand -> Operand -> Analysis ()
 cmpl o1 o2 = tellInstr (Cmpl o1 o2)
 
-cmpq :: Operand -> Operand -> Analysis ()
 cmpq o1 o2 = tellInstr (Cmpq o1 o2)
 
-pushq :: Operand -> Analysis ()
 pushq o = tellInstr (Pushq o)
 
-popq :: Operand -> Analysis ()
 popq o = tellInstr (Popq o)
 
-j :: (X86.Label -> Instr) -> X86.Label -> Analysis ()
 j s l@(R r) = do
   tellInstr (s l)
   useRuntimeFunc r
 j s l = tellInstr (s l)
 
-jo :: X86.Label -> Analysis ()
 jo = j Jo
 
-je :: X86.Label -> Analysis ()
 je = j Je
 
-jne :: X86.Label -> Analysis ()
 jne = j Jne
 
-jmp :: X86.Label -> Analysis ()
 jmp = j Jmp
 
 cltd :: Analysis ()
 cltd = tellInstr Cltd
 
-set :: (a -> Instr) -> a -> Analysis ()
+set :: (a -> Instruction) -> a -> Analysis ()
 set s r = tellInstr (s r)
 
-sete :: Operand -> Analysis ()
 sete = set Sete
 
-setne :: Operand -> Analysis ()
 setne = set Setne
 
-setl :: Operand -> Analysis ()
 setl = set Setl
 
-setle :: Operand -> Analysis ()
 setle = set Setle
 
-setg :: Operand -> Analysis ()
 setg = set Setg
 
-setge :: Operand -> Analysis ()
 setge = set Setge
 
-negl :: Operand -> Analysis ()
 negl o = tellInstr (Negl o)
 
-call :: X86.Label -> Analysis ()
 call = j X86.Call
 
-arg1 :: Operand
 arg1 = Reg Rdi
 
-arg2 :: Operand
-arg2 = Reg Rsi
-
-arg3 :: Operand
-arg3 = Reg Rdx
-
-arg4 :: Operand
-arg4 = Reg Rcx
-
-arg5 :: Operand
-arg6 :: Operand
-arg5 = Reg R8
-
-arg6 = Reg R9
-
-argRet :: Operand
 argRet = Reg Rax
 
 printi :: X86.Label
@@ -786,4 +654,6 @@ arrayStore 8 = R ArrStore8
 arrayStore _ = error "Invalid size for array store"
 
 useRuntimeFunc :: Runtime -> Analysis ()
-useRuntimeFunc r = puts (\x -> x {runtimeFns = S.union (runtimeDeps r) (runtimeFns x)})
+useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps r) (runtimeFns x)})
+
+runtimeDeps = undefined
