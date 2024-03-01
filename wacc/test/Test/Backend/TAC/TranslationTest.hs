@@ -49,7 +49,7 @@ mainFuntion = TACFunc 0 [] (fromList [(0, helloWorldBlock)])
 
 runFrontendSource :: IO (Prog WType Integer Integer BType)
 runFrontendSource = do
-  sourceCode <- readFile "../test.wacc"
+  sourceCode <- readFile "test/wacc_examples/valid/IO/read/echoBigInt.wacc"
   return $ case runParse sourceCode of
     Success ast -> ast
     _ -> error "Failed to parse the source code."
@@ -66,6 +66,7 @@ asm = do translateProg <$> mainProgram
 writeAsm :: IO ()
 writeAsm = do
   prog <- asm
+  putStrLn (formatA prog)
   writeFile "../test.s" (formatA prog)
 
 compileAsm :: IO ()

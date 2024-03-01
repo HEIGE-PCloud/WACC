@@ -7,7 +7,7 @@ compile:
 build-test:
 	stack build --test --no-run-tests
 
-TIMEOUT ?= 30s
+TIMEOUT ?= 20s
 
 test:
 	stack test \

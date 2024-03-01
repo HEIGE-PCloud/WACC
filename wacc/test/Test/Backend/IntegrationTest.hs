@@ -2,7 +2,7 @@
 
 module Test.Backend.IntegrationTest where
 
-import Data.List (intercalate, isInfixOf, (\\))
+import Data.List (intercalate, isInfixOf)
 import Data.Maybe (fromMaybe)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.FilePath (takeBaseName)
