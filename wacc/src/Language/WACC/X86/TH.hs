@@ -25,17 +25,10 @@ genATNT typeName = do
   return
     [InstanceD Nothing [] (AppT (ConT ''ATNT) (ConT typeName)) [formatAMethod]]
 
-generateClause :: Con -> Q Clause
-generateClause (GadtC [name] _ _) = do
+generateGadtC :: (Quote m) => [Name] -> [a] -> m Clause
+generateGadtC ns args = do
   let
-    opName = constructorNameToLower name
-  argName <- newName "arg"
-  let
-    pat = conP name [varP argName]
-  let
-    body = normalB [|opName ++ " " ++ formatA $(varE argName)|]
-  clause [pat] body []
-generateClause (ForallC _ _ (GadtC [name] args _)) = do
+    name = head ns
   let
     opName = constructorNameToLower name
   argNames <- mapM (\_ -> newName "arg") args
@@ -43,13 +36,17 @@ generateClause (ForallC _ _ (GadtC [name] args _)) = do
     pat = conP name (map varP argNames)
   let
     argsExps = map (\n -> [|formatA $(varE n)|]) argNames
+  case opName of
+    "lab" -> clause [pat] (normalB [|concat $(listE argsExps) ++ ":"|]) []
+    "comment" -> clause [pat] (normalB [|"# " ++ concat $(listE argsExps)|]) []
+    _ -> do
+      let
+        body = normalB [|opName ++ " " ++ intercalate ", " $(listE argsExps)|]
+      clause [pat] body []
 
-  let
-    body = normalB $ case length args of
-      0 -> [|opName|]
-      1 -> [|opName ++ " " ++ concat $(listE argsExps)|]
-      _ -> [|opName ++ " " ++ intercalate ", " $(listE argsExps)|]
-  clause [pat] body []
+generateClause :: Con -> Q Clause
+generateClause (GadtC ns args _) = generateGadtC ns args
+generateClause (ForallC _ _ (GadtC ns args _)) = generateGadtC ns args
 generateClause xs = fail $ "Unsupported constructor pattern" ++ show xs
 
 inspectCode :: Q [Dec] -> Q [Dec]

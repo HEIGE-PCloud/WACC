@@ -18,6 +18,7 @@ import Data.Char (toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
+import Data.List (intercalate)
 import Data.Type.Bool (type Not, type (||))
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (Nat, TypeError)
@@ -318,6 +319,7 @@ type family ValidMem (a :: Mem) (b :: Mem) :: Constraint where
   ValidMem _ _ = ()
 
 data Instruction where
+  Comment :: String -> Instruction
   Lab :: Label -> Instruction
   Je :: Label -> Instruction
   Jne :: Label -> Instruction
@@ -327,8 +329,8 @@ data Instruction where
   Jge :: Label -> Instruction
   Jmp :: Label -> Instruction
   Call :: Label -> Instruction
-  -- Ret :: Instruction
-  -- Cltd :: Instruction
+  Ret :: Instruction
+  Cltd :: Instruction
   Mov
     :: (ValidMem mem1 mem2, ValidImm size1 mem1 size2 mem2)
     => Operand size1 mem1
@@ -487,12 +489,20 @@ data Runtime
   | Exit
   deriving (Eq, Ord, Typeable, Data, Show)
 
+instance ATNT Integer where
+  formatA :: Integer -> String
+  formatA = show
+
+instance ATNT String where
+  formatA :: String -> String
+  formatA = id
+
 instance ATNT (IntLit size) where
   formatA :: IntLit size -> String
-  formatA (IntLitQ i) = "$" ++ show i
-  formatA (IntLitD i) = "$" ++ show i
-  formatA (IntLitW i) = "$" ++ show i
-  formatA (IntLitB i) = "$" ++ show i
+  formatA (IntLitQ i) = show i
+  formatA (IntLitD i) = show i
+  formatA (IntLitW i) = show i
+  formatA (IntLitB i) = show i
 
 instance ATNT (Register size) where
   formatA :: Register size -> String
@@ -504,16 +514,21 @@ instance ATNT (Operand size mem) where
   formatA (Reg r) = formatA r
   formatA (Mem m) = formatA m
 
+paren :: String -> String
+paren x = "(" ++ x ++ ")"
+
 instance ATNT Memory where
   formatA :: Memory -> String
-  formatA (MI i) = '$' : show i
-  formatA (MReg r) = formatA r
-  formatA (MTwoReg r1 r2) = formatA r1 ++ "," ++ formatA r2
-  formatA (MScale r1 r2 i) = formatA r1 ++ "," ++ formatA r2 ++ "," ++ show i
-  formatA (MRegI i r) = show i ++ "(" ++ formatA r ++ ")"
-  formatA (MTwoRegI i r1 r2) = show i ++ "(" ++ formatA r1 ++ "," ++ formatA r2 ++ ")"
-  formatA (MScaleI i r1 r2 j) = show i ++ "(" ++ formatA r1 ++ "," ++ formatA r2 ++ "," ++ show j ++ ")"
-  formatA (MRegL l r) = formatA l ++ "(" ++ formatA r ++ ")"
+  formatA (MI x) = paren (show x)
+  formatA (MReg r) = paren (formatA r)
+  formatA (MTwoReg r1 r2) = paren (intercalate ", " (map formatA [r1, r2]))
+  formatA (MScale r1 r2 sc) = paren (intercalate ", " (map formatA [r1, r2] ++ [show sc]))
+  formatA (MRegI x r) = show x ++ paren (formatA r)
+  formatA (MTwoRegI x r1 r2) = show x ++ paren (intercalate ", " (map formatA [r1, r2]))
+  formatA (MScaleI x r1 r2 sc) =
+    show x
+      ++ paren (intercalate ", " (map formatA [r1, r2] ++ [show sc]))
+  formatA (MRegL l r) = formatA l ++ paren (formatA r)
 
 instance ATNT Label where
   formatA :: Label -> String
@@ -538,3 +553,9 @@ instr3 = Mov (Imm (IntLitB 1)) (Reg Al)
 
 instr4 :: Instruction
 instr4 = Movzx (Reg Al) (Reg Rax)
+
+instr5 :: Instruction
+instr5 = Comment "this is a comment"
+
+instr6 :: Instruction
+instr6 = Lab (R ArrLoad1)
