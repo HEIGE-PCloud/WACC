@@ -105,6 +105,7 @@ test-suite wacc-test
       Test.Backend.IntegrationTest
       Test.Backend.TAC
       Test.Backend.TAC.ExprTest
+      Test.Backend.TAC.StmtTest
       Test.Backend.TAC.TranslationTest
       Test.Backend.TAC.ValueTest
       Test.Backend.Test
