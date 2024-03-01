@@ -23,6 +23,10 @@ pairElemOffset :: PairElem ident a -> Int
 pairElemOffset (FstElem _ _) = 0
 pairElemOffset (SndElem _ _) = 8
 
+pairElemLValue :: PairElem ident a -> LValue ident a
+pairElemLValue (FstElem lv _) = lv
+pairElemLValue (SndElem lv _) = lv
+
 {- |
 TAC translation modes for WACC @lvalue@s.
 -}
@@ -67,17 +71,18 @@ instance (Enum ident, Eq ident) => ToTAC (LValue ident BType) where
   toTAC (LVPairElem pe t) = pure $ \case
     LVLoad -> toTAC pe
     LVRead -> do
+      target <- loadLV
       offset <- loadOffset
       temp <- freshTemp
-      target <- getTarget
       putTACs [Read temp ft, Store target offset temp ft]
     LVStore rv -> do
+      target <- loadLV
       offset <- loadOffset
       temp <- tempWith (fnToTAC rv)
-      target <- getTarget
       putTACs [Store target offset temp ft]
     where
       loadOffset = loadConst (pairElemOffset pe)
+      loadLV = tempWith $ lvToTAC (pairElemLValue pe) LVLoad
       ft = flatten t
 
 {- |
