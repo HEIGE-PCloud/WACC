@@ -674,4 +674,3 @@ arrayStore _ = error "Invalid size for array store"
 
 useRuntimeFunc :: Runtime -> Analysis ()
 useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})
-

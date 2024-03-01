@@ -18,11 +18,11 @@ import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
 import Data.List (intercalate)
+import Data.Set (Set, insert, singleton)
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (TypeError)
 import Language.WACC.X86.ATNT (ATNT (..), genATNTInstruction)
 import Language.WACC.X86.Size
-import Data.Set (Set, insert, singleton)
 
 data OpType = IM | RM | MM
 
@@ -695,5 +695,3 @@ runtimeDeps = array startEnd [(r, deps r) | r <- range startEnd]
     deps ErrOverflow = insert ErrOverflow (deps PrintS)
     deps ErrDivByZero = insert ErrDivByZero (deps PrintS)
     deps r = singleton r
-
-
