@@ -30,7 +30,7 @@ data Size
   | W
   | B
 
-data Mem = IM | RM | MM
+data OpType = IM | RM | MM
 
 type RegisterQ = Register Q
 
@@ -264,11 +264,11 @@ type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint whe
 type family Unless (a :: Bool) (b :: Constraint) :: Constraint where
   Unless a b = If a () b
 
-type family NotImm (a :: Mem) :: Constraint where
+type family NotImm (a :: OpType) :: Constraint where
   NotImm 'IM = TypeError ('Text "Can not have an immediate operand here")
   NotImm _ = ()
 
-type family ValidImm (s1 :: Size) (m1 :: Mem) (s2 :: Size) (m2 :: Mem) :: Constraint where
+type family ValidImm (s1 :: Size) (m1 :: OpType) (s2 :: Size) (m2 :: OpType) :: Constraint where
   ValidImm _ _ _ IM =
     TypeError ('Text "The second operand can not be an immediate value")
   ValidImm s1 IM s2 RM =
@@ -311,12 +311,12 @@ type family ValidSizeLT (s1 :: Size) (s2 :: Size) :: Constraint where
           )
       )
 
-type family ValidMem (a :: Mem) (b :: Mem) :: Constraint where
-  ValidMem MM MM = TypeError ('Text "Can not have two memory operands")
-  ValidMem IM IM = TypeError ('Text "Can not have two immediate operands")
-  ValidMem _ IM =
+type family ValidOpType (a :: OpType) (b :: OpType) :: Constraint where
+  ValidOpType MM MM = TypeError ('Text "Can not have two memory operands")
+  ValidOpType IM IM = TypeError ('Text "Can not have two immediate operands")
+  ValidOpType _ IM =
     TypeError ('Text "The second operand can not be an immediate value")
-  ValidMem _ _ = ()
+  ValidOpType _ _ = ()
 
 data Directive
   = DirInt Integer
@@ -342,108 +342,108 @@ data Instruction where
   Ret :: Instruction
   Cltd :: Instruction
   Mov
-    :: (ValidMem mem1 mem2, ValidImm size1 mem1 size2 mem2)
-    => Operand size1 mem1
-    -> Operand size2 mem2
+    :: (ValidOpType type1 type2, ValidImm size1 type1 size2 type2)
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   Movzx
-    :: (ValidSizeLT size1 size2, ValidMem mem1 mem2)
-    => Operand size1 mem1
-    -> Operand size2 mem2
+    :: (ValidSizeLT size1 size2, ValidOpType type1 type2)
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovl
-    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
-    => Operand size mem1
-    -> Operand size mem2
+    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
+    => Operand size type1
+    -> Operand size type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovle
-    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
-    => Operand size mem1
-    -> Operand size mem2
+    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
+    => Operand size type1
+    -> Operand size type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovg
-    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
-    => Operand size mem1
-    -> Operand size mem2
+    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
+    => Operand size type1
+    -> Operand size type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovge
-    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
-    => Operand size mem1
-    -> Operand size mem2
+    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
+    => Operand size type1
+    -> Operand size type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovne
-    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
-    => Operand size mem1
-    -> Operand size mem2
+    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
+    => Operand size type1
+    -> Operand size type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmove
-    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
-    => Operand size mem1
-    -> Operand size mem2
+    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
+    => Operand size type1
+    -> Operand size type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/idiv
   Idivl :: Operand size mem -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addq
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandQ mem1
-    -> OperandQ mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandQ type1
+    -> OperandQ type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addl
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandD mem1
-    -> OperandD mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandD type1
+    -> OperandD type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addw
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandW mem1
-    -> OperandW mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandW type1
+    -> OperandW type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addb
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandB mem1
-    -> OperandB mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandB type1
+    -> OperandB type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subq
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandQ mem1
-    -> OperandQ mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandQ type1
+    -> OperandQ type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subl
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandD mem1
-    -> OperandD mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandD type1
+    -> OperandD type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subw
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandW mem1
-    -> OperandW mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandW type1
+    -> OperandW type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subb
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandB mem1
-    -> OperandB mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandB type1
+    -> OperandB type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/imul
   --   Yeah... Imul can take in one or two or three operands.
   --   I love x86
   Imulq
-    :: (ValidMem mem1 mem2, NotImm mem2)
-    => OperandQ mem1
-    -> OperandQ mem2
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandQ type1
+    -> OperandQ type2
     -> Instruction
 
 -- TODO: You can't operate on 64-bit immediate values unless with mov #imm, reg
@@ -467,7 +467,7 @@ data IntLit (size :: Size) where
 
 deriving instance Show (IntLit size)
 
-data Operand (size :: Size) (memory :: Mem) where
+data Operand (size :: Size) (opType :: OpType) where
   Imm :: IntLit size -> Operand size IM
   Reg :: Register size -> Operand size RM
   Mem :: Memory -> Operand size MM
