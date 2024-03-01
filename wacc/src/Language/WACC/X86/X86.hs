@@ -26,9 +26,6 @@ module Language.WACC.X86.X86
   , Prog
   , Register (..)
   , Runtime (..)
-  , argRegs
-  , callee
-  , caller
   , ATNT (..)
   , ATNTs (..)
   , runtimeDeps
@@ -236,15 +233,6 @@ data Register
   | R15
   | Rip
   deriving (Eq, Ord, Show, Data)
-
-callee :: [Register]
-callee = [Rbx, Rbp, R12, R13, R14, R15]
-
-caller :: [Register]
-caller = [R10, R11]
-
-argRegs :: [Register]
-argRegs = [Rdi, Rsi, Rdx, Rcx, R8, R9]
 
 class ATNT a where
   formatA :: a -> String

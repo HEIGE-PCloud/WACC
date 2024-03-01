@@ -16,7 +16,6 @@ import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
-import Data.List ((\\))
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
@@ -51,9 +50,6 @@ import Language.WACC.X86.X86
   , Prog
   , Register (..)
   , Runtime (..)
-  , argRegs
-  , callee
-  , caller
   , runtimeDeps
   )
 import qualified Language.WACC.X86.X86 as X86
@@ -91,8 +87,6 @@ data TransST = TransST
   -- ^ The number of stack variables used so far (not incl. saving callee saved reg)
   , runtimeFns :: Set Runtime
   -- ^ Set of runtime functions which need to be included
-  , freeRegs :: [Register]
-  -- ^ Unused registers
   , labelCounter :: Integer
   -- ^ Counter for generating unique labels
   }
@@ -104,22 +98,20 @@ type Analysis =
     (DList Instr)
     TransST
 
+stackElemSize :: Integer
+stackElemSize = 8
+
 {- | Rbp points to the location just before the first stack variable of a frame
 This means the last callee saved register pushed onto the stack
 
 Assuming stack looks like this: (initial value of Rsp and constant value of Rbp)
 
 --------------
-Extra Arg: 1
+Args: 1
 .
 .
-Extra Arg: n     <-- Rsp
+Args: n     <-- Rsp , Rbp
 --------------
-Callee Saved: 1
-.
-.
-Callee Saved: m  <-- Rbp
--------------
 Local Regs: 1
 .
 .
@@ -131,36 +123,20 @@ translateFunc (Func l vs bs) = (runtimeFns st, is)
       execRWS
         funcRWS
         bs
-        (TransST B.empty S.empty 0 S.empty ((callee \\ [Rbp]) ++ caller) 0) -- Not empty regs list
+        (TransST B.empty S.empty 0 S.empty 0) -- Not empty regs list
     startBlock = bs M.! l
 
     funcRWS = do
-      -- mapM_ (tellInstr . Pushq . Reg) callee -- callee saving registers
       tellInstr (Lab (I l)) -- label for the function = label of the first block
-      tellInstr (Movq (Reg Rsp) (Reg Rbp)) -- set the stack base pointer
-      mapM_ setupRegArgs (zip vs argRegs)
-      modify
-        ( \x@(TransST {freeRegs}) -> x {freeRegs = freeRegs ++ drop (length vs) argRegs} -- mark extra arg regs as usable
-        )
+      movq rsp rbp -- set the stack base pointer
       -- if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
-      mapM_
-        setupStackArgs
-        ( zip
-            (drop (length argRegs) vs)
-            (map (\x -> (-x) - toInteger (length callee)) [0 ..])
-        )
+      mapM_ setupStackArgs (zip vs [0 ..])
       translateBlocks (TAC.Label l) startBlock -- Translate main part of code
-      -- restore stack pointer
-      movq rbp rsp
-      -- tellInstr (X86.Addq (Imm (svn * 8)) (Reg Rsp)) -- effectively delete local variables on stack
+      movq rbp rsp -- restore stack pointer
       unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
-      -- mapM_ (tellInstr . Popq . Reg) (reverse callee) -- callee saving registers
-      -- assigning arg vars to registers
-    setupRegArgs :: (Var Integer, Register) -> Analysis ()
-    setupRegArgs (v, r) = modify (bindVarToLoc v (Reg r))
-    -- assigning extra arg vars to stack
+      -- assigning arg vars to stack
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
-    setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI n Rbp)))
+    setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI (stackElemSize * n) Rbp)))
 
 {- | translate each statement of the block. then figure out which block to go to
 labels are printed right before this function is called
@@ -292,11 +268,11 @@ translateTAC (TAC.Call v1 (Label l) vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
   -- push all registers on to stack
   os <- mapM getOperand vs
-  mapM_ pushq os
+  mapM_ pushq (reverse os)
   -- call the function
   call (I l)
   -- pop all registers off the stack
-  mapM_ popq (reverse os)
+  mapM_ popq os
   comment "End Call"
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
