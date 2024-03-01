@@ -32,10 +32,13 @@ btypes =
 forEachBType :: (BType -> Assertion) -> Assertion
 forEachBType = flip traverse_ btypes
 
-testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
-testTypingM action = case runTypingM action id mempty of
-  (Just x, _, es) | null es -> Right (getAnn x)
+testTypingM' :: (a -> b) -> TypingM () BType a -> Either Int b
+testTypingM' f action = case runTypingM action id mempty of
+  (Just x, _, es) | null es -> Right (f x)
   (_, _, es) -> Left $ length es
+
+testTypingM :: (Annotated a) => TypingM () BType a -> Either Int (Ann a)
+testTypingM = testTypingM' getAnn
 
 checkAtom' :: WAtom BType Pos -> Either Int BType
 checkAtom' = testTypingM . check
@@ -44,7 +47,7 @@ checkExpr' :: Expr BType Pos -> Either Int BType
 checkExpr' = testTypingM . check
 
 checkArrayIndex' :: ArrayIndex BType Pos -> Either Int BType
-checkArrayIndex' = testTypingM . check
+checkArrayIndex' = testTypingM' fst . check
 
 intExpr :: Expr BType Pos
 intExpr = WAtom (IntLit 0 undefined) undefined

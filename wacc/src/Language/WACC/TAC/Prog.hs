@@ -29,7 +29,7 @@ import Language.WACC.TypeChecking (BType)
 type instance TACIdent (AST.Func typ fnident ident BType) = ident
 
 instance
-  (Enum fnident, Enum ident, Ord fnident)
+  (Enum fnident, Enum ident, Eq ident, Ord fnident)
   => FnToTAC (AST.Func typ fnident ident BType)
   where
   type TACFnRepr (AST.Func typ fnident ident BType) = ()
@@ -45,7 +45,7 @@ instance
 type instance TACIdent (AST.Prog typ fnident ident BType) = ident
 
 instance
-  (Num fnident, Enum fnident, Enum ident, Ord fnident)
+  (Enum fnident, Enum ident, Eq ident, Num fnident, Ord fnident)
   => FnToTAC (AST.Prog typ fnident ident BType)
   where
   type TACFnRepr (AST.Prog typ fnident ident BType) = ()

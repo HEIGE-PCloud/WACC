@@ -52,10 +52,10 @@ scope-test:
 	$(MAKE) test PATTERN="0 ~ /scope/"
 
 typechecker-unit-test:
-	$(MAKE) test PATTERN="0 ~ /typechecker\.unitTest/"
+	$(MAKE) test PATTERN="0 ~ /typeChecker\.unitTest/"
 
 typechecker-test:
-	$(MAKE) test PATTERN="0 ~ /typechecker/"
+	$(MAKE) test PATTERN="0 ~ /typeChecker/"
 
 # Backend Tests
 

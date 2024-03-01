@@ -43,13 +43,14 @@ This instance takes an additional 'LVMode' parameter:
 >   TACRepr (LValue ident BType) lident =
 >     LVMode ident lident -> TACM ident lident ()
 -}
-instance (Enum ident) => ToTAC (LValue ident BType) where
+instance (Enum ident, Eq ident) => ToTAC (LValue ident BType) where
   type
     TACRepr (LValue ident BType) lident =
       LVMode ident lident -> TACM ident lident ()
   toTAC (LVIdent v t) = pure $ \case
-    -- TODO: copy value of source code variable into target TAC variable
-    LVLoad -> pure ()
+    LVLoad -> do
+      target <- getTarget
+      move target (Var v)
     LVRead -> putTACs [Read (Var v) (flatten t)]
     LVStore rv -> fnToTAC rv `into` Var v
   toTAC (LVArrayElem ai _) = pure $ \case
@@ -83,7 +84,7 @@ instance (Enum ident) => ToTAC (LValue ident BType) where
 Translate an @lvalue@ in a single action.
 -}
 lvToTAC
-  :: (Enum ident, Ord lident)
+  :: (Enum ident, Eq ident, Ord lident)
   => LValue ident BType
   -> LVMode ident lident
   -> TACM ident lident ()
@@ -91,7 +92,7 @@ lvToTAC lv mode = toTAC lv >>= ($ mode)
 
 type instance TACIdent (PairElem ident a) = ident
 
-instance (Enum ident) => ToTAC (PairElem ident BType) where
+instance (Enum ident, Eq ident) => ToTAC (PairElem ident BType) where
   type TACRepr (PairElem ident BType) lident = ()
   toTAC pe = do
     let
@@ -105,7 +106,10 @@ instance (Enum ident) => ToTAC (PairElem ident BType) where
 
 type instance TACIdent (RValue fnident ident a) = ident
 
-instance (Enum ident, Ord fnident) => FnToTAC (RValue fnident ident BType) where
+instance
+  (Enum ident, Eq ident, Ord fnident)
+  => FnToTAC (RValue fnident ident BType)
+  where
   type TACFnRepr (RValue fnident ident BType) = ()
   type TACFnIdent (RValue fnident ident BType) = fnident
   fnToTAC (RVExpr x _) = toTAC x

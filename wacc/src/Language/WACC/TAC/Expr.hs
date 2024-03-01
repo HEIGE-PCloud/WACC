@@ -36,7 +36,7 @@ generator:
 >     Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
 >     -> TACM ident lident ()
 -}
-instance (Enum ident) => ToTAC (ArrayIndex ident BType) where
+instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
   type
     TACRepr (ArrayIndex ident BType) lident =
       Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
@@ -81,14 +81,17 @@ loadCI x = do
   putTACs [LoadCI t x]
 
 unOp
-  :: (Enum ident, Ord lident) => UnOp -> Expr ident BType -> TACM ident lident ()
+  :: (Enum ident, Eq ident, Ord lident)
+  => UnOp
+  -> Expr ident BType
+  -> TACM ident lident ()
 unOp op x = do
   temp <- tempWith (toTAC x)
   t <- getTarget
   putTACs [UnInstr t op temp]
 
 binInstr
-  :: (Enum ident, Ord lident)
+  :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
   -> (Var ident -> Var ident -> Var ident -> TAC ident lident)
   -> Expr ident BType
@@ -100,7 +103,7 @@ binInstr x instr y = do
   putTACs [instr t temp1 temp2]
 
 binOp
-  :: (Enum ident, Ord lident)
+  :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
   -> BinOp
   -> Expr ident BType
@@ -109,7 +112,7 @@ binOp x op y = binInstr x (\t xv yv -> BinInstr t xv op yv) y
 
 type instance TACIdent (Expr ident a) = ident
 
-instance (Enum ident) => ToTAC (Expr ident BType) where
+instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   type TACRepr (Expr ident BType) lident = ()
   toTAC (WAtom (IntLit x _) _) = loadCI $ fromEnum x
   toTAC (WAtom (BoolLit b _) _) = loadCI $ bool 0 1 b
@@ -118,8 +121,9 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
     t <- getTarget
     putTACs [LoadCS t s]
   toTAC (WAtom (Null _) _) = loadCI 0
-  -- TODO: copy value of source code variable into target TAC variable
-  toTAC (WAtom (Ident _ _) _) = pure ()
+  toTAC (WAtom (Ident v _) _) = do
+    target <- getTarget
+    move target (Var v)
   toTAC (WAtom (ArrayElem ai _) _) = toTAC ai >>= ($ Nothing)
   toTAC (AST.Not x _) = unOp Not x
   toTAC (AST.Negate x _) = unOp Negate x

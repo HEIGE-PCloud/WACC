@@ -2,6 +2,7 @@
 {-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
@@ -23,6 +24,12 @@ import Language.WACC.TypeChecking.State
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
+type instance Typed (ArrayIndex ident ann) = (BType, ArrayIndex ident BType)
+
+{- |
+@(t, ai') = check ai@ returns the element type @t@ and the 'ArrayIndex' AST node
+annotated with the array type.
+-}
 instance TypeChecked (ArrayIndex ident Pos) where
   check (ArrayIndex v xs p) = do
     vt <- typeOf v
@@ -34,7 +41,9 @@ instance TypeChecked (ArrayIndex ident Pos) where
       tryPred 0 = 0
       tryPred n = pred n
     t <- reportAt p (BArray BAny) $ foldM go vt xs
-    pure $ ArrayIndex v (fmap (BInt <$) xs) t
+    pure (t, ArrayIndex v (fmap (BInt <$) xs) vt)
+
+type instance Typed (WAtom ident ann) = WAtom ident BType
 
 instance TypeChecked (WAtom ident Pos) where
   check i@(IntLit _ _) = pure $ BInt <$ i
@@ -44,8 +53,8 @@ instance TypeChecked (WAtom ident Pos) where
   check (Null _) = pure . Null $ BKnownPair BAny BAny
   check (Ident v _) = Ident v <$> typeOf v
   check (ArrayElem ai _) = do
-    ai' <- check ai
-    pure $ ArrayElem ai' (getAnn ai')
+    (t, ai') <- check ai
+    pure $ ArrayElem ai' t
 
 {- |
 @unifyExprs t0 [x1, x2, ..., xn]@ attempts to unify @x1@ with @t0@ to obtain
@@ -86,6 +95,8 @@ tryUnifyExprs t xs =
   [ (,xs') <$> foldM unify t (getAnn <$> xs')
   | xs' <- traverse check xs
   ]
+
+type instance Typed (Expr ident ann) = Expr ident BType
 
 instance TypeChecked (Expr ident Pos) where
   check (WAtom atom _) =

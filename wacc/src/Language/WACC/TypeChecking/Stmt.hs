@@ -22,6 +22,8 @@ import Language.WACC.TypeChecking.Expr
 import Language.WACC.TypeChecking.State
 import Text.Gigaparsec.Position (Pos)
 
+type instance Typed (PairElem ident ann) = PairElem ident BType
+
 instance TypeChecked (PairElem ident Pos) where
   check (FstElem lv _) = do
     lv' <- check lv
@@ -38,16 +40,20 @@ instance TypeChecked (PairElem ident Pos) where
       _ -> abort
     pure $ FstElem lv' t
 
+type instance Typed (LValue ident ann) = LValue ident BType
+
 instance TypeChecked (LValue ident Pos) where
   check (LVIdent v _) = LVIdent v <$> typeOf v
   check (LVArrayElem ai _) =
-    [ LVArrayElem ai' (getAnn ai')
-    | ai' <- check ai
+    [ LVArrayElem ai' t
+    | (t, ai') <- check ai
     ]
   check (LVPairElem pe _) =
     [ LVPairElem pe' (getAnn pe')
     | pe' <- check pe
     ]
+
+type instance Typed (RValue fnident ident ann) = RValue fnident ident BType
 
 instance (Ord fnident) => FnTypeChecked (RValue fnident ident Pos) where
   type TypingFnIdent (RValue fnident ident Pos) = fnident
@@ -108,6 +114,8 @@ unifyStmtsAt
   -> Stmts fnident ident Pos
   -> TypingM fnident ident (BType, Stmts fnident ident BType)
 unifyStmtsAt p t ss = reportAt p t $ unifyStmts t ss
+
+type instance Typed (Stmt fnident ident ann) = Stmt fnident ident BType
 
 {- |
 @check (Return x)@ returns the type of @x@.

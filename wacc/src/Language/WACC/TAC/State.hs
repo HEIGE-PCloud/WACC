@@ -15,11 +15,12 @@ module Language.WACC.TAC.State
   , appendBlock
   , completeBlock
   , collectBlocks
+  , putFunc
   , getTarget
   , into
   , tempWith
   , loadConst
-  , putFunc
+  , move
   )
 where
 
@@ -27,14 +28,6 @@ import Control.Monad.Trans.RWS (RWS, ask, evalRWS, gets, local, modify, tell)
 import Data.DList (DList, toList)
 import Data.Map (Map, empty, insert, singleton)
 import Language.WACC.TAC.TAC
-  ( BasicBlock (..)
-  , Jump (..)
-  , Label
-  , TAC (LoadCI)
-  , TACFunc
-  , TACProgram
-  , Var (Temp)
-  )
 
 data TACMState ident lident = TACMState
   { nextTemp :: ident
@@ -127,6 +120,12 @@ collectBlocks = gets funcBlocks <* modify clearBlocks
     clearBlocks st = st {funcBlocks = empty}
 
 {- |
+Inserts a function into the TAC program.
+-}
+putFunc :: lident -> TACFunc ident lident -> TACM ident lident ()
+putFunc name func = tell $ singleton name func
+
+{- |
 Read the target variable from the reader component.
 -}
 getTarget :: (Ord lident) => TACM ident lident (Var ident)
@@ -160,7 +159,9 @@ loadConst x = tempWith $ do
   putTACs [LoadCI target x]
 
 {- |
-Inserts a function into the TAC program.
+@move dest src@ generates @'Move' dest src@ only if @dest@ and @src@ differ.
 -}
-putFunc :: lident -> TACFunc ident lident -> TACM ident lident ()
-putFunc name func = tell $ singleton name func
+move :: (Eq ident, Ord lident) => Var ident -> Var ident -> TACM ident lident ()
+move dest src
+  | dest == src = pure ()
+  | otherwise = putTACs [Move dest src]

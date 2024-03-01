@@ -53,7 +53,7 @@ data StmtTACs ident fnident
 Defines instance of @FnToTAC@ for WACC @Stmt@s. This instance is used to translate WACC @Stmt@s AST Nodes to TAC.
 -}
 instance
-  (Enum fnident, Enum ident, Ord fnident)
+  (Enum fnident, Enum ident, Eq ident, Ord fnident)
   => FnToTAC (AST.Stmt fnident ident BType)
   where
   -- \| TAC translation result for a WACC @Stmt@ translation action, with @Jump@ continuation.
@@ -114,7 +114,7 @@ instance
     pure . Jump $ Label fl
 
 stmtsToTAC
-  :: (Enum fnident, Enum ident, Ord fnident)
+  :: (Enum fnident, Enum ident, Eq ident, Ord fnident)
   => AST.Stmts fnident ident BType
   -> fnident
   -> TACM
@@ -127,7 +127,7 @@ stmtsToTAC stmts l = fnToTAC stmts >>= ($ l)
 Defines instance of @FnToTAC@ for WACC @Stmts@s. This instance is used to translate WACC @Stmts@s AST Nodes to TAC.
 -}
 instance
-  (Enum fnident, Enum ident, Ord fnident)
+  (Enum fnident, Enum ident, Eq ident, Ord fnident)
   => FnToTAC (AST.Stmts fnident ident BType)
   where
   -- \| Label identifier type derived from @fnident@ type parameter of @AST.Stmts@.
@@ -148,7 +148,7 @@ instance
     (fnToTAC' l . NE.toList . unwrap) stmts
     where
       fnToTAC'
-        :: (Enum fnident, Enum ident, Ord fnident)
+        :: (Enum fnident, Enum ident, Eq ident, Ord fnident)
         => fnident
         -> [AST.Stmt fnident ident BType]
         -> TACM
