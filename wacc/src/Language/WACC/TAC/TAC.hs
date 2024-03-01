@@ -9,7 +9,6 @@ Defines the three-address code (TAC) representation of the WACC language.
 -}
 module Language.WACC.TAC.TAC where
 
-import Data.Bifunctor.TH
 import Data.Map (Map)
 import Language.WACC.TAC.FType (FType)
 
@@ -133,15 +132,3 @@ data BasicBlock ident lident = BasicBlock
 
 -- | The top-level mapping of function identifiers to their corresponding blocks.
 type TACProgram ident lident = Map lident (TACFunc ident lident)
-
--- deriving (Functor)
-
--- $(deriveBifunctor ''Map)
-
--- $(deriveBifunctor ''BasicBlock)
-
--- $(deriveBifunctor ''TACFunc)
-
--- $(deriveBifunctor ''TAC)
-
--- $(deriveBifunctor ''Jump)

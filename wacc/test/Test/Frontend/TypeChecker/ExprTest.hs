@@ -148,13 +148,13 @@ exprTestGroup =
         [ testGroup
             "literals"
             [ testProperty "int literals are ints" $
-                \i -> checkAtom' (IntLit i undefined) == pure BInt
+                \i -> checkAtom' (IntLit i undefined) === pure BInt
             , testProperty "bool literals are bools" $
-                \b -> checkAtom' (BoolLit b undefined) == pure BBool
+                \b -> checkAtom' (BoolLit b undefined) === pure BBool
             , testProperty "char literals are chars" $
-                \c -> checkAtom' (CharLit c undefined) == pure BChar
+                \c -> checkAtom' (CharLit c undefined) === pure BChar
             , testProperty "string literals are strings" $
-                \s -> checkAtom' (StringLit s undefined) == pure BString
+                \s -> checkAtom' (StringLit s undefined) === pure BString
             , testCase "null is a literal for any pair type" $
                 checkAtom' (Null undefined) @?= pure (BKnownPair BAny BAny)
             ]

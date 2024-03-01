@@ -20,7 +20,7 @@ dependencies:
   - raw-strings-qq
   - bimap
   - array
-  - bifunctors
+  - template-haskell
 
 ghc-options:
   - -Wall

@@ -64,7 +64,7 @@ progTestGroup =
                       undefined
                   )
                   i
-                  == pure (FnType pts rt)
+                  === pure (FnType pts rt)
         , testCase "rejects incompatible return statements in body" $
             checkFunc' (Func WInt 0 [] [Return boolExpr undefined] undefined) 0
               @?= Left 1
@@ -102,6 +102,6 @@ progTestGroup =
               checkProg'
                 (Main [func] [Return (varExpr $ fix wt) undefined] undefined)
                 0
-                == Left 1
+                === Left 1
         ]
     ]

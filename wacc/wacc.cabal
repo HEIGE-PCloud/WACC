@@ -51,7 +51,9 @@ library
       Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
+      Language.WACC.X86.ATNT
       Language.WACC.X86.Runtime
+      Language.WACC.X86.Size
       Language.WACC.X86.Translate
       Language.WACC.X86.X86
   other-modules:
@@ -62,7 +64,6 @@ library
   build-depends:
       array
     , base >=4.7 && <5
-    , bifunctors
     , bimap
     , cmdargs
     , containers
@@ -73,6 +74,7 @@ library
     , mtl
     , raw-strings-qq
     , recursion-schemes
+    , template-haskell
     , transformers
   default-language: Haskell2010
 
@@ -86,7 +88,6 @@ executable compile
   build-depends:
       array
     , base >=4.7 && <5
-    , bifunctors
     , bimap
     , cmdargs
     , containers
@@ -97,6 +98,7 @@ executable compile
     , mtl
     , raw-strings-qq
     , recursion-schemes
+    , template-haskell
     , transformers
     , wacc
   default-language: Haskell2010
@@ -143,7 +145,6 @@ test-suite wacc-test
       QuickCheck
     , array
     , base >=4.7 && <5
-    , bifunctors
     , bimap
     , bytestring
     , cmdargs
@@ -169,6 +170,7 @@ test-suite wacc-test
     , tasty-hspec
     , tasty-hunit
     , tasty-quickcheck
+    , template-haskell
     , transformers
     , utf8-string
     , wacc

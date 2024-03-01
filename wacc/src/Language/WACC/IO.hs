@@ -28,7 +28,7 @@ import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking (BType, checkTypes)
 import Language.WACC.X86.Translate (translateProg)
-import Language.WACC.X86.X86 (ATNT (..))
+import Language.WACC.X86.ATNT (ATNT (..))
 import System.Console.CmdArgs
   ( Data
   , Typeable
