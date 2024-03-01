@@ -630,7 +630,7 @@ instance ATNT Memory where
 instance ATNT Label where
   formatA :: Label -> String
   formatA (I i) = "L" ++ show i
-  formatA (R r) = '_' : (map toLower (show r))
+  formatA (R r) = '_' : map toLower (show r)
   formatA (S s) = s
 
 dirName :: Directive -> String

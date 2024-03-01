@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module Language.WACC.X86.Translate where
 
@@ -17,7 +18,7 @@ import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
-import Data.Int (Int16, Int32, Int64, Int8)
+
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
