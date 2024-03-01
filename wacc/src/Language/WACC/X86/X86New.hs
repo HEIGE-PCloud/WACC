@@ -10,6 +10,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
+module Language.WACC.X86.X86New where
+
 import Data.Char (toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int16, Int32, Int64, Int8)
