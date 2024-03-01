@@ -216,23 +216,25 @@ data Memory
 Each kind of register in x86-64 segregated below. Feel free to change in case a homogenous type is preferred
 -}
 data Register
-  = Rax
-  | Rbx
-  | Rcx
-  | Rdx
-  | Rsi
+  = -- | Caller saved registers
+    Rax
   | Rdi
-  | Rbp
-  | Rsp
-  | Rip
+  | Rsi
+  | Rdx
+  | Rcx
   | R8
   | R9
   | R10
   | R11
+  | -- | Callee saved registers
+    Rsp
+  | Rbx
+  | Rbp
   | R12
   | R13
   | R14
   | R15
+  | Rip
   deriving (Eq, Ord, Show, Data)
 
 callee :: [Register]
