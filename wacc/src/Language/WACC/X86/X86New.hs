@@ -7,6 +7,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
@@ -16,8 +17,8 @@ import Data.Char (toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
-import GHC.TypeError (ErrorMessage (Text))
-import GHC.TypeLits (TypeError)
+import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
+import GHC.TypeLits (Nat, TypeError)
 
 data Size
   = Q
@@ -213,6 +214,12 @@ regFamily R15d = R15F
 regFamily R15w = R15F
 regFamily R15b = R15F
 
+type family SizeToNat (a :: Size) :: Nat where
+  SizeToNat Q = 64
+  SizeToNat D = 32
+  SizeToNat W = 16
+  SizeToNat B = 8
+
 type family SizeLT (a :: Size) (b :: Size) :: Constraint where
   SizeLT B W = ()
   SizeLT B D = ()
@@ -220,10 +227,18 @@ type family SizeLT (a :: Size) (b :: Size) :: Constraint where
   SizeLT W D = ()
   SizeLT W Q = ()
   SizeLT D Q = ()
-  SizeLT _ _ =
+  SizeLT a b =
     TypeError
       ( 'Text
-          "The size of the first operand must be smaller than the size of the second operand"
+          "The size of the first operand must be smaller than the size of the second operand, the first operand has a size of "
+          ':<>: 'ShowType a
+          ':<>: 'Text " ("
+          ':<>: 'ShowType (SizeToNat a)
+          ':<>: 'Text " bits) while the second operand has a size of "
+          ':<>: 'ShowType b
+          ':<>: 'Text " ("
+          ':<>: 'ShowType (SizeToNat b)
+          ':<>: 'Text " bits)"
       )
 
 type family SizeEq (a :: Size) (b :: Size) :: Constraint where
@@ -231,7 +246,14 @@ type family SizeEq (a :: Size) (b :: Size) :: Constraint where
   SizeEq D D = ()
   SizeEq W W = ()
   SizeEq B B = ()
-  SizeEq _ _ = TypeError ('Text "The size of both operands must be equal")
+  SizeEq a b =
+    TypeError
+      ( 'Text
+          "The sizes of the operands must be equal, the first operand has a size of "
+          ':<>: 'ShowType a
+          ':<>: 'Text " while the second operand has a size of "
+          ':<>: 'ShowType b
+      )
 
 type family SizeLTE (a :: Size) (b :: Size) :: Constraint where
   SizeLTE B W = ()
@@ -440,3 +462,6 @@ instr2 = Mov (Mem (MTwoReg Rax Rax)) (Reg Rbx)
 
 instr3 :: Instruction
 instr3 = Mov (Imm (IntLitB 1)) (Reg Al)
+
+instr4 :: Instruction
+instr4 = Movzx (Reg Al) (Reg Rax)
