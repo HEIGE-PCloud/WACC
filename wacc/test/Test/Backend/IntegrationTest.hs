@@ -36,16 +36,17 @@ import Text.Gigaparsec.Token.Lexer
   )
 
 enabledTests :: [FilePath]
-enabledTests =
-  [ "valid/basic/exit/exit-1.wacc"
-  , "valid/IO/IOLoop.wacc"
-  ]
+enabledTests = allTests
+
+--  [ "valid/basic/exit/exit-1.wacc"
+--  , "valid/IO/IOLoop.wacc"
+--  ]
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
 
 ignoredTests :: [FilePath]
-ignoredTests = allTests \\ enabledTests
+ignoredTests = [] -- allTests \\ enabledTests
 
 lexer :: Lexer
 lexer = mkLexer plain

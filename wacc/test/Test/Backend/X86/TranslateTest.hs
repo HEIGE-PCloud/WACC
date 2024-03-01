@@ -26,7 +26,7 @@ preamble = [Dir $ DirGlobl (S "main"), Dir DirSection, Dir DirText, Lab $ S "mai
 
 singleFunctionT
   :: Map Integer (BasicBlock Integer Integer) -> TACProgram Integer Integer
-singleFunctionT bbs = M.fromList [(0, Func 0 [] bbs)]
+singleFunctionT bbs = M.fromList [(0, TACFunc 0 [] bbs)]
 
 singleBlockT :: [TAC Integer Integer] -> TACProgram Integer Integer
 singleBlockT ts =

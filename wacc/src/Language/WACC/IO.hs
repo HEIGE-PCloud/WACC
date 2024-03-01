@@ -16,8 +16,19 @@ import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error, printError, semanticError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
-import Language.WACC.Semantic.Scope (Fnident, VarST, Vident, scopeAnalysis)
-import Language.WACC.TypeChecking (checkTypes)
+import Language.WACC.Semantic.Scope
+  ( Fnident (..)
+  , VarST
+  , Vident (..)
+  , scopeAnalysis
+  )
+import Language.WACC.TAC.Class
+import Language.WACC.TAC.Prog
+import Language.WACC.TAC.State
+import Language.WACC.TAC.TAC
+import Language.WACC.TypeChecking (BType, checkTypes)
+import Language.WACC.X86.Translate (translateProg)
+import Language.WACC.X86.X86 (ATNT (..))
 import System.Console.CmdArgs
   ( Data
   , Typeable
@@ -124,10 +135,13 @@ runTypeCheck ast = case uncurry checkTypes ast of
   [] -> Success ast
   errs -> Failure (errs, semanticErrorCode)
 
-runCodeGen :: String -> (Prog WType Fnident Vident Pos, VarST) -> IO ()
-runCodeGen path _ = writeFile filename (carretCode path) >>= const exitSuccess
+runCodeGen :: String -> (Prog WType Fnident Vident BType, VarST) -> IO ()
+runCodeGen path (ast, st) =
+  writeFile filename (formatA $ translateProg (tacProgram)) >>= const exitSuccess
   where
     filename = takeBaseName path ++ ".s"
+    tacProgram :: TACProgram Fnident Vident
+    tacProgram = evalTACM 0 (fnToTAC ast)
 
 carretCode :: String -> String
 carretCode path
