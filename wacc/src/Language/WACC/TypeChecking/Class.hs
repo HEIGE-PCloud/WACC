@@ -18,10 +18,7 @@ import Text.Gigaparsec.Position (Pos)
 {- |
 Re-annotated AST types.
 -}
-type family Typed t where
-  Typed (t a b c Pos) = t a b c BType
-  Typed (t a b Pos) = t a b BType
-  Typed (t a Pos) = t a BType
+type family Typed t
 
 {- |
 Identifier type used by 'TypeChecked' and 'FnTypeChecked'
