@@ -3,14 +3,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Language.WACC.X86.X86New where
 
@@ -19,16 +17,10 @@ import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
 import Data.List (intercalate)
-import Data.Type.Bool (type Not, type (||))
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
-import GHC.TypeLits (Nat, TypeError)
+import GHC.TypeLits (TypeError)
+import Language.WACC.X86.Size
 import Language.WACC.X86.TH (ATNT (..), genATNTInstruction)
-
-data Size
-  = Q
-  | D
-  | W
-  | B
 
 data OpType = IM | RM | MM
 
@@ -225,37 +217,6 @@ regF R15 = R15F
 regF R15d = R15F
 regF R15w = R15F
 regF R15b = R15F
-
-type family SizeToNat (a :: Size) :: Nat where
-  SizeToNat Q = 64
-  SizeToNat D = 32
-  SizeToNat W = 16
-  SizeToNat B = 8
-
-type family LT (a :: Size) (b :: Size) :: Bool where
-  LT B W = 'True
-  LT B D = 'True
-  LT B Q = 'True
-  LT W D = 'True
-  LT W Q = 'True
-  LT D Q = 'True
-  LT _ _ = 'False
-
-type family EQ (a :: Size) (b :: Size) :: Bool where
-  EQ Q Q = 'True
-  EQ D D = 'True
-  EQ W W = 'True
-  EQ B B = 'True
-  EQ _ _ = 'False
-
-type family LTE (a :: Size) (b :: Size) :: Bool where
-  LTE a b = a `LT` b || a `EQ` b
-
-type family GT (a :: Size) (b :: Size) :: Bool where
-  GT a b = Not (a `LTE` b)
-
-type family GTE (a :: Size) (b :: Size) :: Bool where
-  GTE a b = Not (a `LT` b)
 
 type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint where
   If 'True a _ = a
