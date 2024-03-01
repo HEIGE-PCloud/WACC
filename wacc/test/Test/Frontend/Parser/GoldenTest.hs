@@ -53,7 +53,7 @@ runSemanticCheck path = goldenVsStringDiff testname diff goldenPath testAction
             Failure errs ->
               return (fromString (input ++ "\n\n" ++ semanticCheck errs path (lines input)))
             Success res2 -> case uncurry checkTypes res2 of
-              (Nothing, _) -> error "semantic check should fail but succeeded"
+              (_, []) -> error "semantic check should fail but succeeded"
               (_, errs) ->
                 return (fromString (input ++ "\n\n" ++ semanticCheck errs path (lines input)))
 
