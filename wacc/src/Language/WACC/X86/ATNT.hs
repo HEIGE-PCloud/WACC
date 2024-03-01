@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
-module Language.WACC.X86.TH where
+module Language.WACC.X86.ATNT where
 
 import Data.Char (toLower)
 import Data.List (intercalate)

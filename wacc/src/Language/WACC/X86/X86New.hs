@@ -19,8 +19,8 @@ import Data.Kind (Constraint)
 import Data.List (intercalate)
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (TypeError)
+import Language.WACC.X86.ATNT (ATNT (..), genATNTInstruction)
 import Language.WACC.X86.Size
-import Language.WACC.X86.TH (ATNT (..), genATNTInstruction)
 
 data OpType = IM | RM | MM
 
