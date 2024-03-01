@@ -1,18 +1,34 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 module Test.Backend.TAC.TranslationTest where
 
 import Control.DeepSeq (deepseq)
 import Control.Monad (when)
 import Data.Foldable (for_)
-import Data.Map
+import Data.Map (fromList)
 import GHC.IO.Exception (ExitCode (ExitSuccess))
-import Language.WACC.TAC.FType
+import Language.WACC.AST (Prog, WType)
+import Language.WACC.Error (printError)
+import Language.WACC.IO (runParse)
+import Language.WACC.TAC.Class (FnToTAC (..))
+import Language.WACC.TAC.FType (pattern FString)
+import Language.WACC.TAC.State (evalTACM)
 import Language.WACC.TAC.TAC
+  ( BasicBlock (BasicBlock)
+  , Jump (Exit, Ret)
+  , TAC (LoadCI, LoadCS, PrintLn)
+  , TACFunc (..)
+  , TACProgram
+  , Var (Var)
+  )
+import Language.WACC.TypeChecking (BType)
+import Language.WACC.X86.ATNT (formatA)
 import Language.WACC.X86.Runtime (printProgram)
 import Language.WACC.X86.Translate (translateProg)
-import Language.WACC.X86.ATNT (formatA)
 import Language.WACC.X86.X86 (Program)
-import System.IO
-import System.Process
+import System.IO (hGetContents, hPutStr)
+import System.Process (runInteractiveProcess, waitForProcess)
+import Text.Gigaparsec (Result (..))
 
 exitBlock :: BasicBlock Integer Integer
 exitBlock =
@@ -33,17 +49,26 @@ helloWorldBlock =
 mainFuntion :: TACFunc Integer Integer
 mainFuntion = TACFunc 0 [] (fromList [(0, helloWorldBlock)])
 
-mainProgram :: TACProgram Integer Integer
-mainProgram = fromList [(0, mainFuntion)]
+runFrontendSource :: IO (Prog WType Integer Integer BType)
+runFrontendSource = do
+  sourceCode <- readFile "../test.wacc"
+  return $ case runParse sourceCode of
+    Success ast -> ast
+    _ -> error "Failed to parse the source code."
 
-asm :: Program
-asm = translateProg mainProgram
+astToTAC :: Prog WType Integer Integer BType -> TACProgram Integer Integer
+astToTAC ast = evalTACM 0 (fnToTAC ast)
 
-asm' :: IO ()
-asm' = printProgram asm
+mainProgram :: IO (TACProgram Integer Integer)
+mainProgram = do astToTAC <$> runFrontendSource
+
+asm :: IO Program
+asm = do translateProg <$> mainProgram
 
 writeAsm :: IO ()
-writeAsm = writeFile "../test.s" (formatA asm)
+writeAsm = do
+  prog <- asm
+  writeFile "../test.s" (formatA prog)
 
 compileAsm :: IO ()
 compileAsm = do
