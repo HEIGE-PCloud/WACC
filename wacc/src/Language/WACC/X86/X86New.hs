@@ -45,6 +45,14 @@ type OperandW = Operand W
 
 type OperandB = Operand B
 
+type IntLitQ = IntLit Q
+
+type IntLitD = IntLit D
+
+type IntLitW = IntLit W
+
+type IntLitB = IntLit B
+
 data Register (size :: Size) where
   Rax :: RegisterQ
   Eax :: RegisterD
@@ -437,16 +445,16 @@ data Memory where
   MScaleI :: Integer -> RegisterQ -> RegisterQ -> Integer -> Memory
   MRegL :: Label -> RegisterQ -> Memory
 
-data IntLiteral (size :: Size) where
-  IntLitQ :: Int64 -> IntLiteral Q
-  IntLitD :: Int32 -> IntLiteral D
-  IntLitW :: Int16 -> IntLiteral W
-  IntLitB :: Int8 -> IntLiteral B
+data IntLit (size :: Size) where
+  IntLitQ :: Int64 -> IntLitQ
+  IntLitD :: Int32 -> IntLitD
+  IntLitW :: Int16 -> IntLitW
+  IntLitB :: Int8 -> IntLitB
 
-deriving instance Show (IntLiteral size)
+deriving instance Show (IntLit size)
 
 data Operand (size :: Size) (memory :: Mem) where
-  Imm :: IntLiteral size -> Operand size IM
+  Imm :: IntLit size -> Operand size IM
   Reg :: Register size -> Operand size RM
   Mem :: Memory -> Operand size MM
 
@@ -480,8 +488,8 @@ data Runtime
 class ATNT a where
   formatA :: a -> String
 
-instance ATNT (IntLiteral size) where
-  formatA :: IntLiteral size -> String
+instance ATNT (IntLit size) where
+  formatA :: IntLit size -> String
   formatA (IntLitQ i) = "$" ++ show i
   formatA (IntLitD i) = "$" ++ show i
   formatA (IntLitW i) = "$" ++ show i
