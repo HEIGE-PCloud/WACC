@@ -120,16 +120,16 @@ stmtTestGroup =
             "free"
             [ testProperty "accepts arrays" $
                 \t ->
-                  checkStmt' (Free (varExpr $ BArray t) undefined) == pure BAny
+                  checkStmt' (Free (varExpr $ BArray t) undefined) === pure BAny
             , testCase "accepts erased pairs" $
                 checkStmt' (Free (varExpr BErasedPair) undefined) @?= pure BAny
             , testProperty "accepts known pairs" $
                 \t1 t2 ->
                   checkStmt' (Free (varExpr $ BKnownPair t1 t2) undefined)
-                    == pure BAny
+                    === pure BAny
             ]
         , testProperty "return type is propagated" $
-            \t -> checkStmt' (Return (varExpr t) undefined) == pure t
+            \t -> checkStmt' (Return (varExpr t) undefined) === pure t
         , testGroup
             "exit"
             [ testCase "accepts ints" $
@@ -138,9 +138,9 @@ stmtTestGroup =
                 checkStmt' (Exit boolExpr undefined) @?= Left 1
             ]
         , testProperty "ignores print" $
-            \t -> checkStmt' (Print (varExpr t) undefined) == pure BAny
+            \t -> checkStmt' (Print (varExpr t) undefined) === pure BAny
         , testProperty "ignores println" $
-            \t -> checkStmt' (PrintLn (varExpr t) undefined) == pure BAny
+            \t -> checkStmt' (PrintLn (varExpr t) undefined) === pure BAny
         , testGroup
             "if then else fi"
             [ testCase "accepts skips" $
@@ -152,7 +152,7 @@ stmtTestGroup =
                   let
                     body = [Return (varExpr t) undefined]
                   in
-                    checkStmt' (IfElse boolExpr body body undefined) == pure t
+                    checkStmt' (IfElse boolExpr body body undefined) === pure t
             , testCase "rejects incompatible return types" $
                 checkStmt'
                   ( IfElse
@@ -167,21 +167,21 @@ stmtTestGroup =
             \t ->
               checkStmt'
                 (While boolExpr [Return (varExpr t) undefined] undefined)
-                == pure t
+                === pure t
         , testProperty "begin end propagates return types" $
             \t ->
               checkStmt' (BeginEnd [Return (varExpr t) undefined] undefined)
-                == pure t
+                === pure t
         ]
     , testGroup
         "checkLValue"
         [ testProperty "LVIdent looks up variable types" $
-            \t -> checkLValue' (LVIdent t undefined) == pure t
+            \t -> checkLValue' (LVIdent t undefined) === pure t
         ]
     , testGroup
         "checkRValue"
         [ testProperty "RVExpr propagates expression types" $
-            \t -> checkRValue' (RVExpr (varExpr t) undefined) == pure t
+            \t -> checkRValue' (RVExpr (varExpr t) undefined) === pure t
         , testGroup
             "RVArrayLit"
             [ testCase "accepts empty arrays" $
@@ -193,19 +193,19 @@ stmtTestGroup =
                     t = fix wt
                     xs = replicate n' $ varExpr t
                   in
-                    checkRValue' (RVArrayLit xs undefined) == pure (BArray t)
+                    checkRValue' (RVArrayLit xs undefined) === pure (BArray t)
             , testProperty "rejects arrays of heterogeneous expressions" $
                 \n ->
                   let
                     n' = abs n + 1
                     xs = replicate n' intExpr ++ [boolExpr]
                   in
-                    checkRValue' (RVArrayLit xs undefined) == Left 1
+                    checkRValue' (RVArrayLit xs undefined) === Left 1
             ]
         , testProperty "RVNewPair creates correct pair types" $
             \t1 t2 ->
               checkRValue' (RVNewPair (varExpr t1) (varExpr t2) undefined)
-                == pure (BKnownPair t1 t2)
+                === pure (BKnownPair t1 t2)
         , testGroup
             "RVCall"
             [ testCase "accepts calls with parameters of correct types" $
@@ -227,11 +227,11 @@ stmtTestGroup =
             \t1 t2 ->
               checkPairElem'
                 (FstElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
-                == pure t1
+                === pure t1
         , testProperty "extracts correct snd type" $
             \t1 t2 ->
               checkPairElem'
                 (SndElem (LVIdent (BKnownPair t1 t2) undefined) undefined)
-                == pure t2
+                === pure t2
         ]
     ]
