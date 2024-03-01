@@ -17,7 +17,7 @@ import Data.Char (toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
-import Data.Type.Bool (type (||))
+import Data.Type.Bool (type Not, type (||))
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (Nat, TypeError)
 
@@ -221,24 +221,30 @@ type family SizeToNat (a :: Size) :: Nat where
   SizeToNat W = 16
   SizeToNat B = 8
 
-type family SizeLT (a :: Size) (b :: Size) :: Bool where
-  SizeLT B W = 'True
-  SizeLT B D = 'True
-  SizeLT B Q = 'True
-  SizeLT W D = 'True
-  SizeLT W Q = 'True
-  SizeLT D Q = 'True
-  SizeLT _ _ = 'False
+type family LT (a :: Size) (b :: Size) :: Bool where
+  LT B W = 'True
+  LT B D = 'True
+  LT B Q = 'True
+  LT W D = 'True
+  LT W Q = 'True
+  LT D Q = 'True
+  LT _ _ = 'False
 
-type family SizeEq (a :: Size) (b :: Size) :: Bool where
-  SizeEq Q Q = 'True
-  SizeEq D D = 'True
-  SizeEq W W = 'True
-  SizeEq B B = 'True
-  SizeEq _ _ = 'False
+type family EQ (a :: Size) (b :: Size) :: Bool where
+  EQ Q Q = 'True
+  EQ D D = 'True
+  EQ W W = 'True
+  EQ B B = 'True
+  EQ _ _ = 'False
 
-type family SizeLTE (a :: Size) (b :: Size) :: Bool where
-  SizeLTE a b = SizeLT a b || SizeEq a b
+type family LTE (a :: Size) (b :: Size) :: Bool where
+  LTE a b = a `LT` b || a `EQ` b
+
+type family GT (a :: Size) (b :: Size) :: Bool where
+  GT a b = Not (a `LTE` b)
+
+type family GTE (a :: Size) (b :: Size) :: Bool where
+  GTE a b = Not (a `LT` b)
 
 type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint where
   If 'True a _ = a
@@ -247,41 +253,31 @@ type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint whe
 type family Unless (a :: Bool) (b :: Constraint) :: Constraint where
   Unless a b = If a () b
 
-type family NotBothMemory (a :: Mem) (b :: Mem) :: Constraint where
-  NotBothMemory 'MM 'MM = TypeError ('Text "Can not have two memory operands")
-  NotBothMemory _ _ = ()
-
-type family NotBothImmediate (a :: Mem) (b :: Mem) :: Constraint where
-  NotBothImmediate 'IM 'IM =
-    TypeError ('Text "Can not have two immediate operands")
-  NotBothImmediate _ _ = ()
-
-type family NotImmediate (a :: Mem) :: Constraint where
-  NotImmediate 'IM = TypeError ('Text "Can not have an immediate operand here")
-  NotImmediate _ = ()
+type family NotImm (a :: Mem) :: Constraint where
+  NotImm 'IM = TypeError ('Text "Can not have an immediate operand here")
+  NotImm _ = ()
 
 type family ValidImm (s1 :: Size) (m1 :: Mem) (s2 :: Size) (m2 :: Mem) :: Constraint where
   ValidImm _ _ _ IM =
-    TypeError ('Text "Can not have an immediate operand at the second argument")
+    TypeError ('Text "The second operand can not be an immediate value")
   ValidImm s1 IM s2 RM =
-    ( Unless
-        (SizeLTE s1 s2)
-        ( TypeError
-            ( 'Text
-                "The size of the first operand must be smaller than or equal to the size of the second operand"
-            )
-        )
-    )
+    Unless
+      (s1 `LTE` s2)
+      ( TypeError
+          ( 'Text
+              "The size of the immediate value must be smaller than or equal to the size of the register"
+          )
+      )
   ValidImm s1 _ s2 MM = ()
   ValidImm s1 MM s2 _ = ()
   ValidImm s1 _ s2 _ =
     Unless
-      (SizeEq s1 s2)
+      (s1 `EQ` s2)
       ( TypeError
           ( 'Text
-              "The sizes of the operands must be equal, the first operand has a size of "
+              "The sizes of the registers must be equal, the first register has a size of "
               ':<>: 'ShowType s1
-              ':<>: 'Text " while the second operand has a size of "
+              ':<>: 'Text " while the second register has a size of "
               ':<>: 'ShowType s2
           )
       )
@@ -289,7 +285,7 @@ type family ValidImm (s1 :: Size) (m1 :: Mem) (s2 :: Size) (m2 :: Mem) :: Constr
 type family ValidSizeLT (s1 :: Size) (s2 :: Size) :: Constraint where
   ValidSizeLT s1 s2 =
     Unless
-      (SizeLT s1 s2)
+      (s1 `LT` s2)
       ( TypeError
           ( 'Text
               "The size of the first operand must be smaller than the size of the second operand, the first operand has a size of "
@@ -304,9 +300,12 @@ type family ValidSizeLT (s1 :: Size) (s2 :: Size) :: Constraint where
           )
       )
 
-class (NotBothMemory a b, NotBothImmediate a b) => ValidMemory a b
-
-instance (NotBothMemory a b, NotBothImmediate a b) => ValidMemory a b
+type family ValidMem (a :: Mem) (b :: Mem) :: Constraint where
+  ValidMem MM MM = TypeError ('Text "Can not have two memory operands")
+  ValidMem IM IM = TypeError ('Text "Can not have two immediate operands")
+  ValidMem _ IM =
+    TypeError ('Text "The second operand can not be an immediate value")
+  ValidMem _ _ = ()
 
 data Instruction where
   Lab :: Label -> Instruction
@@ -321,51 +320,112 @@ data Instruction where
   Ret :: Instruction
   Cltd :: Instruction
   Mov
-    :: (ValidMemory mem1 mem2, ValidImm size1 mem1 size2 mem2)
+    :: (ValidMem mem1 mem2, ValidImm size1 mem1 size2 mem2)
     => Operand size1 mem1
     -> Operand size2 mem2
     -> Instruction
   Movzx
-    :: (ValidSizeLT size1 size2, ValidMemory mem1 mem2)
+    :: (ValidSizeLT size1 size2, ValidMem mem1 mem2)
     => Operand size1 mem1
     -> Operand size2 mem2
     -> Instruction
+  -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovl
-    :: (ValidMemory mem1 mem2)
+    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
     => Operand size mem1
     -> Operand size mem2
     -> Instruction
+  -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovle
-    :: (ValidMemory mem1 mem2)
+    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
     => Operand size mem1
     -> Operand size mem2
     -> Instruction
+  -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovg
-    :: (ValidMemory mem1 mem2)
+    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
     => Operand size mem1
     -> Operand size mem2
     -> Instruction
+  -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovge
-    :: (ValidMemory mem1 mem2)
+    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
     => Operand size mem1
     -> Operand size mem2
     -> Instruction
+  -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovne
-    :: (ValidMemory mem1 mem2)
+    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
     => Operand size mem1
     -> Operand size mem2
     -> Instruction
+  -- | https://www.felixcloutier.com/x86/cmovcc
   Cmove
-    :: (ValidMemory mem1 mem2)
+    :: (ValidMem mem1 mem2, NotImm mem1, NotImm mem2)
     => Operand size mem1
     -> Operand size mem2
     -> Instruction
-  Idivl :: Operand size mem -> Instruction -- https://www.felixcloutier.com/x86/idiv
+  -- | https://www.felixcloutier.com/x86/idiv
+  Idivl :: Operand size mem -> Instruction
+  -- | https://www.felixcloutier.com/x86/add
   Addq
-    :: (NotBothMemory mem1 mem2, NotImmediate mem2)
+    :: (ValidMem mem1 mem2, NotImm mem2)
     => OperandQ mem1
     -> OperandQ mem2
     -> Instruction
+  -- | https://www.felixcloutier.com/x86/add
+  Addl
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandD mem1
+    -> OperandD mem2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/add
+  Addw
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandW mem1
+    -> OperandW mem2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/add
+  Addb
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandB mem1
+    -> OperandB mem2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/sub
+  Subq
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandQ mem1
+    -> OperandQ mem2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/sub
+  Subl
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandD mem1
+    -> OperandD mem2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/sub
+  Subw
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandW mem1
+    -> OperandW mem2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/sub
+  Subb
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandB mem1
+    -> OperandB mem2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/imul
+  --   Yeah... Imul can take in one or two or three operands.
+  --   I love x86
+  Imulq
+    :: (ValidMem mem1 mem2, NotImm mem2)
+    => OperandQ mem1
+    -> OperandQ mem2
+    -> Instruction
+
+-- TODO: You can't operate on 64-bit immediate values unless with mov #imm, reg
+-- https://stackoverflow.com/questions/62771323/why-we-cant-move-a-64-bit-immediate-value-to-memory
 
 data Memory where
   MI :: Integer -> Memory
