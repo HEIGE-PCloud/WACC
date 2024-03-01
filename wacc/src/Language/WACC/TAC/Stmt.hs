@@ -45,10 +45,7 @@ TAC translation result for a WACC @Stmt@ translation action.
 -}
 data StmtTACs ident fnident
   = -- | Basic Block translation with result left open with @Jump@ for continuation.
-    Blocks
-      ( Jump ident fnident
-        -> TACM ident fnident (DList (BasicBlock ident fnident), Jump ident fnident)
-      )
+    Blocks (Jump ident fnident -> TACM ident fnident (Jump ident fnident))
   | -- | Jump Translation for terminal instructions like @Ret@ and @Exit@.
     BlockTerminal (Jump ident fnident)
 
@@ -94,15 +91,15 @@ instance
     gl <- freshLabel
     ga <- stmtsToTAC s2 gl
     pure $ Just $ Blocks $ \j -> do
-      fb <- fa j
-      gb <- ga j
-      pure (fb <> gb, CJump t (Label fl) (Label gl))
+      fa j
+      ga j
+      pure (CJump t (Label fl) (Label gl))
   fnToTAC (AST.While e s _) = do
     t <- tempWith (toTAC e)
     fl <- freshLabel
     fa <- stmtsToTAC s fl
     pure $ Just $ Blocks $ \j -> do
-      fb <- fa j
+      fa j
       j' <- case j of
         Jump l -> pure $ CJump t (Label fl) l
         cj@(CJump {}) -> do
@@ -110,12 +107,12 @@ instance
           appendBlock (BasicBlock [] cj) l
           pure $ CJump t (Label fl) (Label l)
         _ -> pure j
-      pure (fb, j')
+      pure j'
   fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
     fl <- freshLabel
     fa <- stmtsToTAC s fl
-    fb <- fa j
-    pure (fb, Jump $ Label fl)
+    fa j
+    pure . Jump $ Label fl
 
 stmtsToTAC
   :: (Enum fnident, Enum ident, Ord fnident)
@@ -124,9 +121,7 @@ stmtsToTAC
   -> TACM
       ident
       fnident
-      ( Jump ident fnident
-        -> TACM ident fnident (DList (BasicBlock ident fnident))
-      )
+      (Jump ident fnident -> TACM ident fnident ())
 stmtsToTAC stmts l = fnToTAC stmts >>= ($ l)
 
 {- |
@@ -146,9 +141,7 @@ instance
         -> TACM
             ident
             fnident
-            ( Jump ident fnident
-              -> TACM ident fnident (DList (BasicBlock ident fnident))
-            )
+            (Jump ident fnident -> TACM ident fnident ())
       )
 
   -- \| Translates a WACC @Stmts@ AST Node to TAC.
@@ -162,9 +155,7 @@ instance
         -> TACM
             ident
             fnident
-            ( Jump ident fnident
-              -> TACM ident fnident (DList (BasicBlock ident fnident))
-            )
+            (Jump ident fnident -> TACM ident fnident ())
       fnToTAC' kp (x : xs) =
         fnToTAC x >>= \case
           Nothing -> fnToTAC' kp xs
@@ -177,8 +168,7 @@ instance
             fl <- freshLabel
             g <- fnToTAC' fl xs
             pure $ \j -> do
-              (bs, fj) <- f j
+              fj <- f j
               appendBlock (BasicBlock (toList ts) fj) kp
-              bs' <- g j
-              pure (bs <> bs')
-      fnToTAC' kp [] = pure $ \j -> mempty <$ completeBlock j kp
+              g j
+      fnToTAC' kp [] = pure $ \j -> completeBlock j kp
