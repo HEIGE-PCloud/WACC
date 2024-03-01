@@ -2,6 +2,7 @@
 {-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
@@ -23,6 +24,8 @@ import Language.WACC.TypeChecking.State
 import Text.Gigaparsec.Position (Pos)
 import Prelude hiding (GT, LT)
 
+type instance Typed (ArrayIndex ident ann) = ArrayIndex ident BType
+
 instance TypeChecked (ArrayIndex ident Pos) where
   check (ArrayIndex v xs p) = do
     vt <- typeOf v
@@ -35,6 +38,8 @@ instance TypeChecked (ArrayIndex ident Pos) where
       tryPred n = pred n
     t <- reportAt p (BArray BAny) $ foldM go vt xs
     pure $ ArrayIndex v (fmap (BInt <$) xs) t
+
+type instance Typed (WAtom ident ann) = WAtom ident BType
 
 instance TypeChecked (WAtom ident Pos) where
   check i@(IntLit _ _) = pure $ BInt <$ i
@@ -86,6 +91,8 @@ tryUnifyExprs t xs =
   [ (,xs') <$> foldM unify t (getAnn <$> xs')
   | xs' <- traverse check xs
   ]
+
+type instance Typed (Expr ident ann) = Expr ident BType
 
 instance TypeChecked (Expr ident Pos) where
   check (WAtom atom _) =
