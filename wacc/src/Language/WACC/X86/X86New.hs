@@ -17,6 +17,7 @@ import Data.Char (toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
+import Data.Type.Bool (type (||))
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (Nat, TypeError)
 
@@ -220,57 +221,31 @@ type family SizeToNat (a :: Size) :: Nat where
   SizeToNat W = 16
   SizeToNat B = 8
 
-type family SizeLT (a :: Size) (b :: Size) :: Constraint where
-  SizeLT B W = ()
-  SizeLT B D = ()
-  SizeLT B Q = ()
-  SizeLT W D = ()
-  SizeLT W Q = ()
-  SizeLT D Q = ()
-  SizeLT a b =
-    TypeError
-      ( 'Text
-          "The size of the first operand must be smaller than the size of the second operand, the first operand has a size of "
-          ':<>: 'ShowType a
-          ':<>: 'Text " ("
-          ':<>: 'ShowType (SizeToNat a)
-          ':<>: 'Text " bits) while the second operand has a size of "
-          ':<>: 'ShowType b
-          ':<>: 'Text " ("
-          ':<>: 'ShowType (SizeToNat b)
-          ':<>: 'Text " bits)"
-      )
+type family SizeLT (a :: Size) (b :: Size) :: Bool where
+  SizeLT B W = 'True
+  SizeLT B D = 'True
+  SizeLT B Q = 'True
+  SizeLT W D = 'True
+  SizeLT W Q = 'True
+  SizeLT D Q = 'True
+  SizeLT _ _ = 'False
 
-type family SizeEq (a :: Size) (b :: Size) :: Constraint where
-  SizeEq Q Q = ()
-  SizeEq D D = ()
-  SizeEq W W = ()
-  SizeEq B B = ()
-  SizeEq a b =
-    TypeError
-      ( 'Text
-          "The sizes of the operands must be equal, the first operand has a size of "
-          ':<>: 'ShowType a
-          ':<>: 'Text " while the second operand has a size of "
-          ':<>: 'ShowType b
-      )
+type family SizeEq (a :: Size) (b :: Size) :: Bool where
+  SizeEq Q Q = 'True
+  SizeEq D D = 'True
+  SizeEq W W = 'True
+  SizeEq B B = 'True
+  SizeEq _ _ = 'False
 
-type family SizeLTE (a :: Size) (b :: Size) :: Constraint where
-  SizeLTE B W = ()
-  SizeLTE B D = ()
-  SizeLTE B Q = ()
-  SizeLTE W D = ()
-  SizeLTE W Q = ()
-  SizeLTE D Q = ()
-  SizeLTE Q Q = ()
-  SizeLTE D D = ()
-  SizeLTE W W = ()
-  SizeLTE B B = ()
-  SizeLTE _ _ =
-    TypeError
-      ( 'Text
-          "The size of the first operand must be smaller than or equal to the size of the second operand"
-      )
+type family SizeLTE (a :: Size) (b :: Size) :: Bool where
+  SizeLTE a b = SizeLT a b || SizeEq a b
+
+type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint where
+  If 'True a _ = a
+  If 'False _ b = b
+
+type family Unless (a :: Bool) (b :: Constraint) :: Constraint where
+  Unless a b = If a () b
 
 type family NotBothMemory (a :: Mem) (b :: Mem) :: Constraint where
   NotBothMemory 'MM 'MM = TypeError ('Text "Can not have two memory operands")
@@ -288,10 +263,46 @@ type family NotImmediate (a :: Mem) :: Constraint where
 type family ValidImm (s1 :: Size) (m1 :: Mem) (s2 :: Size) (m2 :: Mem) :: Constraint where
   ValidImm _ _ _ IM =
     TypeError ('Text "Can not have an immediate operand at the second argument")
-  ValidImm s1 IM s2 RM = SizeLTE s1 s2
+  ValidImm s1 IM s2 RM =
+    ( Unless
+        (SizeLTE s1 s2)
+        ( TypeError
+            ( 'Text
+                "The size of the first operand must be smaller than or equal to the size of the second operand"
+            )
+        )
+    )
   ValidImm s1 _ s2 MM = ()
   ValidImm s1 MM s2 _ = ()
-  ValidImm s1 _ s2 _ = SizeEq s1 s2
+  ValidImm s1 _ s2 _ =
+    Unless
+      (SizeEq s1 s2)
+      ( TypeError
+          ( 'Text
+              "The sizes of the operands must be equal, the first operand has a size of "
+              ':<>: 'ShowType s1
+              ':<>: 'Text " while the second operand has a size of "
+              ':<>: 'ShowType s2
+          )
+      )
+
+type family ValidSizeLT (s1 :: Size) (s2 :: Size) :: Constraint where
+  ValidSizeLT s1 s2 =
+    Unless
+      (SizeLT s1 s2)
+      ( TypeError
+          ( 'Text
+              "The size of the first operand must be smaller than the size of the second operand, the first operand has a size of "
+              ':<>: 'ShowType s1
+              ':<>: 'Text " ("
+              ':<>: 'ShowType (SizeToNat s1)
+              ':<>: 'Text " bits) while the second operand has a size of "
+              ':<>: 'ShowType s2
+              ':<>: 'Text " ("
+              ':<>: 'ShowType (SizeToNat s2)
+              ':<>: 'Text " bits)"
+          )
+      )
 
 class (NotBothMemory a b, NotBothImmediate a b) => ValidMemory a b
 
@@ -315,7 +326,7 @@ data Instruction where
     -> Operand size2 mem2
     -> Instruction
   Movzx
-    :: (SizeLT size1 size2, ValidMemory mem1 mem2)
+    :: (ValidSizeLT size1 size2, ValidMemory mem1 mem2)
     => Operand size1 mem1
     -> Operand size2 mem2
     -> Instruction
