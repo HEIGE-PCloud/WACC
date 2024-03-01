@@ -45,8 +45,8 @@ type instance Typed (LValue ident ann) = LValue ident BType
 instance TypeChecked (LValue ident Pos) where
   check (LVIdent v _) = LVIdent v <$> typeOf v
   check (LVArrayElem ai _) =
-    [ LVArrayElem ai' (getAnn ai')
-    | ai' <- check ai
+    [ LVArrayElem ai' t
+    | (t, ai') <- check ai
     ]
   check (LVPairElem pe _) =
     [ LVPairElem pe' (getAnn pe')
