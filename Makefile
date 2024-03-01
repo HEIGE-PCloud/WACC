@@ -7,14 +7,16 @@ compile:
 build-test:
 	stack build --test --no-run-tests
 
+TIMEOUT ?= 20s
+
 test:
 	stack test \
 		$(if $(SHOW_ALL),, --test-arguments --hide-successes) \
-		--test-arguments --timeout=1m \
+		--test-arguments --timeout=$(TIMEOUT) \
 		--test-arguments --xml=../rspec.xml \
 		--test-arguments --quickcheck-max-size=10 \
 		--test-arguments '--pattern "$$$(PATTERN)"' \
-		$(if $(ACCEPT), --test-arguments --accept)
+		$(if $(ACCEPT), --test-arguments --accept) ; pkill -f "[a-z]+\.out"
 
 test-all: compile
 	$(MAKE) test PATTERN="0 ~ /./"
@@ -60,10 +62,10 @@ typechecker-test:
 # Backend Tests
 
 backend-test: compile
-	$(MAKE) test PATTERN="0 ~ /backend/"
+	TIMEOUT=5s $(MAKE) test PATTERN="0 ~ /backend/"
 
 backend-integration-test: compile
-	$(MAKE) test PATTERN="0 ~ /backend\.integrationTest/"
+	TIMEOUT=5s $(MAKE) test PATTERN="0 ~ /backend\.integrationTest/"
 
 tac-test:
 	$(MAKE) test PATTERN="0 ~ /TAC/"

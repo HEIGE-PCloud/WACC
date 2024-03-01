@@ -1,13 +1,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 {- |
 The entrypoint for the compiler executable.
 -}
-module Language.WACC.IO (main, readProgramFile) where
+module Language.WACC.IO (main, readProgramFile, runParse, runScopeAnalysis, runTypeCheck) where
 
 import Control.Exception (handle)
-import Data.List (isInfixOf)
 import Data.List.Extra (replace)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
@@ -17,15 +15,15 @@ import Language.WACC.Error (Error, printError, semanticError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
 import Language.WACC.Parser.Token (fully)
 import Language.WACC.Semantic.Scope
-  ( Fnident (..)
+  ( Fnident
   , VarST
-  , Vident (..)
+  , Vident
   , scopeAnalysis
   )
-import Language.WACC.TAC.Class
-import Language.WACC.TAC.Prog
-import Language.WACC.TAC.State
-import Language.WACC.TAC.TAC
+import Language.WACC.TAC.Class (FnToTAC (fnToTAC))
+import Language.WACC.TAC.Prog ()
+import Language.WACC.TAC.State (evalTACM)
+import Language.WACC.TAC.TAC (TACProgram)
 import Language.WACC.TypeChecking (BType, checkTypes)
 import Language.WACC.X86.ATNT (ATNT (..))
 import Language.WACC.X86.Translate (translateProg)
@@ -54,7 +52,6 @@ import System.IO.Error
   )
 import Text.Gigaparsec (Result (..))
 import Text.Gigaparsec.Position (Pos)
-import Text.RawString.QQ
 
 ioErrorCode :: ExitCode
 ioErrorCode = ExitFailure 255
@@ -132,7 +129,7 @@ runScopeAnalysis ast = case scopeAnalysis ast of
 runTypeCheck
   :: (Prog WType Fnident Vident Pos, VarST) -> Result'
 runTypeCheck ast = case uncurry checkTypes ast of
-  (Just ast', _) -> Success ast'
+  (Just ast', []) -> Success ast'
   (_, errs) -> Failure (errs, semanticErrorCode)
 
 runCodeGen :: String -> Prog WType Fnident Vident BType -> IO ()
