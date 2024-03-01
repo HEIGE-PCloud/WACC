@@ -7,7 +7,7 @@
 {- |
 TAC Translation actions for WACC @Stmt@s.
 -}
-module Language.WACC.TAC.Stmt (StmtTACs (..)) where
+module Language.WACC.TAC.Stmt (StmtTACs (..), stmtsToTAC) where
 
 import Data.DList
 import qualified Data.List.NonEmpty as NE
@@ -100,14 +100,13 @@ instance
     fa <- stmtsToTAC s fl
     pure $ Just $ Blocks $ \j -> do
       fa j
-      j' <- case j of
+      case j of
         Jump l -> pure $ CJump t (Label fl) l
         cj@(CJump {}) -> do
           l <- freshLabel
           appendBlock (BasicBlock [] cj) l
           pure $ CJump t (Label fl) (Label l)
         _ -> pure j
-      pure j'
   fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
     fl <- freshLabel
     fa <- stmtsToTAC s fl
