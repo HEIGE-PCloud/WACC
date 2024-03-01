@@ -1,8 +1,8 @@
 -- {-# LANGUAGE GADTs #-}
-module Test.Backend.X86.TranslateTest
-  -- ( translateTestGroup
-  -- )
-where
+module Test.Backend.X86.TranslateTest where
+
+-- ( translateTestGroup
+-- )
 
 -- Test translation of TAC to X86
 

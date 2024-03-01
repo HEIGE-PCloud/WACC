@@ -18,7 +18,6 @@ import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
-
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
