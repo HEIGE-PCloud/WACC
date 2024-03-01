@@ -17,6 +17,7 @@ test:
 		--test-arguments --quickcheck-max-size=10 \
 		--test-arguments '--pattern "$$$(PATTERN)"' \
 		$(if $(ACCEPT), --test-arguments --accept)
+	pkill -f "[a-z]+\.out"
 
 test-all: compile
 	$(MAKE) test PATTERN="0 ~ /./"

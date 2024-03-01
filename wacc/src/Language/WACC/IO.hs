@@ -129,7 +129,7 @@ runScopeAnalysis ast = case scopeAnalysis ast of
 runTypeCheck
   :: (Prog WType Fnident Vident Pos, VarST) -> Result'
 runTypeCheck ast = case uncurry checkTypes ast of
-  (Just ast', _) -> Success ast'
+  (Just ast', []) -> Success ast'
   (_, errs) -> Failure (errs, semanticErrorCode)
 
 runCodeGen :: String -> Prog WType Fnident Vident BType -> IO ()
