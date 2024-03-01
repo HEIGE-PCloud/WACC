@@ -159,9 +159,10 @@ lvalueTestGroup =
                     BInt
                 )
                 LVRead
-                === [ LoadCI temp1 offset
-                    , Read temp2 FInt
-                    , Store temp0 temp1 temp2 FInt
+                === [ Move temp1 (Var v)
+                    , LoadCI temp2 offset
+                    , Read temp3 FInt
+                    , Store temp1 temp2 temp3 FInt
                     ]
         , testPairProperty "storing into a pair element uses Store" $
             \mkPairElem offset v x ->
@@ -171,9 +172,10 @@ lvalueTestGroup =
                     BInt
                 )
                 (lvStore x)
-                === [ LoadCI temp1 offset
-                    , LoadCI temp2 x
-                    , Store temp0 temp1 temp2 FInt
+                === [ Move temp1 (Var v)
+                    , LoadCI temp2 offset
+                    , LoadCI temp3 x
+                    , Store temp1 temp2 temp3 FInt
                     ]
         ]
     ]
