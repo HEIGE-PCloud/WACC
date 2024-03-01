@@ -14,21 +14,24 @@ module Language.WACC.TAC.State
   , collectTACs
   , appendBlock
   , completeBlock
+  , collectBlocks
   , getTarget
   , into
   , tempWith
   , loadConst
+  , putFunc
   )
 where
 
 import Control.Monad.Trans.RWS (RWS, ask, evalRWS, gets, local, modify, tell)
 import Data.DList (DList, toList)
-import Data.Map (Map, empty, insert)
+import Data.Map (Map, empty, insert, singleton)
 import Language.WACC.TAC.TAC
   ( BasicBlock (..)
   , Jump (..)
   , Label
   , TAC (LoadCI)
+  , TACFunc
   , TACProgram
   , Var (Temp)
   )
@@ -115,6 +118,15 @@ completeBlock j l = do
   appendBlock (BasicBlock (toList ts) j) l
 
 {- |
+Collects the map of basic blocks from the state.
+-}
+collectBlocks
+  :: (Ord lident) => TACM ident lident (Map lident (BasicBlock ident lident))
+collectBlocks = gets funcBlocks <* modify clearBlocks
+  where
+    clearBlocks st = st {funcBlocks = empty}
+
+{- |
 Read the target variable from the reader component.
 -}
 getTarget :: (Ord lident) => TACM ident lident (Var ident)
@@ -146,3 +158,9 @@ loadConst :: (Enum ident, Ord lident) => Int -> TACM ident lident (Var ident)
 loadConst x = tempWith $ do
   target <- getTarget
   putTACs [LoadCI target x]
+
+{- |
+Inserts a function into the TAC program.
+-}
+putFunc :: lident -> TACFunc ident lident -> TACM ident lident ()
+putFunc name func = tell $ singleton name func
