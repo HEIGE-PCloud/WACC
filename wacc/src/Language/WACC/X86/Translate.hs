@@ -178,7 +178,7 @@ translateNext (Jump l1@(Label n)) = do
     )
 translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
-  tellInstr (X86.Cmpq operand (Imm 0))
+  tellInstr (X86.Cmpq (Imm 0) operand)
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
   t <- isTranslated l1
@@ -324,7 +324,8 @@ translateTAC (TAC.Move v1 v2) = do
   comment $ "Move: " ++ show v1 ++ " := " ++ show v2
   operand1 <- allocate' v1
   operand2 <- getOperand v2
-  movq operand2 operand1
+  movq operand2 rax
+  movq rax operand1
   comment "End Move"
 
 -------------------------------------
@@ -420,7 +421,8 @@ translateBinOp o TAC.LT o1 o2 = do
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setl al -- set al to 1 if %eax < %ebx
-  movzbl al o -- %o := %al
+  movzbl al eax
+  movl eax o -- %o := %al
   comment "End Binary Less Than"
 translateBinOp o TAC.LTE o1 o2 = do
   comment $
@@ -434,7 +436,8 @@ translateBinOp o TAC.LTE o1 o2 = do
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setle al -- set al to 1 if %eax <= %ebx
-  movzbl al o -- %o := %al
+  movzbl al eax
+  movl eax o -- %o := %al
   comment "End Binary Less Than or Equal"
 translateBinOp o TAC.GT o1 o2 = do
   comment $
@@ -443,7 +446,8 @@ translateBinOp o TAC.GT o1 o2 = do
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setg al -- set al to 1 if %eax > %ebx
-  movzbl al o -- %o := %al
+  movzbl al eax
+  movl eax o -- %o := %al
   comment "End Binary Greater Than"
 translateBinOp o TAC.GTE o1 o2 = do
   comment $
@@ -457,7 +461,8 @@ translateBinOp o TAC.GTE o1 o2 = do
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setge al -- set al to 1 if %eax >= %ebx
-  movzbl al o -- %o := %al
+  movzbl al eax
+  movl eax o -- %o := %al
   comment "End Binary Greater Than or Equal"
 translateBinOp o TAC.Eq o1 o2 = do
   comment $ "Binary Equal: " ++ show o ++ " := " ++ show o1 ++ " == " ++ show o2
@@ -465,7 +470,8 @@ translateBinOp o TAC.Eq o1 o2 = do
   movq o2 rbx -- %ebx := o2
   cmpq rbx rax -- compare %ebx and %eax
   sete al -- set al to 1 if %eax == %ebx
-  movzbl al o -- %o := %al
+  movzbl al eax
+  movl eax o -- %o := %al
   comment "End Binary Equal"
 translateBinOp o TAC.Ineq o1 o2 = do
   comment $
@@ -474,7 +480,8 @@ translateBinOp o TAC.Ineq o1 o2 = do
   movq o2 rbx -- %ebx := o2
   cmpq rbx rax -- compare %ebx and %eax
   setne al -- set al to 1 if %eax != %ebx
-  movzbl al o -- %o := %al
+  movzbl al eax
+  movl eax o -- %o := %al
   comment "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
