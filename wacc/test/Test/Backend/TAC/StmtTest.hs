@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedLists #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns -Wno-type-defaults #-}
 
 module Test.Backend.TAC.StmtTest (stmtTestGroup, stmtsTestGroup) where
 
@@ -138,15 +139,18 @@ stmtTestGroup =
               BAny
           )
           === (
-                [ LoadCI temp1 v
-                , LoadCI temp3 i1
-                , LoadCI temp4 i2
-                , BinInstr temp2 temp3 Language.WACC.TAC.TAC.Add temp4
-                , Store temp0 temp1 temp2 WIntF
+                [ Move temp1 (Var v)
+                , LoadCI temp2 0
+                , LoadCI temp4 i1
+                , LoadCI temp5 i2
+                , BinInstr temp3 temp4 Language.WACC.TAC.TAC.Add temp5
+                , Store temp1 temp2 temp3 WIntF
                 ]
               , []
               )
     ]
+
+-- [LoadCI (Temp 1) 0,LoadCI (Temp 3) 4,LoadCI (Temp 4) 6,BinInstr (Temp 2) (Temp 3) Add (Temp 4),Store (Temp 0) (Temp 1) (Temp 2) WIntF]
 
 jump0 :: Jump Int Int
 jump0 = Jump $ Label 0
@@ -158,3 +162,7 @@ stmtsToTAC' stmts l j =
 
 stmtsTestGroup :: TestTree
 stmtsTestGroup = testGroup "statement groups" []
+
+-- [LoadCI (Temp 1) 4,LoadCI (Temp 2) 4,LoadCI (Temp 3) 0,BinInstr (Temp 4) (Temp 3) Mul (Temp 2),
+--  BinInstr (Temp 5) (Temp 4) Add (Temp 1),LoadCI (Temp 7) 0,LoadCI (Temp 8) 5,
+--  BinInstr (Temp 6) (Temp 7) Add (Temp 8),Store (Var 0) (Temp 5) (Temp 6) WIntF]
