@@ -38,6 +38,7 @@ generateGadtC ns args = do
     argsExps = listE $ map (\n -> [|formatA $(varE n)|]) argNames
   let
     body = case opName of
+      "dir" -> normalB [|concat $(argsExps)|]
       "lab" -> normalB [|concat $(argsExps) ++ ":"|]
       "comment" -> normalB [|"# " ++ concat $(argsExps)|]
       _ -> normalB [|opName ++ " " ++ intercalate ", " $(argsExps)|]

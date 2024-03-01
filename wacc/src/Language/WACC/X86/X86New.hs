@@ -15,7 +15,7 @@
 module Language.WACC.X86.X86New where
 
 import Data.Char (toLower)
-import Data.Data (Data, Typeable)
+import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
 import Data.List (intercalate)
@@ -318,9 +318,19 @@ type family ValidMem (a :: Mem) (b :: Mem) :: Constraint where
     TypeError ('Text "The second operand can not be an immediate value")
   ValidMem _ _ = ()
 
+data Directive
+  = DirInt Integer
+  | -- | String directives (insert ascii binary at location)
+    DirAsciz String
+  | DirText
+  | DirSection
+  | DirGlobl Label
+  deriving (Typeable, Data, Show)
+
 data Instruction where
   Comment :: String -> Instruction
   Lab :: Label -> Instruction
+  Dir :: Directive -> Instruction
   Je :: Label -> Instruction
   Jne :: Label -> Instruction
   Jl :: Label -> Instruction
@@ -535,6 +545,20 @@ instance ATNT Label where
   formatA (I i) = "L" ++ show i
   formatA (R r) = show r
   formatA (S s) = s
+
+dirName :: Directive -> String
+dirName = ifDirective . map toLower . showConstr . toConstr
+  where
+    ifDirective str = case str of
+      'd' : 'i' : 'r' : cs -> '.' : cs -- dealing with directives
+      cs -> cs
+
+instance ATNT Directive where
+  formatA d@(DirInt x) = unwords [dirName d, show x]
+  formatA d@(DirAsciz str) = unwords [dirName d, show str]
+  formatA d@(DirGlobl l) = unwords [dirName d, formatA l]
+  formatA d@(DirSection) = unwords [dirName d, ".rodata"]
+  formatA d = dirName d
 
 $(genATNTInstruction ''Instruction)
 
