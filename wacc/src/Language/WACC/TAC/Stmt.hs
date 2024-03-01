@@ -7,7 +7,7 @@
 {- |
 TAC Translation actions for WACC @Stmt@s.
 -}
-module Language.WACC.TAC.Stmt where
+module Language.WACC.TAC.Stmt (StmtTACs (..)) where
 
 import Data.DList
 import qualified Data.List.NonEmpty as NE
@@ -89,29 +89,45 @@ instance
   fnToTAC (AST.Exit e _) = Just . BlockTerminal . Exit <$> tempWith (toTAC e)
   fnToTAC (AST.IfElse e s1 s2 _) = do
     t <- tempWith (toTAC e)
-    fa <- fnToTAC s1
-    ga <- fnToTAC s2
+    fl <- freshLabel
+    fa <- stmtsToTAC s1 fl
+    gl <- freshLabel
+    ga <- stmtsToTAC s2 gl
     pure $ Just $ Blocks $ \j -> do
-      (fb, fl) <- fa j
-      (gb, gl) <- ga j
-      pure (fb <> gb, CJump t fl gl)
+      fb <- fa j
+      gb <- ga j
+      pure (fb <> gb, CJump t (Label fl) (Label gl))
   fnToTAC (AST.While e s _) = do
     t <- tempWith (toTAC e)
-    fa <- fnToTAC s
+    fl <- freshLabel
+    fa <- stmtsToTAC s fl
     pure $ Just $ Blocks $ \j -> do
-      (fb, fl) <- fa j
+      fb <- fa j
       j' <- case j of
-        Jump l -> pure $ CJump t fl l
+        Jump l -> pure $ CJump t (Label fl) l
         cj@(CJump {}) -> do
           l <- freshLabel
           appendBlock (BasicBlock [] cj) l
-          pure $ CJump t fl (Label l)
+          pure $ CJump t (Label fl) (Label l)
         _ -> pure j
       pure (fb, j')
   fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
-    fa <- fnToTAC s
-    (fb, fl) <- fa j
-    pure (fb, Jump fl)
+    fl <- freshLabel
+    fa <- stmtsToTAC s fl
+    fb <- fa j
+    pure (fb, Jump $ Label fl)
+
+stmtsToTAC
+  :: (Enum fnident, Enum ident, Ord fnident)
+  => AST.Stmts fnident ident BType
+  -> fnident
+  -> TACM
+      ident
+      fnident
+      ( Jump ident fnident
+        -> TACM ident fnident (DList (BasicBlock ident fnident))
+      )
+stmtsToTAC stmts l = fnToTAC stmts >>= ($ l)
 
 {- |
 Defines instance of @FnToTAC@ for WACC @Stmts@s. This instance is used to translate WACC @Stmts@s AST Nodes to TAC.
@@ -126,13 +142,17 @@ instance
   -- \| TAC translation result for a WACC @Stmts@ translation action, with @Jump@ continuation.
   type
     TACFnRepr (AST.Stmts fnident ident BType) =
-      ( Jump ident fnident
-        -> TACM ident fnident (DList (BasicBlock ident fnident), Label fnident)
+      ( fnident
+        -> TACM
+            ident
+            fnident
+            ( Jump ident fnident
+              -> TACM ident fnident (DList (BasicBlock ident fnident))
+            )
       )
 
   -- \| Translates a WACC @Stmts@ AST Node to TAC.
-  fnToTAC stmts = do
-    l <- freshLabel
+  fnToTAC stmts = pure $ \l ->
     (fnToTAC' l . NE.toList . unwrap) stmts
     where
       fnToTAC'
@@ -143,7 +163,7 @@ instance
             ident
             fnident
             ( Jump ident fnident
-              -> TACM ident fnident (DList (BasicBlock ident fnident), Label fnident)
+              -> TACM ident fnident (DList (BasicBlock ident fnident))
             )
       fnToTAC' kp (x : xs) =
         fnToTAC x >>= \case
@@ -159,6 +179,6 @@ instance
             pure $ \j -> do
               (bs, fj) <- f j
               appendBlock (BasicBlock (toList ts) fj) kp
-              (bs', _) <- g j
-              pure (bs <> bs', Label kp)
-      fnToTAC' kp [] = pure $ \j -> (mempty, Label kp) <$ completeBlock j kp
+              bs' <- g j
+              pure (bs <> bs')
+      fnToTAC' kp [] = pure $ \j -> mempty <$ completeBlock j kp
