@@ -280,13 +280,13 @@ rvalueTestGroup =
     , testGroup
         "function calls"
         [ testProperty "nullary function calls are executed using Call" $ \f ->
-            toTAC' (RVCall f [] BInt) === [Call temp0 (Label f) []]
+            toTAC' (RVCall f [] BInt) === [Call temp0 f []]
         , testProperty "function arguments are evaluated before the Call" $
             \f i1 i2 ->
               toTAC' (RVCall f [intLit i1, intLit i2] BInt)
                 === [ LoadCI temp1 i1
                     , LoadCI temp2 i2
-                    , Call temp0 (Label f) [temp1, temp2]
+                    , Call temp0 f [temp1, temp2]
                     ]
         ]
     ]

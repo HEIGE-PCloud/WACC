@@ -48,7 +48,7 @@ stmtTestGroup =
     ]
 
 jump0 :: Jump Int Int
-jump0 = Jump $ Label 0
+jump0 = Jump 0
 
 stmtsToTAC'
   :: Stmts Int Int BType -> Int -> Jump Int Int -> Map Int (BasicBlock Int Int)

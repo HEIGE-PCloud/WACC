@@ -29,7 +29,6 @@ import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
   ( BasicBlock (..)
   , Jump (..)
-  , Label (..)
   , TAC (..)
   , Var (..)
   )
@@ -93,7 +92,7 @@ instance
     pure $ Just $ Blocks $ \j -> do
       fa j
       ga j
-      pure (CJump t (Label fl) (Label gl))
+      pure $ CJump t fl gl
   fnToTAC (AST.While e s _) = do
     t <- tempWith (toTAC e)
     fl <- freshLabel
@@ -101,17 +100,17 @@ instance
     pure $ Just $ Blocks $ \j -> do
       fa j
       case j of
-        Jump l -> pure $ CJump t (Label fl) l
+        Jump l -> pure $ CJump t fl l
         cj@(CJump {}) -> do
           l <- freshLabel
           appendBlock (BasicBlock [] cj) l
-          pure $ CJump t (Label fl) (Label l)
+          pure $ CJump t fl l
         _ -> pure j
   fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
     fl <- freshLabel
     fa <- stmtsToTAC s fl
     fa j
-    pure . Jump $ Label fl
+    pure $ Jump fl
 
 stmtsToTAC
   :: (Enum fnident, Enum ident, Eq ident, Ord fnident)
