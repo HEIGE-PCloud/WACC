@@ -32,10 +32,10 @@ import Language.WACC.TAC.FType
 import Language.WACC.TAC.TAC
   ( BasicBlock (BasicBlock)
   , BinOp (Add, And, Div, Mod, Mul, Or, Sub)
-  , Func (..)
   , Jump (CJump, Jump)
   , Label (Label)
   , TAC (BinInstr, LoadCI, LoadCS, LoadM, Print, Read, Store, UnInstr)
+  , TACFunc (..)
   , TACProgram
   , UnOp (..)
   , Var
@@ -117,8 +117,8 @@ Local Regs: 1
 .
 .
 -}
-translateFunc :: Func Integer Integer -> (Set Runtime, DList Instr)
-translateFunc (Func l vs bs) = (runtimeFns st, is)
+translateFunc :: TACFunc Integer Integer -> (Set Runtime, DList Instr)
+translateFunc (TACFunc l vs bs) = (runtimeFns st, is)
   where
     (st, is) =
       execRWS
@@ -286,12 +286,14 @@ translateTAC (TAC.PrintLn v w) = do
   translateTAC (Print v w)
   call printLn
   comment "End PrintLn"
+{-
 translateTAC (TAC.Exit v) = do
   comment $ "Exit: exit " ++ show v
   operand <- getOperand v
   movq operand arg1
   call (R X86.Exit)
   comment "End Exit"
+-}
 translateTAC (Read v w) = do
   comment $ "Read: " ++ show v ++ " := read"
   operand <- allocate' v

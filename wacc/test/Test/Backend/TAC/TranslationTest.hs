@@ -17,7 +17,6 @@ exitBlock :: BasicBlock Integer Integer
 exitBlock =
   BasicBlock
     [ LoadCI (Var 0) 0
-    , Exit (Var 0)
     ]
     (Ret (Var 0))
 
@@ -30,8 +29,8 @@ helloWorldBlock =
     ]
     (Ret (Var 0))
 
-mainFuntion :: Func Integer Integer
-mainFuntion = Func 0 [] (fromList [(0, helloWorldBlock)])
+mainFuntion :: TACFunc Integer Integer
+mainFuntion = TACFunc 0 [] (fromList [(0, helloWorldBlock)])
 
 mainProgram :: TACProgram Integer Integer
 mainProgram = fromList [(0, mainFuntion)]

@@ -11,6 +11,7 @@ module Language.WACC.TAC.Expr () where
 
 import Data.Bool (bool)
 import Data.Char (ord)
+import Data.Maybe (fromMaybe)
 import Language.WACC.AST
   ( ArrayIndex (..)
   , Expr (WAtom)
@@ -24,22 +25,73 @@ import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking (BType (..))
 import Prelude hiding (GT, LT)
 
+type instance TACIdent (ArrayIndex ident a) = ident
+
+{- |
+This instance allows a custom base case to be provided for the TAC instruction
+generator:
+
+> type
+>   TACRepr (ArrayIndex ident BType) lident =
+>     Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
+>     -> TACM ident lident ()
+-}
+instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
+  type
+    TACRepr (ArrayIndex ident BType) lident =
+      Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
+      -> TACM ident lident ()
+  toTAC (ArrayIndex v xs t) = pure $ \mf -> do
+    target <- getTarget
+    offset <- loadConst (sizeOf FInt)
+    let
+      loadOffset v' offset' t' = do
+        target' <- getTarget
+        putTACs [LoadM target' v' offset' t']
+      mkOffsetTACs x ft = do
+        scalar <- loadConst (sizeOf ft)
+        index <- tempWith (toTAC x)
+        temp1 <- freshTemp
+        temp2 <- freshTemp
+        putTACs
+          [ BinInstr temp1 index Mul scalar
+          , BinInstr temp2 temp1 Add offset
+          ]
+        pure temp2
+      chainIndexTACs v' [x] (BArray t') = do
+        let
+          ft = flatten t'
+        offset' <- mkOffsetTACs x ft
+        (fromMaybe loadOffset mf) v' offset' ft `into` target
+      chainIndexTACs v' (x : xs') (BArray t') = do
+        let
+          ft = flatten t'
+        offset' <- mkOffsetTACs x ft
+        temp <- tempWith (loadOffset v' offset' ft)
+        chainIndexTACs temp xs' t'
+      chainIndexTACs _ _ _ = error "attempted to translate invalid ArrayIndex"
+    chainIndexTACs (Var v) xs t
+
 {- |
 Load an integer constant using 'LoadCI'.
 -}
-loadCI :: Int -> TACM ident lident ()
+loadCI :: (Ord lident) => Int -> TACM ident lident ()
 loadCI x = do
   t <- getTarget
   putTACs [LoadCI t x]
 
-unOp :: (Enum ident) => UnOp -> Expr ident BType -> TACM ident lident ()
+unOp
+  :: (Enum ident, Eq ident, Ord lident)
+  => UnOp
+  -> Expr ident BType
+  -> TACM ident lident ()
 unOp op x = do
   temp <- tempWith (toTAC x)
   t <- getTarget
   putTACs [UnInstr t op temp]
 
 binInstr
-  :: (Enum ident)
+  :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
   -> (Var ident -> Var ident -> Var ident -> TAC ident lident)
   -> Expr ident BType
@@ -51,7 +103,7 @@ binInstr x instr y = do
   putTACs [instr t temp1 temp2]
 
 binOp
-  :: (Enum ident)
+  :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
   -> BinOp
   -> Expr ident BType
@@ -60,7 +112,7 @@ binOp x op y = binInstr x (\t xv yv -> BinInstr t xv op yv) y
 
 type instance TACIdent (Expr ident a) = ident
 
-instance (Enum ident) => ToTAC (Expr ident BType) where
+instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   type TACRepr (Expr ident BType) lident = ()
   toTAC (WAtom (IntLit x _) _) = loadCI $ fromEnum x
   toTAC (WAtom (BoolLit b _) _) = loadCI $ bool 0 1 b
@@ -69,32 +121,10 @@ instance (Enum ident) => ToTAC (Expr ident BType) where
     t <- getTarget
     putTACs [LoadCS t s]
   toTAC (WAtom (Null _) _) = loadCI 0
-  -- TODO: copy value of source code variable into target TAC variable
-  toTAC (WAtom (Ident _ _) _) = pure ()
-  toTAC (WAtom (ArrayElem (ArrayIndex v xs t) _) _) = do
+  toTAC (WAtom (Ident v _) _) = do
     target <- getTarget
-    offset <- loadConst (sizeOf FInt)
-    let
-      mkIndexTACs v' x t' = do
-        let
-          ft = flatten t'
-        scalar <- loadConst (sizeOf ft)
-        index <- tempWith (toTAC x)
-        temp1 <- freshTemp
-        temp2 <- freshTemp
-        target' <- getTarget
-        putTACs
-          [ BinInstr temp1 index Mul scalar
-          , BinInstr temp2 temp1 Add offset
-          , LoadM target' v' temp2 ft
-          ]
-      chainIndexTACs v' [x] (BArray t') = mkIndexTACs v' x t' `into` target
-      chainIndexTACs v' (x : xs') (BArray t') = do
-        temp <- freshTemp
-        mkIndexTACs v' x t' `into` temp
-        chainIndexTACs temp xs' t'
-      chainIndexTACs _ _ _ = error "attempted to translate invalid ArrayIndex"
-    chainIndexTACs (Var v) xs t
+    move target (Var v)
+  toTAC (WAtom (ArrayElem ai _) _) = toTAC ai >>= ($ Nothing)
   toTAC (AST.Not x _) = unOp Not x
   toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) = do
