@@ -52,6 +52,7 @@ library
       Language.WACC.X86.Runtime
       Language.WACC.X86.Translate
       Language.WACC.X86.X86
+      Language.WACC.X86.X86New
   other-modules:
       Paths_wacc
   hs-source-dirs:
