@@ -10,8 +10,6 @@ TAC translation actions for WACC expressions.
 -}
 module Language.WACC.TAC.Expr (aiToTAC) where
 
-import Data.Bool (bool)
-import Data.Char (ord)
 import Data.Maybe (fromMaybe)
 import Language.WACC.AST
   ( ArrayIndex (..)
@@ -111,12 +109,13 @@ aiToTAC
 aiToTAC ai mBaseCase = toTAC ai >>= ($ mBaseCase)
 
 {- |
-Load an integer constant using 'LoadCI'.
+Load the index of a value of an enumerable type into the target register using
+'LoadCI'.
 -}
-loadCI :: (Ord lident) => Int -> TACM ident lident ()
-loadCI x = do
+loadEnum :: (Enum a, Ord lident) => a -> TACM ident lident ()
+loadEnum x = do
   t <- getTarget
-  putTACs [LoadCI t x]
+  putTACs [LoadCI t (fromEnum x)]
 
 {- |
 Apply a unary operator to an expression, storing the result in the target
@@ -171,13 +170,13 @@ instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   type TACRepr (Expr ident BType) lident = ()
 
   -- Atomic expressions:
-  toTAC (WAtom (IntLit x _) _) = loadCI $ fromEnum x
-  toTAC (WAtom (BoolLit b _) _) = loadCI $ bool 0 1 b
-  toTAC (WAtom (CharLit c _) _) = loadCI $ ord c
+  toTAC (WAtom (IntLit x _) _) = loadEnum x
+  toTAC (WAtom (BoolLit b _) _) = loadEnum b
+  toTAC (WAtom (CharLit c _) _) = loadEnum c
   toTAC (WAtom (StringLit s _) _) = do
     target <- getTarget
     putTACs [LoadCS target s]
-  toTAC (WAtom (Null _) _) = loadCI 0
+  toTAC (WAtom (Null _) _) = loadEnum (0 :: Int)
   toTAC (WAtom (Ident v _) _) = do
     target <- getTarget
     move target (Var v)
