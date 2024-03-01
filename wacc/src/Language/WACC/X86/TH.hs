@@ -12,12 +12,12 @@ class ATNT a where
   formatA :: a -> String
 
 -- Utility function to convert names to lowercase strings
-constructorNameToLower :: Name -> String
-constructorNameToLower = map toLower . nameBase
+nameToLower :: Name -> String
+nameToLower = map toLower . nameBase
 
 -- Generate formatA method cases based on constructor arity
-genATNT :: Name -> Q [Dec]
-genATNT typeName = do
+genATNTInstruction :: Name -> Q [Dec]
+genATNTInstruction typeName = do
   TyConI (DataD _ _ _ _ constructors _) <- reify typeName
   clauses <- mapM generateClause constructors
   let
@@ -27,22 +27,21 @@ genATNT typeName = do
 
 generateGadtC :: (Quote m) => [Name] -> [a] -> m Clause
 generateGadtC ns args = do
+  argNames <- mapM (\_ -> newName "arg") args
   let
     name = head ns
   let
-    opName = constructorNameToLower name
-  argNames <- mapM (\_ -> newName "arg") args
+    opName = nameToLower name
   let
     pat = conP name (map varP argNames)
   let
-    argsExps = map (\n -> [|formatA $(varE n)|]) argNames
-  case opName of
-    "lab" -> clause [pat] (normalB [|concat $(listE argsExps) ++ ":"|]) []
-    "comment" -> clause [pat] (normalB [|"# " ++ concat $(listE argsExps)|]) []
-    _ -> do
-      let
-        body = normalB [|opName ++ " " ++ intercalate ", " $(listE argsExps)|]
-      clause [pat] body []
+    argsExps = listE $ map (\n -> [|formatA $(varE n)|]) argNames
+  let
+    body = case opName of
+      "lab" -> normalB [|concat $(argsExps) ++ ":"|]
+      "comment" -> normalB [|"# " ++ concat $(argsExps)|]
+      _ -> normalB [|opName ++ " " ++ intercalate ", " $(argsExps)|]
+  clause [pat] body []
 
 generateClause :: Con -> Q Clause
 generateClause (GadtC ns args _) = generateGadtC ns args

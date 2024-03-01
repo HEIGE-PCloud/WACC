@@ -22,7 +22,7 @@ import Data.List (intercalate)
 import Data.Type.Bool (type Not, type (||))
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (Nat, TypeError)
-import Language.WACC.X86.TH
+import Language.WACC.X86.TH (ATNT (..), genATNTInstruction)
 
 data Size
   = Q
@@ -536,7 +536,7 @@ instance ATNT Label where
   formatA (R r) = show r
   formatA (S s) = s
 
-$(genATNT ''Instruction)
+$(genATNTInstruction ''Instruction)
 
 -- $(inspectCode (genATNT ''Instruction))
 
