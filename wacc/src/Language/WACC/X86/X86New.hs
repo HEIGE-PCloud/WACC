@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -20,6 +21,7 @@ import Data.Kind (Constraint)
 import Data.Type.Bool (type Not, type (||))
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (Nat, TypeError)
+import Language.WACC.X86.TH
 
 data Size
   = Q
@@ -325,8 +327,8 @@ data Instruction where
   Jge :: Label -> Instruction
   Jmp :: Label -> Instruction
   Call :: Label -> Instruction
-  Ret :: Instruction
-  Cltd :: Instruction
+  -- Ret :: Instruction
+  -- Cltd :: Instruction
   Mov
     :: (ValidMem mem1 mem2, ValidImm size1 mem1 size2 mem2)
     => Operand size1 mem1
@@ -485,9 +487,6 @@ data Runtime
   | Exit
   deriving (Eq, Ord, Typeable, Data, Show)
 
-class ATNT a where
-  formatA :: a -> String
-
 instance ATNT (IntLit size) where
   formatA :: IntLit size -> String
   formatA (IntLitQ i) = "$" ++ show i
@@ -522,14 +521,9 @@ instance ATNT Label where
   formatA (R r) = show r
   formatA (S s) = s
 
-instance ATNT Instruction where
-  formatA :: Instruction -> String
-  formatA (Lab l) = formatA l ++ ":"
-  formatA (Je l) = "je " ++ formatA l
-  formatA (Jne l) = "jne " ++ formatA l
-  formatA (Addq o1 o2) = "addq " ++ formatA o1 ++ "," ++ formatA o2
+$(genATNT ''Instruction)
 
--- ...
+-- $(inspectCode (genATNT ''Instruction))
 
 type Program = [Instruction]
 

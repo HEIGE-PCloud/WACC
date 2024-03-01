@@ -348,6 +348,7 @@ translateTAC (TAC.Free v) = do
   call (R X86.Free)
   comment "End Free"
 translateTAC (TAC.CheckBounds {}) = undefined
+translateTAC (TAC.Move {}) = undefined
 
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
