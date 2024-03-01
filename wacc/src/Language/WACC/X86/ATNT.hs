@@ -37,11 +37,13 @@ generateGadtC ns args = do
   let
     argsExps = listE $ map (\n -> [|formatA $(varE n)|]) argNames
   let
+    spacing = if null argNames then "" else " "
+  let
     body = case opName of
       "dir" -> normalB [|concat $(argsExps)|]
       "lab" -> normalB [|concat $(argsExps) ++ ":"|]
       "comment" -> normalB [|"# " ++ concat $(argsExps)|]
-      _ -> normalB [|opName ++ " " ++ intercalate ", " $(argsExps)|]
+      _ -> normalB [|opName ++ spacing ++ intercalate ", " $(argsExps)|]
   clause [pat] body []
 
 generateClause :: Con -> Q Clause

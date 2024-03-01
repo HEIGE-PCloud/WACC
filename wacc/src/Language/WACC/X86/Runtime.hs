@@ -1,7 +1,6 @@
 module Language.WACC.X86.Runtime where
 
 import qualified Data.DList as D
-import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Map as M
 import Language.WACC.X86.ATNT (formatA)
 import Language.WACC.X86.X86
@@ -108,12 +107,12 @@ printi =
   , Lab (R PrintI)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Movl (Reg Edi) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._printi_str0") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm (0 :: Int64)) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -154,13 +153,13 @@ prints =
   , Lab (R PrintS)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Movq (Reg Rdi) (Reg Rdx)
   , Movl (Mem (MRegI (-4) Rdi)) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._prints_str0") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm (0 :: Int64)) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -221,8 +220,8 @@ printb =
   , Lab (R PrintB)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm ((-16) :: Int64)) (Reg Rsp)
-  , Cmpb (Imm (0 :: Int8)) (Reg Dl)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Cmpb (Imm (IntLitB 0)) (Reg Dil)
   , Jne (S ".L_printb0")
   , Leaq (Mem (MRegL (S ".L._printb_str0") Rip)) (Reg Rdx)
   , Jmp (S ".L_printb1")
@@ -231,9 +230,9 @@ printb =
   , Lab (S ".L_printb1")
   , Movl (Mem (MRegI (-4) Rdx)) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._printb_str2") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm (0 :: Int64)) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -273,12 +272,12 @@ printc =
   , Lab (R PrintC)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
-  , Movb (Reg Dl) (Reg Sil)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Movb (Reg Dil) (Reg Sil)
   , Leaq (Mem (MRegL (S ".L._printc_str0") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm (0 :: Int64)) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -319,12 +318,12 @@ printp =
   , Lab (R PrintP)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Movq (Reg Rdi) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._printp_str0") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm (0 :: Int64)) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -360,10 +359,10 @@ println =
   , Lab (R PrintLn)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._println_str0") Rip)) (Reg Rdi)
   , Call cputs
-  , Movq (Imm (0 :: Int64)) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -385,7 +384,7 @@ free =
   [ Lab (R Free)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Call cfree
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -409,9 +408,9 @@ malloc =
   [ Lab (R Malloc)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Call cmalloc
-  , Cmpq (Imm (0 :: Int64)) (Reg Rax)
+  , Cmpq (Imm (IntLitQ 0)) (Reg Rax)
   , Je (R ErrOutOfMemory)
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -441,10 +440,10 @@ errOutOfMemory =
   , Dir $ DirAsciz "fatal error: out of memory\n"
   , Dir DirText
   , Lab (R ErrOutOfMemory)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfMemory_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1 :: Int8)) (Reg Dil)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -475,13 +474,13 @@ errOutOfBounds =
   , Dir $ DirAsciz "fatal error: array index %d out of bounds\n"
   , Dir DirText
   , Lab (R ErrOutOfBounds)
-  , Andq (Imm ((-16) :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfBounds_str0") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm (0 :: Int64)) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
-  , Movb (Imm (-1 :: Int8)) (Reg Dil)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -508,10 +507,10 @@ errOverflow =
   , Dir $ DirAsciz "fatal error: integer overflow or underflow occurred\n"
   , Dir DirText
   , Lab (R ErrOverflow)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOverflow_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1 :: Int8)) (Reg Dil)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -539,10 +538,10 @@ errDivByZero =
   , Dir $ DirAsciz "fatal error: division or modulo by zero\n"
   , Dir DirText
   , Lab (R ErrDivByZero)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errDivZero_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1 :: Int8)) (Reg Dil)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -585,15 +584,15 @@ readi =
   , Lab (R ReadI)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
-  , Subq (Imm (16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Subq (Imm (IntLitQ 16)) (Reg Rsp)
   , Movl (Reg Edi) (Mem (MRegI 0 Rsp))
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readi_str0") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cscanf
   , Movslq (Mem (MRegI 0 Rsp)) (Reg Rax)
-  , Addq (Imm (16 :: Int64)) (Reg Rsp)
+  , Addq (Imm (IntLitQ 16)) (Reg Rsp)
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -638,15 +637,15 @@ readc =
   , Lab (R ReadC)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
-  , Subq (Imm (16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Subq (Imm (IntLitQ 16)) (Reg Rsp)
   , Movb (Reg Dil) (Mem (MRegI 0 Rsp))
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readc_str0") Rip)) (Reg Rdi)
-  , Movb (Imm (0 :: Int8)) (Reg Al)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cscanf
   , Movsbq (Mem (MRegI 0 Rsp)) (Reg Rax)
-  , Addq (Imm (16 :: Int64)) (Reg Rsp)
+  , Addq (Imm (IntLitQ 16)) (Reg Rsp)
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -668,7 +667,7 @@ exit =
   [ Lab (R Exit)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16 :: Int64)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Call cexit
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -694,7 +693,7 @@ arrLoad1 :: Program
 arrLoad1 =
   [ Lab (R ArrLoad1)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm (0 :: Int32)) (Reg R10d)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
   , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
@@ -725,7 +724,7 @@ arrStore1 :: Program
 arrStore1 =
   [ Lab (R ArrStore1)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm (0 :: Int32)) (Reg R10d)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
   , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
@@ -756,7 +755,7 @@ arrStore4 :: Program
 arrStore4 =
   [ Lab (R ArrStore4)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm (0 :: Int32)) (Reg R10d)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
   , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
@@ -788,7 +787,7 @@ arrLoad4 :: Program
 arrLoad4 =
   [ Lab (R ArrLoad4)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm (0 :: Int32)) (Reg R10d)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
   , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
@@ -819,7 +818,7 @@ arrLoad8 :: Program
 arrLoad8 =
   [ Lab (R ArrLoad8)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm (0 :: Int32)) (Reg R10d)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
   , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
@@ -850,7 +849,7 @@ arrStore8 :: Program
 arrStore8 =
   [ Lab (R ArrStore8)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm (0 :: Int32)) (Reg R10d)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
   , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)

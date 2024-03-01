@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
 
@@ -16,6 +17,7 @@ import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
+import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
@@ -41,27 +43,16 @@ import Language.WACC.TAC.TAC
   )
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.Runtime (runtimeLib)
-import Language.WACC.X86.X86
-  ( Directive (..)
-  , Instr (..)
-  , Label (..)
-  , Memory (..)
-  , Operand (..)
-  , Prog
-  , Register (..)
-  , Runtime (..)
-  , runtimeDeps
-  )
-import qualified Language.WACC.X86.X86 as X86
+import Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
-translateProg :: TACProgram Integer Integer -> Prog
+translateProg :: TACProgram Integer Integer -> Program
 translateProg p = D.toList $ preamble <> D.concat is <> D.concat runtime
   where
-    runtime :: [DList Instr]
+    runtime :: [DList Instruction]
     runtime = (runtimeLib !) <$> S.toList (S.unions runtimeLs)
     (runtimeLs, is) = unzip $ map translateFunc (M.elems p)
-    preamble :: DList Instr
+    preamble :: DList Instruction
     preamble =
       D.fromList
         [ Dir $ DirGlobl (S "main")
@@ -74,12 +65,11 @@ translateProg p = D.toList $ preamble <> D.concat is <> D.concat runtime
 required for a computation, they put in this register.
 A caller saved register.
 -}
-swapReg :: Register
 swapReg = R10
 
 -- | The state of RWS monad for translation of each function
 data TransST = TransST
-  { alloc :: Bimap (Var Integer) Operand
+  { alloc :: Bimap (Var Integer) X86.OperandQMM
   -- ^ bijection between variables in TAC to register/memory in X86
   , translated :: Set (TAC.Label Integer)
   -- ^ Set of basic blocks that have been translated
@@ -95,7 +85,7 @@ data TransST = TransST
 type Analysis =
   RWS
     (Map Integer (BasicBlock Integer Integer))
-    (DList Instr)
+    (DList Instruction)
     TransST
 
 stackElemSize :: Integer
@@ -116,7 +106,7 @@ Local Regs: 1
 .
 .
 -}
-translateFunc :: Func Integer Integer -> (Set Runtime, DList Instr)
+translateFunc :: Func Integer Integer -> (Set Runtime, DList Instruction)
 translateFunc (Func l vs bs) = (runtimeFns st, is)
   where
     (st, is) =
@@ -157,7 +147,7 @@ setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated
 mapLab :: TAC.Label Integer -> X86.Label
 mapLab (Label x) = I x
 
-tellInstr :: Instr -> Analysis ()
+tellInstr :: Instruction -> Analysis ()
 tellInstr = tell . D.singleton
 
 isTranslated :: TAC.Label Integer -> Analysis Bool
@@ -173,11 +163,11 @@ translateNext (Jump l1@(Label n)) = do
   t <- isTranslated l1
   ( if t
       then tellInstr (Jmp (mapLab l1))
-      else (tellInstr (Lab (mapLab l1)) >> translateBlocks l1 nextBlock)
+      else tellInstr (Lab (mapLab l1)) >> translateBlocks l1 nextBlock
     )
 translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
-  tellInstr (X86.Cmpq operand (Imm 0))
+  tellInstr (Cmpq operand (Imm (IntLitQ 0)))
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
   translateNext (Jump l2)
   t <- isTranslated l1
@@ -186,10 +176,10 @@ translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
   tellInstr (Movl retVal (Reg Rax))
 
-bindVarToLoc :: Var Integer -> Operand -> TransST -> TransST
+bindVarToLoc :: Var Integer -> X86.OperandQMM -> TransST -> TransST
 bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
-allocate :: Var Integer -> Analysis Operand
+allocate :: Var Integer -> Analysis X86.OperandQMM
 allocate v = do
   -- increase the stackVarNum
   modify (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
@@ -199,7 +189,7 @@ allocate v = do
   return (Mem (MRegI stackAddr Rbp))
 
 -- | Sanity check. Variable must not already be allocated in three address code
-allocate' :: Var Integer -> Analysis Operand
+allocate' :: Var Integer -> Analysis X86.OperandQMM
 allocate' v = do
   alloc' <- gets (B.lookup v . alloc)
   case alloc' of
@@ -212,13 +202,7 @@ getLabel = do
   modify (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
-saveRegister :: [Register] -> Analysis ()
-saveRegister = mapM_ (tellInstr . Pushq . Reg)
-
-restoreRegister :: [Register] -> Analysis ()
-restoreRegister = mapM_ (tellInstr . Popq . Reg)
-
-getOperand :: Var Integer -> Analysis Operand
+getOperand :: Var Integer -> Analysis X86.OperandQMM
 getOperand v = gets ((B.! v) . alloc)
 
 -------------------------------------
@@ -246,7 +230,7 @@ translateTAC (Store v1 off v2 w) = do
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
   operand <- allocate' v
-  movq (Imm (fromIntegral i)) operand
+  movq (Imm (IntLitQ $ fromIntegral i)) operand
   comment "End LoadCI"
 translateTAC (LoadCS v s) = do
   comment $ "LoadCS: " ++ show v ++ " := " ++ show s
@@ -318,7 +302,8 @@ translateTAC (TAC.Move {}) = undefined
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
 -}
-translateBinOp :: Operand -> BinOp -> Operand -> Operand -> Analysis ()
+translateBinOp
+  :: X86.OperandQMM -> BinOp -> X86.OperandQMM -> X86.OperandQMM -> Analysis ()
 translateBinOp o Add o1 o2 = do
   comment $ "Binary Addition: " ++ show o ++ " := " ++ show o1 ++ " + " ++ show o2
   movl o1 eax
@@ -348,7 +333,7 @@ translateBinOp o Mul o1 o2 = do
 translateBinOp o Div o1 o2 = do
   comment $ "Binary Division: " ++ show o ++ " := " ++ show o1 ++ " / " ++ show o2
   movl o1 eax -- %eax := o1
-  cmpl (Imm 0) eax -- check for division by zero
+  cmpl (Imm (IntLitD 0)) eax -- check for division by zero
   je errDivByZero
   cltd -- sign extend eax into edx
   movl o2 ebx -- %ebx := o2
@@ -358,7 +343,7 @@ translateBinOp o Div o1 o2 = do
 translateBinOp o Mod o1 o2 = do
   comment $ "Binary Modulo: " ++ show o ++ " := " ++ show o1 ++ " % " ++ show o2
   movl o1 eax -- %eax := o1
-  cmpl (Imm 0) eax -- check for division by zero
+  cmpl (Imm (IntLitD 0)) eax -- check for division by zero
   je errDivByZero
   cltd -- sign extend eax into edx
   movl o2 ebx -- %ebx := o2
@@ -369,14 +354,14 @@ translateBinOp o And o1 o2 = do
   comment $ "Binary And: " ++ show o ++ " := " ++ show o1 ++ " && " ++ show o2
   l2 <- getLabel
   l3 <- getLabel
-  cmpl (Imm 0) o1
+  cmpl (Imm (IntLitD 0)) o1
   je l2
-  cmpl (Imm 0) o2
+  cmpl (Imm (IntLitD 0)) o2
   je l2
-  movl (Imm 1) eax
+  movl (Imm (IntLitD 1)) eax
   jmp l3
   lab l2
-  movl (Imm 0) eax
+  movl (Imm (IntLitD 0)) eax
   lab l3
   movzbl al eax
   movl eax o
@@ -386,15 +371,15 @@ translateBinOp o Or o1 o2 = do
   l2 <- getLabel
   l3 <- getLabel
   l4 <- getLabel
-  cmpl (Imm 0) o1
+  cmpl (Imm (IntLitD 32)) o1
   jne l2
-  cmpl (Imm 0) o2
+  cmpl (Imm (IntLitD 32)) o2
   je l3
   lab l2
-  movl (Imm 1) eax
+  movl (Imm (IntLitD 1)) eax
   jmp l4
   lab l3
-  movl (Imm 0) eax
+  movl (Imm (IntLitD 0)) eax
   lab l4
   movzbl al eax
   movl eax o
@@ -464,11 +449,11 @@ translateBinOp o TAC.Ineq o1 o2 = do
   comment "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
-translateUnOp :: Operand -> UnOp -> Operand -> Analysis ()
+translateUnOp :: X86.OperandQMM -> UnOp -> X86.OperandQMM -> Analysis ()
 translateUnOp o Not o' = do
   comment $ "Unary Not: " ++ show o ++ " := ! " ++ show o'
   movl o' eax
-  cmpl (Imm 0) eax
+  cmpl (Imm (IntLitD 32)) eax
   sete al
   movzbl al o
   comment "End Unary Not"
@@ -486,7 +471,7 @@ translatePrint FChar = call printc
 translatePrint FString = call prints
 translatePrint _ = call printp
 
-translateRead :: Operand -> FType -> Analysis ()
+translateRead :: X86.OperandQMM -> FType -> Analysis ()
 translateRead o FInt = do
   call (R X86.ReadI)
   movq argRet o
@@ -521,134 +506,95 @@ translateStore v1 off v2 s = do
   movq o2 r11
   call (arrayStore s)
 
-rbp :: Operand
 rbp = Reg Rbp
 
-rsp :: Operand
 rsp = Reg Rsp
 
-al :: Operand
-al = Reg Rax
+al = Reg Al
 
-r8 :: Operand
 r8 = Reg R8
 
-r9 :: Operand
 r9 = Reg R9
 
-r10 :: Operand
 r10 = Reg R10
 
-r11 :: Operand
 r11 = Reg R11
 
-rax :: Operand
 rax = Reg Rax
 
-rbx :: Operand
 rbx = Reg Rbx
 
-eax :: Operand
-eax = Reg Rax
+eax = Reg Eax
 
-ebx :: Operand
-ebx = Reg Rbx
+ebx = Reg Ebx
 
-ecx :: Operand
-ecx = Reg Rcx
+ecx = Reg Ecx
 
-edx :: Operand
-edx = Reg Rdx
+edx = Reg Edx
 
-leaq :: Operand -> Operand -> Analysis ()
 leaq o1 o2 = tellInstr (Leaq o1 o2)
 
-mov :: (a -> b -> Instr) -> a -> b -> Analysis ()
 mov m o r = tellInstr (m o r)
 
-movl :: Operand -> Operand -> Analysis ()
 movl = mov Movl
 
-movq :: Operand -> Operand -> Analysis ()
 movq = mov Movq
 
-movzbl :: Operand -> Operand -> Analysis ()
 movzbl o r = tellInstr (Movzbl o r)
 
-addl :: Operand -> Operand -> Analysis ()
 addl o1 o2 = tellInstr (Addl o1 o2)
 
-subl :: Operand -> Operand -> Analysis ()
 subl o1 o2 = tellInstr (Subl o1 o2)
 
-imull :: Operand -> Operand -> Analysis ()
 imull o1 o2 = tellInstr (Imull o1 o2)
 
-idivl :: Operand -> Analysis ()
 idivl o = tellInstr (Idivl o)
 
-cmpl :: Operand -> Operand -> Analysis ()
 cmpl o1 o2 = tellInstr (Cmpl o1 o2)
 
-cmpq :: Operand -> Operand -> Analysis ()
 cmpq o1 o2 = tellInstr (Cmpq o1 o2)
 
-pushq :: Operand -> Analysis ()
 pushq o = tellInstr (Pushq o)
 
-popq :: Operand -> Analysis ()
 popq o = tellInstr (Popq o)
 
-j :: (X86.Label -> Instr) -> X86.Label -> Analysis ()
 j s l@(R r) = do
   tellInstr (s l)
   useRuntimeFunc r
 j s l = tellInstr (s l)
 
-jo :: X86.Label -> Analysis ()
 jo = j Jo
 
-je :: X86.Label -> Analysis ()
 je = j Je
 
-jne :: X86.Label -> Analysis ()
 jne = j Jne
 
-jmp :: X86.Label -> Analysis ()
 jmp = j Jmp
 
 cltd :: Analysis ()
 cltd = tellInstr Cltd
 
-set :: (a -> Instr) -> a -> Analysis ()
+set :: (a -> Instruction) -> a -> Analysis ()
 set s r = tellInstr (s r)
 
-sete :: Operand -> Analysis ()
 sete = set Sete
 
-setne :: Operand -> Analysis ()
 setne = set Setne
 
-setl :: Operand -> Analysis ()
 setl = set Setl
 
-setle :: Operand -> Analysis ()
 setle = set Setle
 
-setg :: Operand -> Analysis ()
 setg = set Setg
 
-setge :: Operand -> Analysis ()
 setge = set Setge
 
-negl :: Operand -> Analysis ()
 negl o = tellInstr (Negl o)
 
-call :: X86.Label -> Analysis ()
 call = j X86.Call
 
-arg1, argRet :: Operand
 arg1 = Reg Rdi
+
 argRet = Reg Rax
 
 printi :: X86.Label
@@ -707,3 +653,5 @@ arrayStore _ = error "Invalid size for array store"
 
 useRuntimeFunc :: Runtime -> Analysis ()
 useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps r) (runtimeFns x)})
+
+runtimeDeps = undefined

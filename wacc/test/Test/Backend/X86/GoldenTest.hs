@@ -5,7 +5,7 @@ where
 
 import Data.ByteString.Lazy.UTF8 (fromString)
 import Language.WACC.X86.Runtime (x86Examples)
-import Language.WACC.X86.X86 (formatA)
+import Language.WACC.X86.ATNT (formatA)
 import qualified Language.WACC.X86.X86 as X86
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
@@ -13,7 +13,7 @@ import Test.Tasty.Golden (goldenVsStringDiff)
 goldenBasePath :: FilePath
 goldenBasePath = "test/golden"
 
-runX86CheckATNT :: X86.Prog -> String -> TestTree
+runX86CheckATNT :: X86.Program -> String -> TestTree
 runX86CheckATNT p name = goldenVsStringDiff testname diff goldenPath testAction
   where
     testname = "X86Example." ++ name

@@ -5,7 +5,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -14,7 +14,7 @@ module Language.WACC.X86.X86 where
 import Data.Char (toLower)
 import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.Int (Int16, Int32, Int64, Int8)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Constraint)
 import Data.List (intercalate)
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (TypeError)
@@ -141,6 +141,7 @@ data RegisterF where
   R13F :: RegisterF
   R14F :: RegisterF
   R15F :: RegisterF
+  RipF :: RegisterF
 
 deriving instance Show RegisterF
 
@@ -217,6 +218,7 @@ regF R15 = R15F
 regF R15d = R15F
 regF R15w = R15F
 regF R15b = R15F
+regF Rip = RipF
 
 type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint where
   If 'True a _ = a
@@ -302,14 +304,15 @@ data Instruction where
   Jle :: Label -> Instruction
   Jg :: Label -> Instruction
   Jge :: Label -> Instruction
+  Jo :: Label -> Instruction
   Jmp :: Label -> Instruction
   Call :: Label -> Instruction
   Ret :: Instruction
   Cltd :: Instruction
-  Popq :: (NotMem type1) => OperandQ type1 -> Instruction
-  Popl :: (NotMem type1) => OperandD type1 -> Instruction
-  Pushq :: (NotMem type1) => OperandQ type1 -> Instruction
-  Pushl :: (NotMem type1) => OperandD type1 -> Instruction
+  Popq :: OperandQ type1 -> Instruction
+  Popl :: OperandD type1 -> Instruction
+  Pushq :: OperandQ type1 -> Instruction
+  Pushl :: OperandD type1 -> Instruction
   Negl :: (NotImm type1) => OperandD type1 -> Instruction
   Mov
     :: (ValidOpType type1 type2, ValidImm size1 type1 size2 type2)
@@ -322,11 +325,11 @@ data Instruction where
     -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
-  Movslq :: OperandD type1 -> OperandQ type2 -> Instruction
+  Movslq :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
-  Movsbq :: OperandB type1 -> OperandQ type2 -> Instruction
+  Movsbq :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
-  Movzbl :: OperandB type1 -> OperandD type2 -> Instruction
+  Movzbl :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   Cmovl
     :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
     => Operand size type1
@@ -380,14 +383,14 @@ data Instruction where
   -- | https://www.felixcloutier.com/x86/add
   Addl
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandD type1
-    -> OperandD type2
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addw
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandW type1
-    -> OperandW type2
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addb
@@ -404,62 +407,78 @@ data Instruction where
   -- | https://www.felixcloutier.com/x86/sub
   Subl
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandD type1
-    -> OperandD type2
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subw
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandW type1
-    -> OperandW type2
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subb
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandB type1
-    -> OperandB type2
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/imul
   --   Yeah... Imul can take in one or two or three operands.
   --   I love x86
   Imulq
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandQ type1
-    -> OperandQ type2
+    => Operand size1 type1
+    -> Operand size2 type2
+    -> Instruction
+  Imull
+    :: (ValidOpType type1 type2, NotImm type2)
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Andq
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandQ type1
-    -> OperandQ type2
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Andl
     :: (ValidOpType type1 type2, NotImm type2)
-    => OperandD type1
-    -> OperandD type2
+    => Operand size1 type1
+    -> Operand size2 type2
     -> Instruction
   Cmpq
-    :: (ValidOpType type1 type2) => OperandQ type1 -> OperandQ type2 -> Instruction
+    :: OperandQ type1 -> OperandQ type2 -> Instruction
   Cmpl
-    :: (ValidOpType type1 type2) => OperandD type1 -> OperandD type2 -> Instruction
+    :: (ValidOpType type1 type2)
+    => Operand size1 type1
+    -> Operand size2 type2
+    -> Instruction
   Cmpw
-    :: (ValidOpType type1 type2) => OperandW type1 -> OperandW type2 -> Instruction
+    :: (ValidOpType type1 type2)
+    => Operand size1 type1
+    -> Operand size2 type2
+    -> Instruction
   Cmpb
-    :: (ValidOpType type1 type2) => OperandB type1 -> OperandB type2 -> Instruction
+    :: (ValidOpType type1 type2)
+    => Operand size1 type1
+    -> Operand size2 type2
+    -> Instruction
   Movq
-    :: (ValidOpType type1 type2) => OperandQ type1 -> OperandQ type2 -> Instruction
+    :: OperandQ type1 -> OperandQ type2 -> Instruction
   Movl
-    :: (ValidOpType type1 type2) => OperandD type1 -> OperandD type2 -> Instruction
+    :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   Movw
-    :: (ValidOpType type1 type2) => OperandW type1 -> OperandW type2 -> Instruction
+    :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   Movb
-    :: (ValidOpType type1 type2) => OperandB type1 -> OperandB type2 -> Instruction
+    :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   Leaq
     :: (ValidOpType type1 type2) => OperandQ type1 -> OperandQ type2 -> Instruction
 
 -- TODO: You can't operate on 64-bit immediate values unless with mov #imm, reg
 -- https://stackoverflow.com/questions/62771323/why-we-cant-move-a-64-bit-immediate-value-to-memory
+
+deriving instance Show Instruction
 
 data Memory where
   MI :: Integer -> Memory
@@ -471,6 +490,12 @@ data Memory where
   MScaleI :: Integer -> RegisterQ -> RegisterQ -> Integer -> Memory
   MRegL :: Label -> RegisterQ -> Memory
 
+deriving instance Eq Memory
+
+deriving instance Ord Memory
+
+deriving instance Show Memory
+
 data IntLit (size :: Size) where
   IntLitQ :: Int64 -> IntLitQ
   IntLitD :: Int32 -> IntLitD
@@ -479,16 +504,44 @@ data IntLit (size :: Size) where
 
 deriving instance Show (IntLit size)
 
-type family FindSize (a :: Type) :: Size where
-  FindSize Int64 = Q
-  FindSize Int32 = D
-  FindSize Int16 = W
-  FindSize Int8 = B
+deriving instance Eq (IntLit size)
+
+deriving instance Ord (IntLit size)
+
+type OperandQMM = OperandQ MM
+
+type OperandQRM = OperandQ RM
+
+type OperandQIM = OperandQ IM
+
+type OperandDMM = OperandD MM
+
+type OperandDRM = OperandD RM
+
+type OperandDIM = OperandD IM
+
+type OperandWMM = OperandW MM
+
+type OperandWRM = OperandW RM
+
+type OperandWIM = OperandW IM
+
+type OperandBMM = OperandB MM
+
+type OperandBRM = OperandB RM
+
+type OperandBIM = OperandB IM
 
 data Operand (size :: Size) (opType :: OpType) where
-  Imm :: (ATNT a, Show a) => a -> Operand (FindSize a) IM
+  Imm :: IntLit size -> Operand size IM
   Reg :: Register size -> Operand size RM
   Mem :: Memory -> Operand size MM
+
+deriving instance Eq (Operand size opType)
+
+deriving instance Ord (Operand size opType)
+
+deriving instance Show (Operand size opType)
 
 data Label = I Integer | R Runtime | S String
   deriving (Eq, Ord, Data, Show)
@@ -577,7 +630,7 @@ instance ATNT Memory where
 instance ATNT Label where
   formatA :: Label -> String
   formatA (I i) = "L" ++ show i
-  formatA (R r) = show r
+  formatA (R r) = '_' : (map toLower (show r))
   formatA (S s) = s
 
 dirName :: Directive -> String
@@ -609,7 +662,7 @@ instr2 :: Instruction
 instr2 = Mov (Mem (MTwoReg Rax Rax)) (Reg Rbx)
 
 instr3 :: Instruction
-instr3 = Mov (Imm (1 :: Int8)) (Reg Al)
+instr3 = Mov (Imm (IntLitB 1)) (Reg Al)
 
 instr4 :: Instruction
 instr4 = Movzx (Reg Al) (Reg Rax)
