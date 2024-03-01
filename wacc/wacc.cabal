@@ -38,7 +38,9 @@ library
       Language.WACC.TAC.Class
       Language.WACC.TAC.Expr
       Language.WACC.TAC.FType
+      Language.WACC.TAC.Prog
       Language.WACC.TAC.State
+      Language.WACC.TAC.Stmt
       Language.WACC.TAC.TAC
       Language.WACC.TAC.Value
       Language.WACC.TypeChecking
@@ -103,6 +105,7 @@ test-suite wacc-test
       Test.Backend.IntegrationTest
       Test.Backend.TAC
       Test.Backend.TAC.ExprTest
+      Test.Backend.TAC.StmtTest
       Test.Backend.TAC.TranslationTest
       Test.Backend.TAC.ValueTest
       Test.Backend.Test

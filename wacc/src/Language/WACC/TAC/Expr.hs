@@ -75,20 +75,23 @@ instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
 {- |
 Load an integer constant using 'LoadCI'.
 -}
-loadCI :: Int -> TACM ident lident ()
+loadCI :: (Ord lident) => Int -> TACM ident lident ()
 loadCI x = do
   t <- getTarget
   putTACs [LoadCI t x]
 
 unOp
-  :: (Enum ident, Eq ident) => UnOp -> Expr ident BType -> TACM ident lident ()
+  :: (Enum ident, Eq ident, Ord lident)
+  => UnOp
+  -> Expr ident BType
+  -> TACM ident lident ()
 unOp op x = do
   temp <- tempWith (toTAC x)
   t <- getTarget
   putTACs [UnInstr t op temp]
 
 binInstr
-  :: (Enum ident, Eq ident)
+  :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
   -> (Var ident -> Var ident -> Var ident -> TAC ident lident)
   -> Expr ident BType
@@ -100,7 +103,7 @@ binInstr x instr y = do
   putTACs [instr t temp1 temp2]
 
 binOp
-  :: (Enum ident, Eq ident)
+  :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
   -> BinOp
   -> Expr ident BType

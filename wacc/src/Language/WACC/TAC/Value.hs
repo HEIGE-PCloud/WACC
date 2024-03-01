@@ -84,7 +84,7 @@ instance (Enum ident, Eq ident) => ToTAC (LValue ident BType) where
 Translate an @lvalue@ in a single action.
 -}
 lvToTAC
-  :: (Enum ident, Eq ident)
+  :: (Enum ident, Eq ident, Ord lident)
   => LValue ident BType
   -> LVMode ident lident
   -> TACM ident lident ()
@@ -106,7 +106,10 @@ instance (Enum ident, Eq ident) => ToTAC (PairElem ident BType) where
 
 type instance TACIdent (RValue fnident ident a) = ident
 
-instance (Enum ident, Eq ident) => FnToTAC (RValue fnident ident BType) where
+instance
+  (Enum ident, Eq ident, Ord fnident)
+  => FnToTAC (RValue fnident ident BType)
+  where
   type TACFnRepr (RValue fnident ident BType) = ()
   type TACFnIdent (RValue fnident ident BType) = fnident
   fnToTAC (RVExpr x _) = toTAC x
