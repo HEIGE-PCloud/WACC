@@ -11,6 +11,7 @@ module Language.WACC.TAC.Stmt where
 
 import Data.DList
 import qualified Data.List.NonEmpty as NE
+import Language.WACC.AST (Annotated (getAnn))
 import Language.WACC.AST.Stmt (Stmts (..))
 import qualified Language.WACC.AST.Stmt as AST
 import Language.WACC.TAC.Class
@@ -77,13 +78,13 @@ instance
     putTACs [Free t]
     pure Nothing
   fnToTAC (AST.Return e _) = Just . BlockTerminal . Ret <$> tempWith (toTAC e)
-  fnToTAC (AST.Print x ann) = do
+  fnToTAC (AST.Print x _) = do
     t <- tempWith (toTAC x)
-    putTACs [Print t (flatten ann)]
+    putTACs [Print t (flatten $ getAnn x)]
     pure Nothing
-  fnToTAC (AST.PrintLn x ann) = do
+  fnToTAC (AST.PrintLn x _) = do
     t <- tempWith (toTAC x)
-    putTACs [PrintLn t (flatten ann)]
+    putTACs [PrintLn t (flatten $ getAnn x)]
     pure Nothing
   fnToTAC (AST.Exit e _) = Just . BlockTerminal . Exit <$> tempWith (toTAC e)
   fnToTAC (AST.IfElse e s1 s2 _) = do
