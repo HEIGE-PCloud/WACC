@@ -175,11 +175,11 @@ translateNext (CJump v l1 l2) = do
   (if t then pure () else translateNext (Jump l1))
 translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
-  tellInstr (Movl retVal (Reg Rax))
+  tellInstr (Movl retVal (Reg Eax))
   tellInstr X86.Ret
 translateNext (TAC.Exit x) = do
   operand <- gets ((B.! x) . alloc)
-  tellInstr (Movl operand (Reg Rdi))
+  tellInstr (Movl operand (Reg Edi))
   tellInstr (X86.Call (R X86.Exit))
 
 bindVarToLoc :: Var Integer -> X86.OperandQMM -> TransST -> TransST
