@@ -225,6 +225,10 @@ type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint whe
 type family Unless (a :: Bool) (b :: Constraint) :: Constraint where
   Unless a b = If a () b
 
+type family NotMem (a :: OpType) :: Constraint where
+  NotMem 'MM = TypeError ('Text "Can not have a memory operand here")
+  NotMem _ = ()
+
 type family NotImm (a :: OpType) :: Constraint where
   NotImm 'IM = TypeError ('Text "Can not have an immediate operand here")
   NotImm _ = ()
@@ -290,8 +294,8 @@ data Directive
 
 data Instruction where
   Comment :: String -> Instruction
-  Lab :: Label -> Instruction
   Dir :: Directive -> Instruction
+  Lab :: Label -> Instruction
   Je :: Label -> Instruction
   Jne :: Label -> Instruction
   Jl :: Label -> Instruction
@@ -302,6 +306,11 @@ data Instruction where
   Call :: Label -> Instruction
   Ret :: Instruction
   Cltd :: Instruction
+  Popq :: (NotMem type1) => OperandQ type1 -> Instruction
+  Popl :: (NotMem type1) => OperandD type1 -> Instruction
+  Pushq :: (NotMem type1) => OperandQ type1 -> Instruction
+  Pushl :: (NotMem type1) => OperandD type1 -> Instruction
+  Negl :: (NotImm type1) => OperandD type1 -> Instruction
   Mov
     :: (ValidOpType type1 type2, ValidImm size1 type1 size2 type2)
     => Operand size1 type1
@@ -405,6 +414,18 @@ data Instruction where
     :: (ValidOpType type1 type2, NotImm type2)
     => OperandQ type1
     -> OperandQ type2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/add
+  Andq
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandQ type1
+    -> OperandQ type2
+    -> Instruction
+  -- | https://www.felixcloutier.com/x86/add
+  Andl
+    :: (ValidOpType type1 type2, NotImm type2)
+    => OperandD type1
+    -> OperandD type2
     -> Instruction
 
 -- TODO: You can't operate on 64-bit immediate values unless with mov #imm, reg
