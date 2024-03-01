@@ -32,10 +32,12 @@ module Language.WACC.X86.X86
   )
 where
 
+-- import Data.Ix hiding (Ix)
+import Data.Array
 import Data.Char (toLower)
 import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.List (intercalate)
-import Data.Set (Set, fromList)
+import Data.Set (Set, fromList, insert, singleton)
 import Data.Typeable ()
 
 data Label = I Integer | R Runtime | S String
@@ -62,34 +64,28 @@ data Runtime
   | ErrOutOfBounds
   | ErrOverflow
   | ErrDivByZero
+  | ErrBadChar
   | Exit
-  deriving (Eq, Ord, Typeable, Data, Show)
+  deriving (Ix, Eq, Ord, Typeable, Data, Show)
 
-runtimeDeps :: Runtime -> Set Runtime
-runtimeDeps r = fromList (deps r)
+startEnd :: (Runtime, Runtime)
+startEnd = (ArrLoad1, Exit)
+
+runtimeDeps :: Array Runtime (Set Runtime)
+runtimeDeps = array startEnd [(r, deps r) | r <- range startEnd]
   where
-    deps :: Runtime -> [Runtime]
-    deps ArrLoad1 = ArrLoad1 : deps ErrOutOfBounds
-    deps ArrLoad4 = ArrLoad4 : deps ErrOutOfBounds
-    deps ArrLoad8 = ArrLoad8 : deps ErrOutOfBounds
-    deps ArrStore1 = ArrStore1 : deps ErrOutOfBounds
-    deps ArrStore4 = ArrStore4 : deps ErrOutOfBounds
-    deps ArrStore8 = ArrStore8 : deps ErrOutOfBounds
-    deps PrintI = [PrintI]
-    deps PrintB = [PrintB]
-    deps PrintC = [PrintC]
-    deps PrintS = [PrintS]
-    deps PrintP = [PrintP]
-    deps PrintLn = [PrintLn]
-    deps Free = [Free]
-    deps Malloc = Malloc : deps ErrOutOfMemory
-    deps ReadI = [ReadI]
-    deps ReadC = [ReadC]
-    deps ErrOutOfMemory = ErrOutOfMemory : deps PrintS
-    deps ErrOutOfBounds = ErrOutOfBounds : deps PrintS
-    deps ErrOverflow = ErrOverflow : deps PrintS
-    deps ErrDivByZero = ErrDivByZero : deps PrintS
-    deps Exit = [Exit]
+    deps :: Runtime -> Set Runtime
+    deps ArrLoad1 = insert ArrLoad1 (deps ErrOutOfBounds)
+    deps ArrLoad4 = insert ArrLoad4 (deps ErrOutOfBounds)
+    deps ArrLoad8 = insert ArrLoad8 (deps ErrOutOfBounds)
+    deps ArrStore1 = insert ArrStore1 (deps ErrOutOfBounds)
+    deps ArrStore4 = insert ArrStore4 (deps ErrOutOfBounds)
+    deps ArrStore8 = insert ArrStore8 (deps ErrOutOfBounds)
+    deps ErrOutOfMemory = insert ErrOutOfMemory (deps PrintS)
+    deps ErrOutOfBounds = insert ErrOutOfBounds (deps PrintS)
+    deps ErrOverflow = insert ErrOverflow (deps PrintS)
+    deps ErrDivByZero = insert ErrDivByZero (deps PrintS)
+    deps r = singleton r
 
 type Prog = [Instr]
 

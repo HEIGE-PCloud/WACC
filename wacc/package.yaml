@@ -19,6 +19,7 @@ dependencies:
   - cmdargs
   - raw-strings-qq
   - bimap
+  - array
 
 ghc-options:
   - -Wall

@@ -12,6 +12,7 @@ import Control.Monad.RWS
   , modify
   , tell
   )
+import qualified Data.Array as A
 import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
@@ -705,4 +706,4 @@ arrayStore 8 = R ArrStore8
 arrayStore _ = error "Invalid size for array store"
 
 useRuntimeFunc :: Runtime -> Analysis ()
-useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps r) (runtimeFns x)})
+useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})
