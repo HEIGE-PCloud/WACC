@@ -11,11 +11,14 @@
 
 module Language.WACC.X86.X86 where
 
+-- import Data.Ix hiding (Ix)
+import Data.Array
 import Data.Char (toLower)
 import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Constraint)
 import Data.List (intercalate)
+import Data.Set (Set, insert, singleton)
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (TypeError)
 import Language.WACC.X86.ATNT (ATNT (..), genATNTInstruction)
@@ -567,8 +570,9 @@ data Runtime
   | ErrOutOfBounds
   | ErrOverflow
   | ErrDivByZero
+  | ErrBadChar
   | Exit
-  deriving (Eq, Ord, Typeable, Data, Show)
+  deriving (Ix, Eq, Ord, Typeable, Data, Show)
 
 instance ATNT Int8 where
   formatA :: Int8 -> String
@@ -672,3 +676,22 @@ instr5 = Comment "this is a comment"
 
 instr6 :: Instruction
 instr6 = Lab (R ArrLoad1)
+
+startEnd :: (Runtime, Runtime)
+startEnd = (ArrLoad1, Exit)
+
+runtimeDeps :: Array Runtime (Set Runtime)
+runtimeDeps = array startEnd [(r, deps r) | r <- range startEnd]
+  where
+    deps :: Runtime -> Set Runtime
+    deps ArrLoad1 = insert ArrLoad1 (deps ErrOutOfBounds)
+    deps ArrLoad4 = insert ArrLoad4 (deps ErrOutOfBounds)
+    deps ArrLoad8 = insert ArrLoad8 (deps ErrOutOfBounds)
+    deps ArrStore1 = insert ArrStore1 (deps ErrOutOfBounds)
+    deps ArrStore4 = insert ArrStore4 (deps ErrOutOfBounds)
+    deps ArrStore8 = insert ArrStore8 (deps ErrOutOfBounds)
+    deps ErrOutOfMemory = insert ErrOutOfMemory (deps PrintS)
+    deps ErrOutOfBounds = insert ErrOutOfBounds (deps PrintS)
+    deps ErrOverflow = insert ErrOverflow (deps PrintS)
+    deps ErrDivByZero = insert ErrDivByZero (deps PrintS)
+    deps r = singleton r

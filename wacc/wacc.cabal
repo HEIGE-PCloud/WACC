@@ -62,7 +62,8 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , bimap
     , cmdargs
     , containers
@@ -85,7 +86,8 @@ executable compile
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , bimap
     , cmdargs
     , containers
@@ -141,6 +143,7 @@ test-suite wacc-test
       tasty-autocollect:tasty-autocollect
   build-depends:
       QuickCheck
+    , array
     , base >=4.7 && <5
     , bimap
     , bytestring
