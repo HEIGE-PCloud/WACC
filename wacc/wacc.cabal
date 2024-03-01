@@ -51,7 +51,9 @@ library
       Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
+      Language.WACC.X86.ATNT
       Language.WACC.X86.Runtime
+      Language.WACC.X86.Size
       Language.WACC.X86.Translate
       Language.WACC.X86.X86
   other-modules:
@@ -60,7 +62,8 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , bimap
     , cmdargs
     , containers
@@ -71,6 +74,7 @@ library
     , mtl
     , raw-strings-qq
     , recursion-schemes
+    , template-haskell
     , transformers
   default-language: Haskell2010
 
@@ -82,7 +86,8 @@ executable compile
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , bimap
     , cmdargs
     , containers
@@ -93,6 +98,7 @@ executable compile
     , mtl
     , raw-strings-qq
     , recursion-schemes
+    , template-haskell
     , transformers
     , wacc
   default-language: Haskell2010
@@ -111,6 +117,7 @@ test-suite wacc-test
       Test.Backend.Test
       Test.Backend.X86.GoldenTest
       Test.Backend.X86.Test
+      Test.Backend.X86.TranslateTest
       Test.Common
       Test.Frontend.IntegrationTest
       Test.Frontend.Parser.GoldenTest
@@ -136,6 +143,7 @@ test-suite wacc-test
       tasty-autocollect:tasty-autocollect
   build-depends:
       QuickCheck
+    , array
     , base >=4.7 && <5
     , bimap
     , bytestring
@@ -162,6 +170,7 @@ test-suite wacc-test
     , tasty-hspec
     , tasty-hunit
     , tasty-quickcheck
+    , template-haskell
     , transformers
     , utf8-string
     , wacc

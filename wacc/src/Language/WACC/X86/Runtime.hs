@@ -2,9 +2,10 @@ module Language.WACC.X86.Runtime where
 
 import qualified Data.DList as D
 import qualified Data.Map as M
+import Language.WACC.X86.ATNT (formatA)
 import Language.WACC.X86.X86
 
-x86Examples :: [(Prog, String)]
+x86Examples :: [(Program, String)]
 x86Examples =
   [ (arrLoad1, "arrLoad1")
   , (arrLoad4, "arrLoad4")
@@ -29,7 +30,7 @@ x86Examples =
   , (exit, "exit")
   ]
 
-runtimeLib :: M.Map Runtime (D.DList Instr)
+runtimeLib :: M.Map Runtime (D.DList Instruction)
 runtimeLib =
   M.fromList
     [ (ArrLoad1, D.fromList arrLoad1)
@@ -96,7 +97,7 @@ _printi:
 	popq %rbp
 	ret
 -}
-printi :: Prog
+printi :: Program
 printi =
   [ Dir DirSection
   , Dir $ DirInt 2
@@ -106,12 +107,12 @@ printi =
   , Lab (R PrintI)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
-  , Movl (Reg Rdi) (Reg Rsi)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Movl (Reg Edi) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._printi_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm 0) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -142,7 +143,7 @@ _prints:
 	popq %rbp
 	ret
 -}
-prints :: Prog
+prints :: Program
 prints =
   [ Dir DirSection
   , Dir $ DirInt 4
@@ -152,13 +153,13 @@ prints =
   , Lab (R PrintS)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Movq (Reg Rdi) (Reg Rdx)
-  , Movl (Mem (MRegI (-4) Rdi)) (Reg Rsi)
+  , Movl (Mem (MRegI (-4) Rdi)) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._prints_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm 0) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -203,7 +204,7 @@ _printb:
 	popq %rbp
 	ret
 -}
-printb :: Prog
+printb :: Program
 printb =
   [ Dir DirSection
   , Dir $ DirInt 5
@@ -219,19 +220,19 @@ printb =
   , Lab (R PrintB)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
-  , Cmpb (Imm 0) (Reg Rdi)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Cmpb (Imm (IntLitB 0)) (Reg Dil)
   , Jne (S ".L_printb0")
   , Leaq (Mem (MRegL (S ".L._printb_str0") Rip)) (Reg Rdx)
   , Jmp (S ".L_printb1")
   , Lab (S ".L_printb0")
   , Leaq (Mem (MRegL (S ".L._printb_str1") Rip)) (Reg Rdx)
   , Lab (S ".L_printb1")
-  , Movl (Mem (MRegI (-4) Rdx)) (Reg Rsi)
+  , Movl (Mem (MRegI (-4) Rdx)) (Reg Esi)
   , Leaq (Mem (MRegL (S ".L._printb_str2") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm 0) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -261,7 +262,7 @@ _printc:
 	popq %rbp
 	ret
 -}
-printc :: Prog
+printc :: Program
 printc =
   [ Dir DirSection
   , Dir $ DirInt 2
@@ -271,12 +272,12 @@ printc =
   , Lab (R PrintC)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
-  , Movb (Reg Rdi) (Reg Rsi)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Movb (Reg Dil) (Reg Sil)
   , Leaq (Mem (MRegL (S ".L._printc_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm 0) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -307,7 +308,7 @@ _printp:
 	ret
 -}
 
-printp :: Prog
+printp :: Program
 printp =
   [ Dir DirSection
   , Dir $ DirInt 2
@@ -317,12 +318,12 @@ printp =
   , Lab (R PrintP)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Movq (Reg Rdi) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._printp_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm 0) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -348,7 +349,7 @@ _println:
   popq %rbp
   ret
 -}
-println :: Prog
+println :: Program
 println =
   [ Dir DirSection
   , Dir $ DirInt 0
@@ -358,10 +359,10 @@ println =
   , Lab (R PrintLn)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._println_str0") Rip)) (Reg Rdi)
   , Call cputs
-  , Movq (Imm 0) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -378,12 +379,12 @@ _free:
   popq %rbp
   ret
 -}
-free :: Prog
+free :: Program
 free =
   [ Lab (R Free)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Call cfree
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -402,14 +403,14 @@ _malloc:
 	popq %rbp
 	ret
 -}
-malloc :: Prog
+malloc :: Program
 malloc =
   [ Lab (R Malloc)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Call cmalloc
-  , Cmpq (Imm 0) (Reg Rax)
+  , Cmpq (Imm (IntLitQ 0)) (Reg Rax)
   , Je (R ErrOutOfMemory)
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -431,7 +432,7 @@ _errOutOfMemory:
 	movb $-1, %dil
 	call exit@plt
 -}
-errOutOfMemory :: Prog
+errOutOfMemory :: Program
 errOutOfMemory =
   [ Dir DirSection
   , Dir $ DirInt 27
@@ -439,10 +440,10 @@ errOutOfMemory =
   , Dir $ DirAsciz "fatal error: out of memory\n"
   , Dir DirText
   , Lab (R ErrOutOfMemory)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfMemory_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1)) (Reg Rdi)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -465,7 +466,7 @@ _errOutOfBounds:
 	movb $-1, %dil
 	call exit@plt
 -}
-errOutOfBounds :: Prog
+errOutOfBounds :: Program
 errOutOfBounds =
   [ Dir DirSection
   , Dir $ DirInt 42
@@ -473,13 +474,13 @@ errOutOfBounds =
   , Dir $ DirAsciz "fatal error: array index %d out of bounds\n"
   , Dir DirText
   , Lab (R ErrOutOfBounds)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfBounds_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cprintf
-  , Movq (Imm 0) (Reg Rdi)
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
-  , Movb (Imm (-1)) (Reg Rdi)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -498,7 +499,7 @@ _errOverflow:
 	movb $-1, %dil
 	call exit@plt
 -}
-errOverflow :: Prog
+errOverflow :: Program
 errOverflow =
   [ Dir DirSection
   , Dir $ DirInt 52
@@ -506,10 +507,10 @@ errOverflow =
   , Dir $ DirAsciz "fatal error: integer overflow or underflow occurred\n"
   , Dir DirText
   , Lab (R ErrOverflow)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOverflow_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1)) (Reg Rdi)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -529,7 +530,7 @@ _errDivZero:
 	call exit@plt
 -}
 
-errDivByZero :: Prog
+errDivByZero :: Program
 errDivByZero =
   [ Dir DirSection
   , Dir $ DirInt 40
@@ -537,10 +538,10 @@ errDivByZero =
   , Dir $ DirAsciz "fatal error: division or modulo by zero\n"
   , Dir DirText
   , Lab (R ErrDivByZero)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errDivZero_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
-  , Movb (Imm (-1)) (Reg Rdi)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]
 
@@ -573,7 +574,7 @@ _readi:
 	ret
 -}
 
-readi :: Prog
+readi :: Program
 readi =
   [ Dir DirSection
   , Dir $ DirInt 2
@@ -583,15 +584,15 @@ readi =
   , Lab (R ReadI)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
-  , Subq (Imm 16) (Reg Rsp)
-  , Movl (Reg Rdi) (Mem (MRegI 0 Rsp))
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Subq (Imm (IntLitQ 16)) (Reg Rsp)
+  , Movl (Reg Edi) (Mem (MRegI 0 Rsp))
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readi_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cscanf
   , Movslq (Mem (MRegI 0 Rsp)) (Reg Rax)
-  , Addq (Imm 16) (Reg Rsp)
+  , Addq (Imm (IntLitQ 16)) (Reg Rsp)
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -626,7 +627,7 @@ popq %rbp
 ret
 -}
 
-readc :: Prog
+readc :: Program
 readc =
   [ Dir DirSection
   , Dir $ DirInt 3
@@ -636,15 +637,15 @@ readc =
   , Lab (R ReadC)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
-  , Subq (Imm 16) (Reg Rsp)
-  , Movb (Reg Rdi) (Mem (MRegI 0 Rsp))
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Subq (Imm (IntLitQ 16)) (Reg Rsp)
+  , Movb (Reg Dil) (Mem (MRegI 0 Rsp))
   , Leaq (Mem (MRegI 0 Rsp)) (Reg Rsi)
   , Leaq (Mem (MRegL (S ".L._readc_str0") Rip)) (Reg Rdi)
-  , Movb (Imm 0) (Reg Rax)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
   , Call cscanf
   , Movsbq (Mem (MRegI 0 Rsp)) (Reg Rax)
-  , Addq (Imm 16) (Reg Rsp)
+  , Addq (Imm (IntLitQ 16)) (Reg Rsp)
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
@@ -661,12 +662,12 @@ _exit:
 	popq %rbp
 	ret
 -}
-exit :: Prog
+exit :: Program
 exit =
   [ Lab (R Exit)
   , Pushq (Reg Rbp)
   , Movq (Reg Rsp) (Reg Rbp)
-  , Andq (Imm (-16)) (Reg Rsp)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Call cexit
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
@@ -688,15 +689,15 @@ _arrLoad1:
   popq %rbx
   ret
 -}
-arrLoad1 :: Prog
+arrLoad1 :: Program
 arrLoad1 =
   [ Lab (R ArrLoad1)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm 0) (Reg R10)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Rbx)
-  , Cmpl (Reg Rbx) (Reg R10)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
   , Cmovge (Reg R10) (Reg Rsi)
   , Jge (R ErrOutOfBounds)
   , Movsbq (Mem (MScale R9 R10 1)) (Reg R9)
@@ -719,18 +720,18 @@ _arrStore1:
 	popq %rbx
 	ret
 -}
-arrStore1 :: Prog
+arrStore1 :: Program
 arrStore1 =
   [ Lab (R ArrStore1)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm 0) (Reg R10)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Rbx)
-  , Cmpl (Reg Rbx) (Reg R10)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
   , Cmovge (Reg R10) (Reg Rsi)
   , Jge (R ErrOutOfBounds)
-  , Movb (Reg Rax) (Mem (MScale R9 R10 1))
+  , Movb (Reg Al) (Mem (MScale R9 R10 1))
   , Popq (Reg Rbx)
   , Ret
   ]
@@ -750,18 +751,18 @@ _arrStore4:
 	popq %rbx
 	ret
 -}
-arrStore4 :: Prog
+arrStore4 :: Program
 arrStore4 =
   [ Lab (R ArrStore4)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm 0) (Reg R10)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Rbx)
-  , Cmpl (Reg Rbx) (Reg R10)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
   , Cmovge (Reg R10) (Reg Rsi)
   , Jge (R ErrOutOfBounds)
-  , Movl (Reg Rax) (Mem (MScale R9 R10 4))
+  , Movl (Reg Eax) (Mem (MScale R9 R10 4))
   , Popq (Reg Rbx)
   , Ret
   ]
@@ -782,15 +783,15 @@ _arrLoad4:
   ret
 -}
 
-arrLoad4 :: Prog
+arrLoad4 :: Program
 arrLoad4 =
   [ Lab (R ArrLoad4)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm 0) (Reg R10)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Rbx)
-  , Cmpl (Reg Rbx) (Reg R10)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
   , Cmovge (Reg R10) (Reg Rsi)
   , Jge (R ErrOutOfBounds)
   , Movslq (Mem (MScale R9 R10 4)) (Reg R9)
@@ -813,15 +814,15 @@ _arrLoad8:
 	popq %rbx
 	ret
 -}
-arrLoad8 :: Prog
+arrLoad8 :: Program
 arrLoad8 =
   [ Lab (R ArrLoad8)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm 0) (Reg R10)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Rbx)
-  , Cmpl (Reg Rbx) (Reg R10)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
   , Cmovge (Reg R10) (Reg Rsi)
   , Jge (R ErrOutOfBounds)
   , Movq (Mem (MScale R9 R10 8)) (Reg R9)
@@ -844,15 +845,15 @@ _arrStore8:
   popq %rbx
   ret
 -}
-arrStore8 :: Prog
+arrStore8 :: Program
 arrStore8 =
   [ Lab (R ArrStore8)
   , Pushq (Reg Rbx)
-  , Cmpl (Imm 0) (Reg R10)
+  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
   , Cmovl (Reg R10) (Reg Rsi)
   , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Rbx)
-  , Cmpl (Reg Rbx) (Reg R10)
+  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
+  , Cmpl (Reg Ebx) (Reg R10d)
   , Cmovge (Reg R10) (Reg Rsi)
   , Jge (R ErrOutOfBounds)
   , Movq (Reg Rax) (Mem (MScale R9 R10 8))
@@ -861,5 +862,5 @@ arrStore8 =
   ]
 
 -- | Print a program, useful for debugging in GHCi
-printProg :: Prog -> IO ()
-printProg = putStrLn . formatA
+printProgram :: Program -> IO ()
+printProgram = putStrLn . formatA

@@ -19,6 +19,8 @@ dependencies:
   - cmdargs
   - raw-strings-qq
   - bimap
+  - array
+  - template-haskell
 
 ghc-options:
   - -Wall

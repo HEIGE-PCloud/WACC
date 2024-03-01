@@ -8,7 +8,7 @@
 The strategy for scope analysis is first add all function names into a symbol table (pass1).
 The AST renaming and scope analysis occurs simultaneously in the 2nd pass using a RWS monad, @Analysis@.
 -}
-module Language.WACC.Semantic.Scope (scopeAnalysis, Fnident, Vident, VarST) where
+module Language.WACC.Semantic.Scope (scopeAnalysis, Fnident (..), Vident (..), VarST) where
 
 import Control.Monad.RWS
   ( RWS
@@ -47,14 +47,12 @@ import Prelude hiding (GT, LT, reverse)
 {- |
 The @Integer@ acts as a UID (which will not clash with variables @Vident@s either).
 -}
-data Fnident = Fnident Integer
-  deriving (Ord, Eq, Show)
+type Fnident = Integer
 
 {- |
 The @Integer@ acts as a UID (which will not clash with @Fnident@s either)
 -}
-data Vident = Vident Integer
-  deriving (Ord, Eq, Show)
+type Vident = Integer
 
 -- | Symbol Table of variables for all scopes above the current one
 type SuperST = Map String (Integer, Pos)
@@ -168,7 +166,7 @@ insertDecl pos t str = do
     Nothing -> do
       n <- freshN
       modify $ mapPair (insert str (n, pos)) id
-      tell (mempty, Map.singleton (Vident n) (t, pos))
+      tell (mempty, Map.singleton (n) (t, pos))
       return n
     (Just (_, posOrig)) -> do
       report (alreadyDecl str posOrig) pos defaultCaretLen
@@ -202,11 +200,11 @@ instance Rename (RValue String) where
   rename (RVPairElem pe p) = (`RVPairElem` p) <$> rename pe
   rename (RVCall str es pos) = do
     es' <- mapM rename es
-    renameFuncOrErr str pos (\n -> RVCall (Fnident n) es' pos)
+    renameFuncOrErr str pos (\n -> RVCall (n) es' pos)
 
 instance Rename LValue where
   rename :: LValue String Pos -> Analysis (LValue Vident Pos)
-  rename (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (Vident n) pos)
+  rename (LVIdent str pos) = renameOrErr str pos (\n -> LVIdent (n) pos)
   rename (LVArrayElem arrI p) = (`LVArrayElem` p) <$> rename arrI
   rename (LVPairElem pe p) = (`LVPairElem` p) <$> rename pe
 
@@ -214,14 +212,14 @@ instance Rename ArrayIndex where
   rename :: ArrayIndex String Pos -> Analysis (ArrayIndex Vident Pos)
   rename (ArrayIndex str es pos) = do
     es' <- mapM rename es
-    renameOrErr str pos (\n -> ArrayIndex (Vident n) es' pos)
+    renameOrErr str pos (\n -> ArrayIndex (n) es' pos)
 
 {- |
 Use @renameOrErr@ to inspect every occurence of an ident and rename it
 -}
 instance Rename WAtom where
   rename :: WAtom String Pos -> Analysis (WAtom Vident Pos)
-  rename (Ident str pos) = renameOrErr str pos (\n -> Ident (Vident n) pos)
+  rename (Ident str pos) = renameOrErr str pos (\n -> Ident (n) pos)
   rename (ArrayElem arrI p) = (`ArrayElem` p) <$> rename arrI
   rename (IntLit x p) = pure (IntLit x p)
   rename (BoolLit x p) = pure (BoolLit x p)
@@ -260,7 +258,7 @@ instance Rename (Stmt String) where
   rename (Decl t str rv pos) = do
     rv' <- rename rv
     n <- insertDecl pos t str
-    return (Decl t (Vident n) rv' pos)
+    return (Decl t (n) rv' pos)
   rename (Asgn lv rv p) = do
     lv' <- rename lv
     rv' <- rename rv
@@ -313,12 +311,12 @@ instance Rename (Func WType String) where
     let
       (n, _) = funcST ! str
     ls' <- rename ls
-    return (Func t (Fnident n) params' ls' pos)
+    return (Func t (n) params' ls' pos)
     where
       renameParam :: (WType, String) -> Analysis (WType, Vident)
       renameParam (t, str) = do
         n <- insertDecl pos t str
-        return (t, Vident n)
+        return (t, n)
 
 instance Rename (Prog WType String) where
   rename

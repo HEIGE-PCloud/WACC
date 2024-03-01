@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {- |
 Defines the three-address code (TAC) representation of the WACC language.
@@ -57,7 +59,7 @@ data TAC ident lident
     CheckBounds Int (Var ident) Int
   | -- | > <var> := <var>
     Move (Var ident) (Var ident)
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)
 
 -- | Binary operators in TAC
 data BinOp
@@ -80,13 +82,13 @@ data BinOp
 data UnOp = Not | Negate deriving (Eq, Show)
 
 -- | Variables in TAC, either temporary or named in the source code.
-data Var ident = Temp ident | Var ident deriving (Eq, Show, Ord)
+data Var ident = Temp ident | Var ident deriving (Eq, Show, Ord, Functor)
 
 -- | Offsets in TAC, either temporary or named in the source code.
 type Offset = Var
 
 -- | Labels in TAC for jumps and function calls to other basic blocks.
-newtype Label lident = Label lident deriving (Eq, Show, Ord)
+newtype Label lident = Label lident deriving (Eq, Show, Ord, Functor)
 
 -- | Jump instructions in TAC Basic Blocks for control flow.
 data Jump ident lident
@@ -105,10 +107,10 @@ data Jump ident lident
     Ret (Var ident)
   | -- |  > exit <var>
     Exit (Var ident)
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)
 
 -- | Block labels in TAC for basic blocks.
-newtype BlockLabel ident = BlockLabel ident deriving (Eq, Show)
+newtype BlockLabel ident = BlockLabel ident deriving (Eq, Show, Functor)
 
 -- | Function representation in TAC.
 data TACFunc ident lident
@@ -126,7 +128,7 @@ data BasicBlock ident lident = BasicBlock
   { block :: [TAC ident lident]
   , nextBlock :: Jump ident lident
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)
 
 -- | The top-level mapping of function identifiers to their corresponding blocks.
 type TACProgram ident lident = Map lident (TACFunc ident lident)
