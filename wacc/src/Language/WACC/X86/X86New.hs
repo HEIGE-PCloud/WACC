@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -321,7 +320,12 @@ data Instruction where
     => Operand size1 type1
     -> Operand size2 type2
     -> Instruction
-  -- | https://www.felixcloutier.com/x86/cmovcc
+  -- | https://www.felixcloutier.com/x86/movsx:movsxd
+  Movslq :: OperandD type1 -> OperandQ type2 -> Instruction
+  -- | https://www.felixcloutier.com/x86/movsx:movsxd
+  Movsbq :: OperandB type1 -> OperandQ type2 -> Instruction
+  -- | https://www.felixcloutier.com/x86/movsx:movsxd
+  Movzbl :: OperandB type1 -> OperandD type2 -> Instruction
   Cmovl
     :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
     => Operand size type1
@@ -359,6 +363,13 @@ data Instruction where
     -> Instruction
   -- | https://www.felixcloutier.com/x86/idiv
   Idivl :: Operand size mem -> Instruction
+  -- | https://www.felixcloutier.com/x86/setcc
+  Sete :: OperandB type1 -> Instruction
+  Setne :: OperandB type1 -> Instruction
+  Setl :: OperandB type1 -> Instruction
+  Setle :: OperandB type1 -> Instruction
+  Setg :: OperandB type1 -> Instruction
+  Setge :: OperandB type1 -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addq
     :: (ValidOpType type1 type2, NotImm type2)
