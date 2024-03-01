@@ -106,8 +106,8 @@ Local Regs: 1
 .
 .
 -}
-translateFunc :: Func Integer Integer -> (Set Runtime, DList Instruction)
-translateFunc (Func l vs bs) = (runtimeFns st, is)
+translateFunc :: TACFunc Integer Integer -> (Set Runtime, DList Instruction)
+translateFunc (TACFunc l vs bs) = (runtimeFns st, is)
   where
     (st, is) =
       execRWS
