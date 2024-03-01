@@ -186,6 +186,11 @@ translateNext (CJump v l1 l2) = do
 translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
   tellInstr (Movl retVal (Reg Rax))
+  tellInstr X86.Ret
+translateNext (TAC.Exit x) = do
+  operand <- gets ((B.! x) . alloc)
+  tellInstr (Movl operand (Reg Rdi))
+  tellInstr (X86.Call (R X86.Exit))
 
 bindVarToLoc :: Var Integer -> Operand -> TransST -> TransST
 bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
@@ -202,9 +207,10 @@ allocate v = do
 -- | Sanity check. Variable must not already be allocated in three address code
 allocate' :: Var Integer -> Analysis Operand
 allocate' v = do
+  -- check if the variable is already allocated
   alloc' <- gets (B.lookup v . alloc)
   case alloc' of
-    Just _ -> error "allocate': Variable already allocated"
+    Just o -> return o
     Nothing -> allocate v
 
 getLabel :: Analysis X86.Label
@@ -314,6 +320,12 @@ translateTAC (TAC.Free v) = do
   call (R X86.Free)
   comment "End Free"
 translateTAC (TAC.CheckBounds {}) = undefined
+translateTAC (TAC.Move v1 v2) = do
+  comment $ "Move: " ++ show v1 ++ " := " ++ show v2
+  operand1 <- allocate' v1
+  operand2 <- getOperand v2
+  movq operand2 operand1
+  comment "End Move"
 
 -------------------------------------
 

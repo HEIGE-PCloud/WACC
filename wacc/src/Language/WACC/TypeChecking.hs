@@ -24,7 +24,10 @@ import Text.Gigaparsec.Position (Pos)
 {- |
 Run the type checker on a renamed AST.
 -}
-checkTypes :: Prog WType Fnident Vident Pos -> VarST -> [Error]
+checkTypes
+  :: Prog WType Fnident Vident Pos
+  -> VarST
+  -> (Maybe (Prog WType Integer Integer BType), [Error])
 checkTypes program vs =
   case runTypingM (fnCheck program) (fix . fst . (vs !)) mempty of
-    (_, _, errors) -> toList $ convertTypeError <$> errors
+    (ast, _, errors) -> (ast, toList $ convertTypeError <$> errors)
