@@ -41,7 +41,8 @@ instance TypeChecked (ArrayIndex ident Pos) where
       tryPred 0 = 0
       tryPred n = pred n
     t <- reportAt p (BArray BAny) $ foldM go vt xs
-    pure (t, ArrayIndex v (fmap (BInt <$) xs) vt)
+    xs' <- mapM check xs
+    pure (t, ArrayIndex v xs' vt)
 
 type instance Typed (WAtom ident ann) = WAtom ident BType
 
