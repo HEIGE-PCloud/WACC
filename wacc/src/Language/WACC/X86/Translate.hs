@@ -182,6 +182,7 @@ translateNext (CJump v l1 l2) = do
 translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
   movq retVal argRet
+  movq rbp rsp
   tellInstr X86.Ret
 translateNext (TAC.Exit x) = do
   operand <- gets ((B.! x) . alloc)
