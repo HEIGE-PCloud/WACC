@@ -333,7 +333,7 @@ data Instruction where
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
   Movsbq :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
-  Movzbl :: Operand size1 type1 -> Operand size2 type2 -> Instruction
+  Movzbq :: Operand size1 type1 -> Operand size2 type2 -> Instruction
   Cmovl
     :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
     => Operand size type1
