@@ -176,12 +176,6 @@ operators =
   ]
 
 {- |
-Defines the escape characters for the WACC language.
--}
-escapeChars :: [Char]
-escapeChars = ['0', 'b', 't', 'n', 'f', 'r', '"', '\'', '\\']
-
-{- |
 Defines the symbol description for the WACC language lexer.
 -}
 waccSymbolDesc :: SymbolDesc
@@ -229,8 +223,10 @@ waccTextDesc =
     { escapeSequences =
         EscapeDesc
           { escBegin = '\\'
-          , literals = S.fromList escapeChars
-          , mapping = M.empty
+          , literals = S.fromList ['"', '\'', '\\']
+          , mapping =
+              M.fromList
+                [("0", '\0'), ("b", '\b'), ("t", '\t'), ("n", '\n'), ("f", '\f'), ("r", '\r')]
           , decimalEscape = NumericIllegal
           , octalEscape = NumericIllegal
           , hexadecimalEscape = NumericIllegal
