@@ -193,6 +193,28 @@ stmtTestGroup =
                 ]
               , []
               )
+    , testProperty "Return Creates instructions for var" $ \x ->
+        toTAC' (AST.Return (intLit x) BAny) === ([LoadCI temp1 x], [])
+    , testProperty "Return Creates instructions for simple expression" $ \i1 i2 ->
+        toTAC' (AST.Return (AST.Add (intLit i1) (intLit i2) BInt) BAny)
+          === (
+                [ LoadCI temp2 i1
+                , LoadCI temp3 i2
+                , BinInstr temp1 temp2 Language.WACC.TAC.TAC.Add temp3
+                ]
+              , []
+              )
+    , testProperty "Exit Creates instructions for var" $ \x ->
+        toTAC' (AST.Exit (intLit x) BAny) === ([LoadCI temp1 x], [])
+    , testProperty "Exit Creates instructions for simple expression" $ \i1 i2 ->
+        toTAC' (AST.Exit (AST.Add (intLit i1) (intLit i2) BInt) BAny)
+          === (
+                [ LoadCI temp2 i1
+                , LoadCI temp3 i2
+                , BinInstr temp1 temp2 Language.WACC.TAC.TAC.Add temp3
+                ]
+              , []
+              )
     ]
 
 jump0 :: Jump Int Int
