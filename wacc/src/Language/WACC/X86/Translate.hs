@@ -475,7 +475,7 @@ translateUnOp :: X86.OperandQMM -> UnOp -> X86.OperandQMM -> Analysis ()
 translateUnOp o Not o' = do
   comment $ "Unary Not: " ++ show o ++ " := ! " ++ show o'
   movl o' eax
-  cmpl (Imm (IntLitD 32)) eax
+  cmpl (Imm (IntLitD 0)) eax
   sete al
   movzbl al eax
   movl eax o
