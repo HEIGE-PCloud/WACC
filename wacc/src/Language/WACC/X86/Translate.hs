@@ -25,7 +25,6 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Language.WACC.TAC.FType
   ( FType
-  , sizeOf
   , pattern FBool
   , pattern FChar
   , pattern FInt
@@ -316,8 +315,8 @@ translateTAC (TAC.CheckBounds v vm) = do
   cmpl om eax
   jl l4
   lab l3
+  movl om esi
   movl o edx
-  movl o eax
   call (R X86.ErrOutOfBounds)
   lab l4
 translateTAC (TAC.Move v1 v2) = do
@@ -570,6 +569,8 @@ cx = Reg Cx
 cl = Reg Cl
 
 rcx = Reg Rcx
+
+esi = Reg Esi
 
 eax = Reg Eax
 
