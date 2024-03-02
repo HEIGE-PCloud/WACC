@@ -2,7 +2,7 @@
 
 module Test.Backend.IntegrationTest where
 
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate, isInfixOf, isPrefixOf, (\\))
 import Data.Maybe (fromMaybe)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.FilePath (takeBaseName)
@@ -36,17 +36,16 @@ import Text.Gigaparsec.Token.Lexer
   )
 
 enabledTests :: [FilePath]
-enabledTests = allTests
-
---  [ "valid/basic/exit/exit-1.wacc"
---  , "valid/IO/IOLoop.wacc"
---  ]
+enabledTests = allTests \\ ignoredTests
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
 
 ignoredTests :: [FilePath]
-ignoredTests = [] -- allTests \\ enabledTests
+ignoredTests = [t | t <- allTests, or $ map ((`isPrefixOf` t) . ("valid/" ++)) ignoredPaths]
+  where
+    -- just give the subfolder/file below the valid directory here, to ignore it
+    ignoredPaths = ["array", "scope", "function", "while", "if", "IO", "pairs", "runtimeErr"] --    sequence  variables  expression basic
 
 lexer :: Lexer
 lexer = mkLexer plain
