@@ -55,7 +55,7 @@ runFrontendSource = do
     _ -> error "Failed to parse the source code."
 
 astToTAC :: Prog WType Integer Integer BType -> TACProgram Integer Integer
-astToTAC ast = evalTACM 0 (fnToTAC ast)
+astToTAC ast = evalTACM 1 (fnToTAC ast)
 
 mainProgram :: IO (TACProgram Integer Integer)
 mainProgram = do astToTAC <$> runFrontendSource
