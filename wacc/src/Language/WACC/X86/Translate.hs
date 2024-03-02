@@ -188,8 +188,10 @@ allocate :: Var Integer -> Analysis X86.OperandQMM
 allocate v = do
   -- increase the stackVarNum
   modify (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
+  -- decrease rsp
+  subq (Imm (IntLitQ 8)) rsp
   -- insert the variable into the allocation map
-  stackAddr <- gets ((* (-8)) . stackVarNum)
+  stackAddr <- gets ((* (-stackElemSize)) . stackVarNum)
   modify (bindVarToLoc v (Mem (MRegI stackAddr Rbp)))
   return (Mem (MRegI stackAddr Rbp))
 
@@ -475,7 +477,8 @@ translateUnOp o Not o' = do
   movl o' eax
   cmpl (Imm (IntLitD 32)) eax
   sete al
-  movzbl al o
+  movzbl al eax
+  movl eax o
   comment "End Unary Not"
 translateUnOp o Negate o' = do
   comment $ "Unary Negate: " ++ show o ++ " := - " ++ show o'
@@ -563,6 +566,8 @@ movq = mov Movq
 movzbl o r = tellInstr (Movzbl o r)
 
 addl o1 o2 = tellInstr (Addl o1 o2)
+
+subq o1 o2 = tellInstr (Subq o1 o2)
 
 subl o1 o2 = tellInstr (Subl o1 o2)
 
