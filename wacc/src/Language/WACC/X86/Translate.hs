@@ -29,6 +29,7 @@ import Language.WACC.TAC.FType
   , pattern FBool
   , pattern FChar
   , pattern FInt
+  , pattern FPtr
   , pattern FString
   )
 import Language.WACC.TAC.TAC
@@ -231,7 +232,7 @@ translateTAC (UnInstr v1 op v2) = do
   comment "End UnInstr"
 translateTAC (Store v1 off v2 w) = do
   comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  translateStore v1 off v2 (sizeOf w)
+  translateStore v1 off v2 w
   comment "End Store"
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
@@ -252,7 +253,7 @@ translateTAC (LoadCS v s) = do
   comment "End LoadCS"
 translateTAC (LoadM v1 v2 off w) = do
   comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  translateLoadM v1 v2 off (sizeOf w)
+  translateLoadM v1 v2 off w
   comment "End LoadM"
 translateTAC (TAC.Call v1 l vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
@@ -519,26 +520,32 @@ translateRead _ w =
     "Invalid type for read, only int and char are supported, got: " ++ show w
 
 translateLoadM
-  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
-translateLoadM v1 v2 off s = do
-  -- array ptr passed in R9, index in R10, and return into R9
+  :: Var Integer -> Var Integer -> Var Integer -> FType -> Analysis ()
+translateLoadM v1 v2 off t = do
   o1 <- allocate' v1
   o2 <- getOperand v2
   offset <- getOperand off
-  movq o2 r9
-  movq offset r10
-  movq r9 o1
+  movq o2 rax
+  addq offset rbx
+  moveT (Mem (MTwoReg Rax Rbx)) o1 t
 
+-- | > <var>[<offset>] := <var>
 translateStore
-  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
-translateStore v1 off v2 s = do
-  -- array ptr passed in R9, index in R10, and value in R11
+  :: Var Integer -> Var Integer -> Var Integer -> FType -> Analysis ()
+translateStore v1 off v2 t = do
   o1 <- getOperand v1
   offset <- getOperand off
   o2 <- getOperand v2
-  movq o1 r9
-  movq offset r10
-  movq o2 r11
+  movq o1 rax
+  movq offset rbx
+  moveT o2 (Mem (MTwoReg Rax Rbx)) t
+
+moveT :: X86.OperandQMM -> X86.OperandQMM -> FType -> Analysis ()
+moveT s d FChar = movb s cl >> movb cl d
+moveT s d FBool = movb s cl >> movb cl d
+moveT s d FInt = movl s ecx >> movl ecx d
+moveT s d FString = movq s rcx >> movq rcx d
+moveT s d FPtr = movq s rcx >> movq rcx d
 
 rbp = Reg Rbp
 
@@ -558,6 +565,12 @@ rax = Reg Rax
 
 rbx = Reg Rbx
 
+cx = Reg Cx
+
+cl = Reg Cl
+
+rcx = Reg Rcx
+
 eax = Reg Eax
 
 ebx = Reg Ebx
@@ -570,11 +583,15 @@ leaq o1 o2 = tellInstr (Leaq o1 o2)
 
 mov m o r = tellInstr (m o r)
 
+movb = mov Movb
+
 movl = mov Movl
 
 movq = mov Movq
 
 movzbl o r = tellInstr (Movzbl o r)
+
+addq o1 o2 = tellInstr (Addq o1 o2)
 
 addl o1 o2 = tellInstr (Addl o1 o2)
 
