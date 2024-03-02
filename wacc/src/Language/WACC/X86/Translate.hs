@@ -367,22 +367,22 @@ translateBinOp o Mul o1 o2 = do
 translateBinOp o Div o1 o2 = do
   comment $ "Binary Division: " ++ show o ++ " := " ++ show o1 ++ " / " ++ show o2
   movl o1 eax -- %eax := o1
-  cmpl (Imm (IntLitD 0)) eax -- check for division by zero
+  movl o2 ebx -- %ebx := o2
+  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
   je errDivByZero
   cltd -- sign extend eax into edx
-  movl o2 ebx -- %ebx := o2
   idivl ebx -- divide edx:eax by ebx
   movl eax o -- %o := eax
   comment "End Binary Division"
 translateBinOp o Mod o1 o2 = do
   comment $ "Binary Modulo: " ++ show o ++ " := " ++ show o1 ++ " % " ++ show o2
   movl o1 eax -- %eax := o1
-  cmpl (Imm (IntLitD 0)) eax -- check for division by zero
+  movl o2 ebx -- %ebx := o2
+  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
   je errDivByZero
   cltd -- sign extend eax into edx
-  movl o2 ebx -- %ebx := o2
   idivl ebx -- divide edx:eax by ebx
-  movl edx o -- %o := edx
+  movl edx o -- %o := eax
   comment "End Binary Modulo"
 translateBinOp o And o1 o2 = do
   comment $ "Binary And: " ++ show o ++ " := " ++ show o1 ++ " && " ++ show o2
@@ -530,7 +530,7 @@ translateLoadM v1 v2 off t = do
   o2 <- getOperand v2
   offset <- getOperand off
   movq o2 rax
-  addq offset rbx
+  movq offset rbx
   moveT (Mem (MTwoReg Rax Rbx)) o1 t
 
 -- | > <var>[<offset>] := <var>
