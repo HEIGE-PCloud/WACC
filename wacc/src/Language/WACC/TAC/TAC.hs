@@ -32,7 +32,7 @@ data TAC ident lident
     -- > <var> := call <lident>([<var>])
     --
     -- where @lident@ is a function identifier
-    Call (Var ident) (Label lident) [Var ident]
+    Call (Var ident) lident [Var ident]
   | -- |
     -- > print <var>
     --
@@ -53,10 +53,10 @@ data TAC ident lident
   | -- | > free <var>
     Free (Var ident)
   | -- |
-    -- > assert <low> <= <var> <= <high>
+    -- > assert 0 <= <var> < <max>
     --
     -- Throw a runtime error if the assertion fails.
-    CheckBounds Int (Var ident) Int
+    CheckBounds (Var ident) (Var ident)
   | -- | > <var> := <var>
     Move (Var ident) (Var ident)
   deriving (Eq, Show, Functor)
@@ -87,19 +87,16 @@ data Var ident = Temp ident | Var ident deriving (Eq, Show, Ord, Functor)
 -- | Offsets in TAC, either temporary or named in the source code.
 type Offset = Var
 
--- | Labels in TAC for jumps and function calls to other basic blocks.
-newtype Label lident = Label lident deriving (Eq, Show, Ord, Functor)
-
 -- | Jump instructions in TAC Basic Blocks for control flow.
 data Jump ident lident
   = -- |  > jmp <lident>
-    Jump (Label lident)
+    Jump lident
   | -- |
     -- > cjmp <var> <lident> <lident>
     --
     -- Jump to the first label if @var@ is non-zero. Otherwise, jump to the
     -- second label.
-    CJump (Var ident) (Label lident) (Label lident)
+    CJump (Var ident) lident lident
   | -- |
     -- > ret <var>
     --
@@ -108,9 +105,6 @@ data Jump ident lident
   | -- |  > exit <var>
     Exit (Var ident)
   deriving (Eq, Show, Functor)
-
--- | Block labels in TAC for basic blocks.
-newtype BlockLabel ident = BlockLabel ident deriving (Eq, Show, Functor)
 
 -- | Function representation in TAC.
 data TACFunc ident lident

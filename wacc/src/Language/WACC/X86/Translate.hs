@@ -35,7 +35,6 @@ import Language.WACC.TAC.TAC
   ( BasicBlock (BasicBlock)
   , BinOp (Add, And, Div, Mod, Mul, Or, Sub)
   , Jump (CJump, Jump)
-  , Label (Label)
   , TAC (BinInstr, LoadCI, LoadCS, LoadM, Print, Read, Store, UnInstr)
   , TACFunc (..)
   , TACProgram
@@ -72,7 +71,7 @@ swapReg = R10
 data TransST = TransST
   { alloc :: Bimap (Var Integer) X86.OperandQMM
   -- ^ bijection between variables in TAC to register/memory in X86
-  , translated :: Set (TAC.Label Integer)
+  , translated :: Set Integer
   -- ^ Set of basic blocks that have been translated
   , stackVarNum :: Integer
   -- ^ The number of stack variables used so far (not incl. saving callee saved reg)
@@ -122,7 +121,7 @@ translateFunc (TACFunc l vs bs) = (runtimeFns st, is)
       movq rsp rbp -- set the stack base pointer
       -- if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
       mapM_ setupStackArgs (zip vs [0 ..])
-      translateBlocks (TAC.Label l) startBlock -- Translate main part of code
+      translateBlocks l startBlock -- Translate main part of code
       movq rbp rsp -- restore stack pointer
       unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
       -- assigning arg vars to stack
@@ -133,7 +132,7 @@ translateFunc (TACFunc l vs bs) = (runtimeFns st, is)
 labels are printed right before this function is called
 -}
 translateBlocks
-  :: TAC.Label Integer
+  :: Integer
   -> BasicBlock Integer Integer
   -> Analysis ()
 translateBlocks l (BasicBlock is next) = do
@@ -142,16 +141,16 @@ translateBlocks l (BasicBlock is next) = do
   translateNext next
 
 -- | Mark the block as translated, so its not re-translated
-setTranslated :: TAC.Label Integer -> TransST -> TransST
+setTranslated :: Integer -> TransST -> TransST
 setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated}
 
-mapLab :: TAC.Label Integer -> X86.Label
-mapLab (Label x) = I x
+mapLab :: Integer -> X86.Label
+mapLab = I
 
 tellInstr :: Instruction -> Analysis ()
 tellInstr = tell . D.singleton
 
-isTranslated :: TAC.Label Integer -> Analysis Bool
+isTranslated :: Integer -> Analysis Bool
 isTranslated l = gets (S.member l . translated)
 
 {- | Flow control: For CJump translate l2 first then translate l1 after returning from the recursive call
@@ -159,12 +158,12 @@ This generates weird (but correct) assembly with else first then if. The if bloc
 end of the recursive call.
 -}
 translateNext :: Jump Integer Integer -> Analysis ()
-translateNext (Jump l1@(Label n)) = do
-  nextBlock <- asks (! n)
-  t <- isTranslated l1
+translateNext (Jump l) = do
+  nextBlock <- asks (! l)
+  t <- isTranslated l
   ( if t
-      then tellInstr (Jmp (mapLab l1))
-      else tellInstr (Lab (mapLab l1)) >> translateBlocks l1 nextBlock
+      then tellInstr (Jmp (mapLab l))
+      else tellInstr (Lab (mapLab l)) >> translateBlocks l nextBlock
     )
 translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
@@ -255,7 +254,7 @@ translateTAC (LoadM v1 v2 off w) = do
   comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
   translateLoadM v1 v2 off (sizeOf w)
   comment "End LoadM"
-translateTAC (TAC.Call v1 (Label l) vs) = do
+translateTAC (TAC.Call v1 l vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
   -- push all registers on to stack
   os <- mapM getOperand vs
