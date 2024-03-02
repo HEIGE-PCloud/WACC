@@ -112,8 +112,8 @@ instance
       pure $ Jump cl
   fnToTAC (AST.BeginEnd s _) = do
     fl <- freshLabel
+    fa <- stmtsToTAC s fl
     pure $ Just $ Blocks $ \j -> do
-      fa <- stmtsToTAC s fl
       fa j
       pure $ Jump fl
 
