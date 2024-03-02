@@ -26,8 +26,9 @@ toTAC' = testTACM . (*> ((,) <$> collectTACs <*> collectBlocks)) . fnToTAC
 intLit :: (Integral a) => a -> Expr Int BType
 intLit x = WAtom (IntLit (toInteger x) BInt) BInt
 
-temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8 :: Var Int
-temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : temp7 : temp8 : _ = Temp <$> [0 ..]
+temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8, temp9 :: Var Int
+temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : temp7 : temp8 : temp9
+  : _ = Temp <$> [0 ..]
 
 stmtTestGroup :: TestTree
 stmtTestGroup =
@@ -148,9 +149,51 @@ stmtTestGroup =
                 ]
               , []
               )
+    , testProperty "Asgn uses Asgn with RVArrayLit" $ \v ->
+        toTAC'
+          ( AST.Asgn
+              (AST.LVIdent v BInt)
+              (AST.RVArrayLit [intLit 5, intLit 6, intLit 7] (BArray BInt))
+              BAny
+          )
+          === (
+                [ LoadCI temp1 16
+                , LoadCI temp2 3
+                , LoadCI temp3 0
+                , Malloc (Var v) temp1
+                , Store (Var v) temp3 temp2 WIntF
+                , LoadCI temp4 5
+                , LoadCI temp5 4
+                , Store (Var v) temp5 temp4 WIntF
+                , LoadCI temp6 6
+                , LoadCI temp7 8
+                , Store (Var v) temp7 temp6 WIntF
+                , LoadCI temp8 7
+                , LoadCI temp9 12
+                , Store (Var v) temp9 temp8 WIntF
+                ]
+              , []
+              )
+    , testProperty "Asgn Uses Asgn with RVNewPair" $ \v i1 i2 ->
+        toTAC'
+          ( AST.Asgn
+              (AST.LVIdent v (BKnownPair BInt BInt))
+              (RVNewPair (intLit i1) (intLit i2) (BKnownPair BInt BInt))
+              BAny
+          )
+          === (
+                [ LoadCI temp1 i1
+                , LoadCI temp2 i2
+                , LoadCI temp3 0
+                , LoadCI temp4 8
+                , LoadCI temp5 16
+                , Malloc (Var v) temp5
+                , Store (Var v) temp3 temp1 WIntF
+                , Store (Var v) temp4 temp2 WIntF
+                ]
+              , []
+              )
     ]
-
--- [LoadCI (Temp 1) 0,LoadCI (Temp 3) 4,LoadCI (Temp 4) 6,BinInstr (Temp 2) (Temp 3) Add (Temp 4),Store (Temp 0) (Temp 1) (Temp 2) WIntF]
 
 jump0 :: Jump Int Int
 jump0 = Jump $ Label 0
