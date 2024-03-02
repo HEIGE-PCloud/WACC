@@ -308,6 +308,7 @@ data Instruction where
   Jg :: Label -> Instruction
   Jge :: Label -> Instruction
   Jo :: Label -> Instruction
+  Js :: Label -> Instruction
   Jmp :: Label -> Instruction
   Call :: Label -> Instruction
   Ret :: Instruction
@@ -484,13 +485,21 @@ data Instruction where
 deriving instance Show Instruction
 
 data Memory where
+  -- | (53) :- immediate memory access
   MI :: Integer -> Memory
+  -- | (%rax) :- single register memory access
   MReg :: RegisterQ -> Memory
+  -- | (%rsp, %rax) = M[R[rsp] + R[rax]] :- register sum memory access
   MTwoReg :: RegisterQ -> RegisterQ -> Memory
+  -- | (%rsp, %rax, 4) = M[R[rsp] + R[rax]*4] :- register scaled (by 1,2,4 or 8) memory access
   MScale :: RegisterQ -> RegisterQ -> Integer -> Memory
+  -- | 7(%rax) = M[7 + R[rax]] :- offset single register memory access
   MRegI :: Integer -> RegisterQ -> Memory
+  -- | 7(%rsp, %rax) = M[7 + R[rsp] + R[rax]] :- offset register sum memory access
   MTwoRegI :: Integer -> RegisterQ -> RegisterQ -> Memory
+  -- | 7(%rsp, %rax, 4) = M[7 + R[rsp] + R[rax]*4] :- offset register scaled (by 1,2,4 or 8) memory access
   MScaleI :: Integer -> RegisterQ -> RegisterQ -> Integer -> Memory
+  -- | f4(%rax) :- offset to label, single register memory access
   MRegL :: Label -> RegisterQ -> Memory
 
 deriving instance Eq Memory
@@ -550,13 +559,7 @@ data Label = I Integer | R Runtime | S String
   deriving (Eq, Ord, Data, Show)
 
 data Runtime
-  = ArrLoad1
-  | ArrLoad4
-  | ArrLoad8
-  | ArrStore1
-  | ArrStore4
-  | ArrStore8
-  | PrintI
+  = PrintI
   | PrintB
   | PrintC
   | PrintS
@@ -674,22 +677,13 @@ instr4 = Movzx (Reg Al) (Reg Rax)
 instr5 :: Instruction
 instr5 = Comment "this is a comment"
 
-instr6 :: Instruction
-instr6 = Lab (R ArrLoad1)
-
 startEnd :: (Runtime, Runtime)
-startEnd = (ArrLoad1, Exit)
+startEnd = (PrintI, Exit)
 
 runtimeDeps :: Array Runtime (Set Runtime)
 runtimeDeps = array startEnd [(r, deps r) | r <- range startEnd]
   where
     deps :: Runtime -> Set Runtime
-    deps ArrLoad1 = insert ArrLoad1 (deps ErrOutOfBounds)
-    deps ArrLoad4 = insert ArrLoad4 (deps ErrOutOfBounds)
-    deps ArrLoad8 = insert ArrLoad8 (deps ErrOutOfBounds)
-    deps ArrStore1 = insert ArrStore1 (deps ErrOutOfBounds)
-    deps ArrStore4 = insert ArrStore4 (deps ErrOutOfBounds)
-    deps ArrStore8 = insert ArrStore8 (deps ErrOutOfBounds)
     deps ErrOutOfMemory = insert ErrOutOfMemory (deps PrintS)
     deps ErrOutOfBounds = insert ErrOutOfBounds (deps PrintS)
     deps ErrOverflow = insert ErrOverflow (deps PrintS)

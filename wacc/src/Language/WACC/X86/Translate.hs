@@ -25,10 +25,10 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Language.WACC.TAC.FType
   ( FType
-  , sizeOf
   , pattern FBool
   , pattern FChar
   , pattern FInt
+  , pattern FPtr
   , pattern FString
   )
 import Language.WACC.TAC.TAC
@@ -233,7 +233,7 @@ translateTAC (UnInstr v1 op v2) = do
   comment "End UnInstr"
 translateTAC (Store v1 off v2 w) = do
   comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  translateStore v1 off v2 (sizeOf w)
+  translateStore v1 off v2 w
   comment "End Store"
 translateTAC (LoadCI v i) = do
   comment $ "LoadCI: " ++ show v ++ " := " ++ show i
@@ -254,7 +254,7 @@ translateTAC (LoadCS v s) = do
   comment "End LoadCS"
 translateTAC (LoadM v1 v2 off w) = do
   comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
-  translateLoadM v1 v2 off (sizeOf w)
+  translateLoadM v1 v2 off w
   comment "End LoadM"
 translateTAC (TAC.Call v1 l vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
@@ -269,7 +269,7 @@ translateTAC (TAC.Call v1 l vs) = do
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
   operand <- getOperand v
-  movq operand arg1
+  movq operand arg2
   translatePrint w
   comment "End Print"
 translateTAC (TAC.PrintLn v w) = do
@@ -304,7 +304,23 @@ translateTAC (TAC.Free v) = do
   movq operand arg1
   call (R X86.Free)
   comment "End Free"
-translateTAC (TAC.CheckBounds {}) = undefined
+-- > assert 0 <= <var> < <max>
+translateTAC (TAC.CheckBounds v vm) = do
+  comment $ "CheckBounds: assert 0 <= " ++ show v ++ " < " ++ show vm
+  l3 <- getLabel
+  l4 <- getLabel
+  o <- getOperand v
+  om <- getOperand vm
+  cmpl (Imm (IntLitD 0)) o
+  js l3
+  movl o eax
+  cmpl om eax
+  jl l4
+  lab l3
+  movl om esi
+  movl o edx
+  call (R X86.ErrOutOfBounds)
+  lab l4
 translateTAC (TAC.Move v1 v2) = do
   comment $ "Move: " ++ show v1 ++ " := " ++ show v2
   operand1 <- allocate' v1
@@ -506,28 +522,32 @@ translateRead _ w =
     "Invalid type for read, only int and char are supported, got: " ++ show w
 
 translateLoadM
-  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
-translateLoadM v1 v2 off s = do
-  -- array ptr passed in R9, index in R10, and return into R9
+  :: Var Integer -> Var Integer -> Var Integer -> FType -> Analysis ()
+translateLoadM v1 v2 off t = do
   o1 <- allocate' v1
   o2 <- getOperand v2
   offset <- getOperand off
-  movq o2 r9
-  movq offset r10
-  call (arrayLoad s)
-  movq r9 o1
+  movq o2 rax
+  addq offset rbx
+  moveT (Mem (MTwoReg Rax Rbx)) o1 t
 
+-- | > <var>[<offset>] := <var>
 translateStore
-  :: Var Integer -> Var Integer -> Var Integer -> Int -> Analysis ()
-translateStore v1 off v2 s = do
-  -- array ptr passed in R9, index in R10, and value in R11
+  :: Var Integer -> Var Integer -> Var Integer -> FType -> Analysis ()
+translateStore v1 off v2 t = do
   o1 <- getOperand v1
   offset <- getOperand off
   o2 <- getOperand v2
-  movq o1 r9
-  movq offset r10
-  movq o2 r11
-  call (arrayStore s)
+  movq o1 rax
+  movq offset rbx
+  moveT o2 (Mem (MTwoReg Rax Rbx)) t
+
+moveT :: X86.OperandQMM -> X86.OperandQMM -> FType -> Analysis ()
+moveT s d FChar = movb s cl >> movb cl d
+moveT s d FBool = movb s cl >> movb cl d
+moveT s d FInt = movl s ecx >> movl ecx d
+moveT s d FString = movq s rcx >> movq rcx d
+moveT s d FPtr = movq s rcx >> movq rcx d
 
 rbp = Reg Rbp
 
@@ -547,6 +567,14 @@ rax = Reg Rax
 
 rbx = Reg Rbx
 
+cx = Reg Cx
+
+cl = Reg Cl
+
+rcx = Reg Rcx
+
+esi = Reg Esi
+
 eax = Reg Eax
 
 ebx = Reg Ebx
@@ -559,11 +587,15 @@ leaq o1 o2 = tellInstr (Leaq o1 o2)
 
 mov m o r = tellInstr (m o r)
 
+movb = mov Movb
+
 movl = mov Movl
 
 movq = mov Movq
 
 movzbl o r = tellInstr (Movzbl o r)
+
+addq o1 o2 = tellInstr (Addq o1 o2)
 
 addl o1 o2 = tellInstr (Addl o1 o2)
 
@@ -589,6 +621,10 @@ j s l@(R r) = do
 j s l = tellInstr (s l)
 
 jo = j Jo
+
+js = j Js
+
+jl = j Jl
 
 je = j Je
 
@@ -619,6 +655,16 @@ negl o = tellInstr (Negl o)
 call = j X86.Call
 
 arg1 = Reg Rdi
+
+arg2 = Reg Rsi
+
+arg3 = Reg Rdx
+
+arg4 = Reg Rcx
+
+arg5 = Reg R8
+
+arg6 = Reg R9
 
 argRet = Reg Rax
 
@@ -663,18 +709,6 @@ text = tellInstr (Dir DirText)
 
 comment :: String -> Analysis ()
 comment s = tellInstr (Comment s)
-
-arrayLoad :: (Eq a, Num a) => a -> X86.Label
-arrayLoad 1 = R ArrLoad1
-arrayLoad 4 = R ArrLoad4
-arrayLoad 8 = R ArrLoad8
-arrayLoad _ = error "Invalid size for array load"
-
-arrayStore :: (Eq a, Num a) => a -> X86.Label
-arrayStore 1 = R ArrStore1
-arrayStore 4 = R ArrStore4
-arrayStore 8 = R ArrStore8
-arrayStore _ = error "Invalid size for array store"
 
 useRuntimeFunc :: Runtime -> Analysis ()
 useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})

@@ -7,13 +7,7 @@ import Language.WACC.X86.X86
 
 x86Examples :: [(Program, String)]
 x86Examples =
-  [ (arrLoad1, "arrLoad1")
-  , (arrLoad4, "arrLoad4")
-  , (arrLoad8, "arrLoad8")
-  , (arrStore1, "arrStore1")
-  , (arrStore4, "arrStore4")
-  , (arrStore8, "arrStore8")
-  , (printi, "printi")
+  [ (printi, "printi")
   , (printb, "printb")
   , (printc, "printc")
   , (printp, "printp")
@@ -33,13 +27,7 @@ x86Examples =
 runtimeLib :: M.Map Runtime (D.DList Instruction)
 runtimeLib =
   M.fromList
-    [ (ArrLoad1, D.fromList arrLoad1)
-    , (ArrLoad4, D.fromList arrLoad4)
-    , (ArrLoad8, D.fromList arrLoad8)
-    , (ArrStore1, D.fromList arrStore1)
-    , (ArrStore4, D.fromList arrStore4)
-    , (ArrStore8, D.fromList arrStore8)
-    , (PrintI, D.fromList printi)
+    [ (PrintI, D.fromList printi)
     , (PrintB, D.fromList printb)
     , (PrintC, D.fromList printc)
     , (PrintS, D.fromList prints)
@@ -469,9 +457,11 @@ _errOutOfBounds:
 errOutOfBounds :: Program
 errOutOfBounds =
   [ Dir DirSection
-  , Dir $ DirInt 42
+  , Dir $ DirInt 81
   , Lab (S ".L._errOutOfBounds_str0")
-  , Dir $ DirAsciz "fatal error: array index %d out of bounds\n"
+  , Dir $
+      DirAsciz
+        "fatal error: variable failed boundary check. Expected: 0 <= x < %d, while x = %d\n"
   , Dir DirText
   , Lab (R ErrOutOfBounds)
   , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
@@ -671,193 +661,6 @@ exit =
   , Call cexit
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
-  , Ret
-  ]
-
-{-
-_arrLoad1:
-	# Special calling convention: array ptr passed in R9, index in R10, and return into R9
-	pushq %rbx
-	cmpl $0, %r10d
-	cmovl %r10, %rsi
-	jl _errOutOfBounds
-	movl -4(%r9), %ebx
-	cmpl %ebx, %r10d
-  cmovge %r10, %rsi
-  jge _errOutOfBounds
-  movsbq (%r9,%r10), %r9
-  popq %rbx
-  ret
--}
-arrLoad1 :: Program
-arrLoad1 =
-  [ Lab (R ArrLoad1)
-  , Pushq (Reg Rbx)
-  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
-  , Cmovl (Reg R10) (Reg Rsi)
-  , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
-  , Cmpl (Reg Ebx) (Reg R10d)
-  , Cmovge (Reg R10) (Reg Rsi)
-  , Jge (R ErrOutOfBounds)
-  , Movsbq (Mem (MScale R9 R10 1)) (Reg R9)
-  , Popq (Reg Rbx)
-  , Ret
-  ]
-
-{-
-_arrStore1:
-	# Special calling convention: array ptr passed in R9, index in R10, value to store in RAX
-	pushq %rbx
-	cmpl $0, %r10d
-	cmovl %r10, %rsi
-	jl _errOutOfBounds
-	movl -4(%r9), %ebx
-	cmpl %ebx, %r10d
-	cmovge %r10, %rsi
-	jge _errOutOfBounds
-	movb %al, (%r9,%r10)
-	popq %rbx
-	ret
--}
-arrStore1 :: Program
-arrStore1 =
-  [ Lab (R ArrStore1)
-  , Pushq (Reg Rbx)
-  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
-  , Cmovl (Reg R10) (Reg Rsi)
-  , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
-  , Cmpl (Reg Ebx) (Reg R10d)
-  , Cmovge (Reg R10) (Reg Rsi)
-  , Jge (R ErrOutOfBounds)
-  , Movb (Reg Al) (Mem (MScale R9 R10 1))
-  , Popq (Reg Rbx)
-  , Ret
-  ]
-
-{-
-_arrStore4:
-	# Special calling convention: array ptr passed in R9, index in R10, value to store in RAX
-	pushq %rbx
-	cmpl $0, %r10d
-	cmovl %r10, %rsi
-	jl _errOutOfBounds
-	movl -4(%r9), %ebx
-	cmpl %ebx, %r10d
-	cmovge %r10, %rsi
-	jge _errOutOfBounds
-	movl %eax, (%r9,%r10,4)
-	popq %rbx
-	ret
--}
-arrStore4 :: Program
-arrStore4 =
-  [ Lab (R ArrStore4)
-  , Pushq (Reg Rbx)
-  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
-  , Cmovl (Reg R10) (Reg Rsi)
-  , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
-  , Cmpl (Reg Ebx) (Reg R10d)
-  , Cmovge (Reg R10) (Reg Rsi)
-  , Jge (R ErrOutOfBounds)
-  , Movl (Reg Eax) (Mem (MScale R9 R10 4))
-  , Popq (Reg Rbx)
-  , Ret
-  ]
-
-{-
-_arrLoad4:
-	# Special calling convention: array ptr passed in R9, index in R10, and return into R9
-  pushq %rbx
-  cmpl $0, %r10d
-  cmovl %r10, %rsi
-  jl _errOutOfBounds
-  movl -4(%r9), %ebx
-  cmpl %ebx, %r10d
-  cmovge %r10, %rsi
-  jge _errOutOfBounds
-  movslq (%r9,%r10,4), %r9
-  popq %rbx
-  ret
--}
-
-arrLoad4 :: Program
-arrLoad4 =
-  [ Lab (R ArrLoad4)
-  , Pushq (Reg Rbx)
-  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
-  , Cmovl (Reg R10) (Reg Rsi)
-  , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
-  , Cmpl (Reg Ebx) (Reg R10d)
-  , Cmovge (Reg R10) (Reg Rsi)
-  , Jge (R ErrOutOfBounds)
-  , Movslq (Mem (MScale R9 R10 4)) (Reg R9)
-  , Popq (Reg Rbx)
-  , Ret
-  ]
-
-{-
-_arrLoad8:
-	# Special calling convention: array ptr passed in R9, index in R10, and return into R9
-	pushq %rbx
-	cmpl $0, %r10d
-	cmovl %r10, %rsi
-	jl _errOutOfBounds
-	movl -4(%r9), %ebx
-	cmpl %ebx, %r10d
-	cmovge %r10, %rsi
-	jge _errOutOfBounds
-	movq (%r9,%r10,8), %r9
-	popq %rbx
-	ret
--}
-arrLoad8 :: Program
-arrLoad8 =
-  [ Lab (R ArrLoad8)
-  , Pushq (Reg Rbx)
-  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
-  , Cmovl (Reg R10) (Reg Rsi)
-  , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
-  , Cmpl (Reg Ebx) (Reg R10d)
-  , Cmovge (Reg R10) (Reg Rsi)
-  , Jge (R ErrOutOfBounds)
-  , Movq (Mem (MScale R9 R10 8)) (Reg R9)
-  , Popq (Reg Rbx)
-  , Ret
-  ]
-
-{-
-_arrStore8:
-	# Special calling convention: array ptr passed in R9, index in R10, value to store in RAX
-	pushq %rbx
-	cmpl $0, %r10d
-	cmovl %r10, %rsi
-	jl _errOutOfBounds
-	movl -4(%r9), %ebx
-	cmpl %ebx, %r10d
-  cmovge %r10, %rsi
-  jge _errOutOfBounds
-  movq %rax, (%r9,%r10,8)
-  popq %rbx
-  ret
--}
-arrStore8 :: Program
-arrStore8 =
-  [ Lab (R ArrStore8)
-  , Pushq (Reg Rbx)
-  , Cmpl (Imm (IntLitD 0)) (Reg R10d)
-  , Cmovl (Reg R10) (Reg Rsi)
-  , Jl (R ErrOutOfBounds)
-  , Movl (Mem (MRegI (-4) R9)) (Reg Ebx)
-  , Cmpl (Reg Ebx) (Reg R10d)
-  , Cmovge (Reg R10) (Reg Rsi)
-  , Jge (R ErrOutOfBounds)
-  , Movq (Reg Rax) (Mem (MScale R9 R10 8))
-  , Popq (Reg Rbx)
   , Ret
   ]
 

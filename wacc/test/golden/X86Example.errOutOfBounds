@@ -1,7 +1,7 @@
 .section .rodata
-.int 42
+.int 81
 .L._errOutOfBounds_str0:
-.asciz "fatal error: array index %d out of bounds\n"
+.asciz "fatal error: variable failed boundary check. Expected: 0 <= x < %d, while x = %d\n"
 .text
 _erroutofbounds:
 andq $-16, %rsp
