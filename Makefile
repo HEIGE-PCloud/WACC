@@ -16,7 +16,7 @@ test:
 		--test-arguments --xml=../rspec.xml \
 		--test-arguments --quickcheck-max-size=10 \
 		--test-arguments '--pattern "$$$(PATTERN)"' \
-		$(if $(ACCEPT), --test-arguments --accept) ; pkill -f "[a-z]+\.out"
+		$(if $(ACCEPT), --test-arguments --accept)
 
 test-all: compile
 	$(MAKE) test PATTERN="0 ~ /./"

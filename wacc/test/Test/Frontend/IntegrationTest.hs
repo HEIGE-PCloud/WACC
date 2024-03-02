@@ -45,6 +45,9 @@ expectedExitCode Valid = ExitSuccess
 expectedExitCode SyntaxError = ExitFailure 100
 expectedExitCode SemanticError = ExitFailure 200
 
+timeout :: Int
+timeout = 1000000
+
 mkIntegrationTestCase :: IntegrationTest -> TestTree
 mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKind = kind} =
   testProgram
@@ -56,6 +59,7 @@ mkIntegrationTestCase IntegrationTest {testName = name, testPath = path, testKin
     (expectedExitCode kind)
     ignoreOutput
     ignoreOutput
+    timeout
 
 allintegrationTest :: [TestTree]
 allintegrationTest = map (mkIntegrationTestCase . mkIntegrationTest) allTests
