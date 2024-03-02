@@ -86,31 +86,36 @@ instance
   fnToTAC (AST.IfElse e s1 s2 _) = do
     t <- tempWith (toTAC e)
     fl <- freshLabel
-    fa <- stmtsToTAC s1 fl
     gl <- freshLabel
-    ga <- stmtsToTAC s2 gl
+
     pure $ Just $ Blocks $ \j -> do
+      fa <- stmtsToTAC s1 fl
       fa j
+      ga <- stmtsToTAC s2 gl
       ga j
       pure $ CJump t fl gl
   fnToTAC (AST.While e s _) = do
-    t <- tempWith (toTAC e)
+    cl <- freshLabel
     fl <- freshLabel
-    fa <- stmtsToTAC s fl
     pure $ Just $ Blocks $ \j -> do
-      fa j
-      case j of
+      t <- tempWith (toTAC e)
+      cj' <- case j of
         Jump l -> pure $ CJump t fl l
         cj@(CJump {}) -> do
           l <- freshLabel
           appendBlock (BasicBlock [] cj) l
           pure $ CJump t fl l
         _ -> pure j
-  fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
+      completeBlock cj' cl
+      fa <- stmtsToTAC s fl
+      fa (Jump cl)
+      pure $ Jump cl
+  fnToTAC (AST.BeginEnd s _) = do
     fl <- freshLabel
-    fa <- stmtsToTAC s fl
-    fa j
-    pure $ Jump fl
+    pure $ Just $ Blocks $ \j -> do
+      fa <- stmtsToTAC s fl
+      fa j
+      pure $ Jump fl
 
 stmtsToTAC
   :: (Enum fnident, Enum ident, Eq ident, Ord fnident)
@@ -157,10 +162,7 @@ instance
       fnToTAC' kp (x : xs) =
         fnToTAC x >>= \case
           Nothing -> fnToTAC' kp xs
-          Just (BlockTerminal j) -> do
-            completeBlock j kp
-            l <- freshLabel
-            fnToTAC' l xs
+          Just (BlockTerminal j) -> pure $ \_ -> completeBlock j kp
           Just (Blocks f) -> do
             ts <- collectTACs
             fl <- freshLabel
