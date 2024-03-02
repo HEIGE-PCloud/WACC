@@ -174,7 +174,7 @@ translateNext (CJump v l1 l2) = do
   (if t then pure () else translateNext (Jump l1))
 translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
-  tellInstr (Movl retVal (Reg Eax))
+  movq retVal argRet
   tellInstr X86.Ret
 translateNext (TAC.Exit x) = do
   operand <- gets ((B.! x) . alloc)
@@ -259,12 +259,14 @@ translateTAC (LoadM v1 v2 off w) = do
 translateTAC (TAC.Call v1 l vs) = do
   comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
   -- push all registers on to stack
+  o <- allocate' v1
   os <- mapM getOperand vs
   mapM_ pushq (reverse os)
   -- call the function
   call (I l)
   -- pop all registers off the stack
   mapM_ popq os
+  movq argRet o
   comment "End Call"
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
