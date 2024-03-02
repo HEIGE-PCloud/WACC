@@ -318,6 +318,25 @@ stmtTestGroup =
               , (2, BasicBlock {block = [], nextBlock = Jump (Label 1)})
               , (3, BasicBlock {block = [], nextBlock = Jump (Label x)})
               ]
+    , testProperty "BeginEnd creates BeginEnd Block With Return" $ \x y ->
+        stmtsToTAC'
+          (AST.Stmts [(AST.BeginEnd (AST.Stmts [(AST.Return (intLit y) BAny)]) BAny)])
+          0
+          (Jump $ Label x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+              , (1, BasicBlock {block = [LoadCI temp1 y], nextBlock = Ret temp1})
+              , (2, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              ]
+    , testProperty "BeginEnd creates BeginEnd Block" $ \x ->
+        stmtsToTAC'
+          (AST.Stmts [(AST.BeginEnd (AST.Stmts [(AST.Skip BAny)]) BAny)])
+          0
+          (Jump $ Label x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+              , (1, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              , (2, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              ]
+
     ]
 
 jump0 :: Jump Int Int
