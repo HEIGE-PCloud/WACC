@@ -17,7 +17,7 @@ import Language.WACC.TypeChecking
 import Test
 
 testTACM :: TACM Int Int a -> a
-testTACM = fst . runTACM 0
+testTACM = fst . runTACM 1
 
 toTAC'
   :: AST.Stmt Int Int BType
@@ -228,6 +228,96 @@ stmtTestGroup =
           0
           (Jump (Label l))
           === [(0, BasicBlock {block = [LoadCI temp1 x], nextBlock = (Exit temp1)})]
+    , testProperty "If Else creates If Else Block with Return" $ \b x l ->
+        stmtsToTAC'
+          ( AST.Stmts
+              [ AST.IfElse
+                  (WAtom (BoolLit b BBool) BBool)
+                  (AST.Stmts [(AST.Return (intLit x) BAny)])
+                  (AST.Stmts [(AST.Return (intLit x) BAny)])
+                  BAny
+              ]
+          )
+          0
+          (Jump $ Label l)
+          === [
+                ( 0
+                , BasicBlock
+                    { block = [LoadCI temp1 (if b then 1 else 0)]
+                    , nextBlock = CJump temp1 (Label 1) (Label 2)
+                    }
+                )
+              , (1, BasicBlock {block = [LoadCI temp2 x], nextBlock = Ret temp2})
+              , (2, BasicBlock {block = [LoadCI temp3 x], nextBlock = Ret temp3})
+              , (3, BasicBlock {block = [], nextBlock = Jump (Label l)})
+              ]
+    , testProperty "If Else creates If Else Block" $ \b l ->
+        stmtsToTAC'
+          ( AST.Stmts
+              [ AST.IfElse
+                  (WAtom (BoolLit b BBool) BBool)
+                  (AST.Stmts [(AST.Skip BAny)])
+                  (AST.Stmts [(AST.Skip BAny)])
+                  BAny
+              ]
+          )
+          0
+          (Jump $ Label l)
+          === [
+                ( 0
+                , BasicBlock
+                    { block = [LoadCI temp1 (if b then 1 else 0)]
+                    , nextBlock = CJump temp1 (Label 1) (Label 2)
+                    }
+                )
+              , (1, BasicBlock {block = [], nextBlock = Jump (Label l)})
+              , (2, BasicBlock {block = [], nextBlock = Jump (Label l)})
+              , (3, BasicBlock {block = [], nextBlock = Jump (Label l)})
+              ]
+    , testProperty "While creates While Block With Return" $ \b x y ->
+        stmtsToTAC'
+          ( AST.Stmts
+              [ AST.While
+                  (WAtom (BoolLit b BBool) BBool)
+                  (AST.Stmts [(AST.Return (intLit y) BAny)])
+                  BAny
+              ]
+          )
+          0
+          (Jump $ Label x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+              ,
+                ( 1
+                , BasicBlock
+                    { block = [LoadCI temp1 (if b then 1 else 0)]
+                    , nextBlock = CJump temp1 (Label 2) (Label x)
+                    }
+                )
+              , (2, BasicBlock {block = [LoadCI temp2 y], nextBlock = Ret temp2})
+              , (3, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              ]
+    , testProperty "While creates While Block" $ \b x ->
+        stmtsToTAC'
+          ( AST.Stmts
+              [ AST.While
+                  (WAtom (BoolLit b BBool) BBool)
+                  (AST.Stmts [(AST.Skip BAny)])
+                  BAny
+              ]
+          )
+          0
+          (Jump $ Label x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+              ,
+                ( 1
+                , BasicBlock
+                    { block = [LoadCI temp1 (if b then 1 else 0)]
+                    , nextBlock = CJump temp1 (Label 2) (Label x)
+                    }
+                )
+              , (2, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+              , (3, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              ]
     ]
 
 jump0 :: Jump Int Int
