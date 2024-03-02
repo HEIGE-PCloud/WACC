@@ -19,6 +19,7 @@ import Data.Bimap (Bimap)
 import qualified Data.Bimap as B
 import Data.DList (DList)
 import qualified Data.DList as D
+import Data.Int (Int64)
 import Data.Map (Map, (!))
 import qualified Data.Map as M
 import Data.Set (Set)
@@ -137,8 +138,14 @@ translateBlocks
   -> Analysis ()
 translateBlocks l (BasicBlock is next) = do
   modify (setTranslated l) -- include label in translated set
+  subq (Imm (IntLitQ lenStack)) rsp -- allocate space for local variables
   mapM_ translateTAC is
   translateNext next
+  where
+    lenStack :: Int64
+    lenStack = toInt64 $ 8 * ((\x -> if (even x) then x else x + 1) (length is))
+    toInt64 :: Int -> Int64
+    toInt64 = fromIntegral . toInteger
 
 -- | Mark the block as translated, so its not re-translated
 setTranslated :: Integer -> TransST -> TransST
@@ -179,7 +186,7 @@ translateNext (TAC.Ret var) = do
 translateNext (TAC.Exit x) = do
   operand <- gets ((B.! x) . alloc)
   tellInstr (Movl operand (Reg Edi))
-  tellInstr (X86.Call (R X86.Exit))
+  call (R X86.Exit)
 
 bindVarToLoc :: Var Integer -> X86.OperandQMM -> TransST -> TransST
 bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
@@ -188,8 +195,6 @@ allocate :: Var Integer -> Analysis X86.OperandQMM
 allocate v = do
   -- increase the stackVarNum
   modify (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
-  -- decrease rsp
-  subq (Imm (IntLitQ 8)) rsp
   -- insert the variable into the allocation map
   stackAddr <- gets ((* (-stackElemSize)) . stackVarNum)
   modify (bindVarToLoc v (Mem (MRegI stackAddr Rbp)))
@@ -294,10 +299,10 @@ translateTAC (Read v w) = do
   comment "End Read"
 translateTAC (TAC.Malloc lv rv) = do
   comment $ "Malloc: " ++ show lv ++ " := malloc " ++ show rv
-  operand <- allocate' lv
   operand' <- getOperand rv
   movq operand' arg1
   call (R X86.Malloc)
+  operand <- allocate' lv
   movq argRet operand
   comment "End Malloc"
 translateTAC (TAC.Free v) = do
@@ -587,6 +592,8 @@ ecx = Reg Ecx
 
 edx = Reg Edx
 
+r15 = Reg R15
+
 leaq o1 o2 = tellInstr (Leaq o1 o2)
 
 mov m o r = tellInstr (m o r)
@@ -600,6 +607,8 @@ movq = mov Movq
 movzbq o r = tellInstr (Movzbq o r)
 
 addq o1 o2 = tellInstr (Addq o1 o2)
+
+andq o1 o2 = tellInstr (Andq o1 o2)
 
 addl o1 o2 = tellInstr (Addl o1 o2)
 
@@ -619,6 +628,7 @@ pushq o = tellInstr (Pushq o)
 
 popq o = tellInstr (Popq o)
 
+j :: (Label -> Instruction) -> Label -> Analysis ()
 j s l@(R r) = do
   tellInstr (s l)
   useRuntimeFunc r
@@ -659,8 +669,6 @@ negl o = tellInstr (Negl o)
 call = j X86.Call
 
 arg1 = Reg Rdi
-
-arg2 = Reg Rsi
 
 arg3 = Reg Rdx
 
