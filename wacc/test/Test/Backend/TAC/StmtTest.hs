@@ -347,4 +347,46 @@ stmtsToTAC' stmts l j =
   testTACM $ (stmtsToTAC stmts l >>= ($ j)) *> collectBlocks
 
 stmtsTestGroup :: TestTree
-stmtsTestGroup = testGroup "statement groups" []
+stmtsTestGroup =
+  testGroup
+    "statement groups"
+    [ testProperty "Singleton Skip" $ \l ->
+        stmtsToTAC' (AST.Stmts [AST.Skip BAny]) 0 (Jump $ Label l)
+          === [(0, BasicBlock {block = [], nextBlock = Jump $ Label l})]
+    , testProperty "Singleton Read" $ \v l ->
+        stmtsToTAC' (AST.Stmts [AST.Read (LVIdent v BInt) BAny]) 0 (Jump $ Label l)
+          === [(0, BasicBlock {block = [Read (Var v) FInt], nextBlock = Jump $ Label l})]
+    , testProperty "Singleton Free" $ \v l ->
+        stmtsToTAC'
+          (AST.Stmts [AST.Free (WAtom (Ident v BErasedPair) BErasedPair) BAny])
+          0
+          (Jump $ Label l)
+          === [
+                ( 0
+                , BasicBlock
+                    { block = [Move temp1 (Var v), Free temp1]
+                    , nextBlock = Jump $ Label l
+                    }
+                )
+              ]
+    , testProperty "Singleton Print" $ \i l ->
+        stmtsToTAC' (AST.Stmts [AST.Print (intLit i) BAny]) 0 (Jump $ Label l)
+          === [
+                ( 0
+                , BasicBlock
+                    { block = [LoadCI temp1 i, Print temp1 FInt]
+                    , nextBlock = Jump $ Label l
+                    }
+                )
+              ]
+    , testProperty "Singleton Print" $ \i l ->
+        stmtsToTAC' (AST.Stmts [AST.PrintLn (intLit i) BAny]) 0 (Jump $ Label l)
+          === [
+                ( 0
+                , BasicBlock
+                    { block = [LoadCI temp1 i, PrintLn temp1 FInt]
+                    , nextBlock = Jump $ Label l
+                    }
+                )
+              ]
+    ]
