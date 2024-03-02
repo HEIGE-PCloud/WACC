@@ -536,6 +536,8 @@ translateLoadM v1 v2 off t = do
   o2 <- getOperand v2
   offset <- getOperand off
   movq o2 rax
+  cmpq (Imm (IntLitQ 0)) rax
+  je (R ErrNull)
   movq offset rbx
   moveT (Mem (MTwoReg Rax Rbx)) o1 t
 
@@ -547,6 +549,8 @@ translateStore v1 off v2 t = do
   offset <- getOperand off
   o2 <- getOperand v2
   movq o1 rax
+  cmpq (Imm (IntLitQ 0)) rax
+  je (R ErrNull)
   movq offset rbx
   moveT o2 (Mem (MTwoReg Rax Rbx)) t
 

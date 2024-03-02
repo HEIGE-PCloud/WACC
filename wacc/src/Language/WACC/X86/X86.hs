@@ -574,6 +574,7 @@ data Runtime
   | ErrOverflow
   | ErrDivByZero
   | ErrBadChar
+  | ErrNull
   | Exit
   deriving (Ix, Eq, Ord, Typeable, Data, Show)
 
@@ -688,5 +689,6 @@ runtimeDeps = array startEnd [(r, deps r) | r <- range startEnd]
     deps ErrOutOfBounds = insert ErrOutOfBounds (deps PrintS)
     deps ErrOverflow = insert ErrOverflow (deps PrintS)
     deps ErrDivByZero = insert ErrDivByZero (deps PrintS)
+    deps ErrNull = insert ErrNull (deps PrintS)
     deps Malloc = insert Malloc (deps ErrOutOfMemory)
     deps r = singleton r

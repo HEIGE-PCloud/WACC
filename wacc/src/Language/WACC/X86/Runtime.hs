@@ -41,6 +41,7 @@ runtimeLib =
     , (ErrOutOfBounds, D.fromList errOutOfBounds)
     , (ErrOverflow, D.fromList errOverflow)
     , (ErrDivByZero, D.fromList errDivByZero)
+    , (ErrNull, D.fromList errNull)
     , (Exit, D.fromList exit)
     ]
 
@@ -664,6 +665,37 @@ exit =
   , Movq (Reg Rbp) (Reg Rsp)
   , Popq (Reg Rbp)
   , Ret
+  ]
+
+{-
+.section .rodata
+# length of .L._errNull_str0
+	.int 45
+.L._errNull_str0:
+	.asciz "fatal error: null pair dereferenced or freed\n"
+.text
+_errNull:
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	leaq .L._errNull_str0(%rip), %rdi
+	call _prints
+	movb $-1, %dil
+	call exit@plt
+-}
+
+errNull :: Program
+errNull =
+  [ Dir DirSection
+  , Dir $ DirInt 45
+  , Lab (S ".L._errNull_str0")
+  , Dir $ DirAsciz "fatal error: null pair dereferenced or freed\n"
+  , Dir DirText
+  , Lab (R ErrNull)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Leaq (Mem (MRegL (S ".L._errNull_str0") Rip)) (Reg Rdi)
+  , Call (R PrintS)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
+  , Call cexit
   ]
 
 -- | Print a program, useful for debugging in GHCi
