@@ -138,30 +138,31 @@ testProgram testName program opts workingDir input exitCode checkStderr checkStd
     )
 
 runTestProgram :: TestProgram -> IO Result
-runTestProgram ( TestProgram
-                  program
-                  args
-                  workingDir
-                  input
-                  exitCode
-                  checkStderr
-                  checkStdout
-                  timeout
-                ) = do
-  execFound <- findExecutable program
+runTestProgram
+  ( TestProgram
+      program
+      args
+      workingDir
+      input
+      exitCode
+      checkStderr
+      checkStdout
+      timeout
+    ) = do
+    execFound <- findExecutable program
 
-  case execFound of
-    Nothing -> return $ execNotFoundFailure program
-    Just progPath ->
-      runProgram
-        progPath
-        args
-        workingDir
-        input
-        exitCode
-        checkStderr
-        checkStdout
-        timeout
+    case execFound of
+      Nothing -> return $ execNotFoundFailure program
+      Just progPath ->
+        runProgram
+          progPath
+          args
+          workingDir
+          input
+          exitCode
+          checkStderr
+          checkStdout
+          timeout
 
 instance IsTest TestProgram where
   run _ p _ = runTestProgram p
