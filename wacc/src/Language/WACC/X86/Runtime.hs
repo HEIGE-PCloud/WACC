@@ -467,6 +467,8 @@ errOutOfBounds =
   , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfBounds_str0") Rip)) (Reg Rdi)
   , Movb (Imm (IntLitB 0)) (Reg Al)
+  , Movq (Reg Rsi) (Reg Rdx)
+  , Movq (Reg Rdi) (Reg Rsi)
   , Call cprintf
   , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
