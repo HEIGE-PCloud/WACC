@@ -71,13 +71,12 @@ sizeOf FPtr = 8
 
 {- |
 Flatten a 'BType' into an 'FType'.
+
+Returns 'FPtr' when the type has been erased.
 -}
 flatten :: BType -> FType
 flatten BInt = FInt
 flatten BBool = FBool
 flatten BChar = FChar
 flatten BString = FString
-flatten BErasedPair = FPtr
-flatten (BKnownPair _ _) = FPtr
-flatten (BArray _) = FPtr
-flatten BAny = error "attempted to flatten BAny"
+flatten _ = FPtr
