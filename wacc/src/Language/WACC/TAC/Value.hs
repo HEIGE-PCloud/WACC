@@ -152,5 +152,5 @@ instance
   fnToTAC (RVCall f xs _) = do
     args <- mapM (tempWith . toTAC) xs
     target <- getTarget
-    putTACs [Call target (Label f) args]
+    putTACs [Call target f args]
   fnToTAC _ = error "attempted to translate ill-typed array literal"

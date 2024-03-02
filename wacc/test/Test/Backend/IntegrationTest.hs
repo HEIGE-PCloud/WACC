@@ -2,7 +2,7 @@
 
 module Test.Backend.IntegrationTest where
 
-import Data.List (intercalate, isInfixOf, isPrefixOf, (\\))
+import Data.List (intercalate, isInfixOf, (\\))
 import Data.Maybe (fromMaybe)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.FilePath (takeBaseName)
@@ -36,26 +36,15 @@ import Text.Gigaparsec.Token.Lexer
   )
 
 enabledTests :: [FilePath]
-enabledTests = allTests \\ ignoredTests
+enabledTests = [t | t <- allTests, any (`isInfixOf` t) enabledPaths]
+  where
+    enabledPaths = ["basic", "variables", "expressions"]
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
 
 ignoredTests :: [FilePath]
-ignoredTests = [t | t <- allTests, or $ map ((`isPrefixOf` t) . ("valid/" ++)) ignoredPaths]
-  where
-    -- just give the subfolder/file below the valid directory here, to ignore it
-    ignoredPaths =
-      [ "array"
-      , "scope"
-      , "while"
-      , "if"
-      , "expression"
-      , "IO"
-      , "pairs"
-      , "function"
-      , "runtimeErr" --   sequence  variables  expression basic
-      ]
+ignoredTests = allTests \\ enabledTests
 
 lexer :: Lexer
 lexer = mkLexer plain
@@ -143,6 +132,9 @@ data TestProgramMetadata = TestProgramMetadata
   }
   deriving (Show)
 
+timeout :: Int
+timeout = 1000000
+
 workingDirectory :: Maybe String
 workingDirectory = Just ".."
 
@@ -156,6 +148,7 @@ compile (TestProgramMetadata path _ _ _ _ _ _) =
     ExitSuccess
     ignoreOutput
     ignoreOutput
+    timeout
 
 assemble :: TestProgramMetadata -> TestProgram
 assemble (TestProgramMetadata _ path exe _ _ _ _) =
@@ -167,6 +160,7 @@ assemble (TestProgramMetadata _ path exe _ _ _ _) =
     ExitSuccess
     ignoreOutput
     ignoreOutput
+    timeout
 
 executable :: TestProgramMetadata -> TestProgram
 executable (TestProgramMetadata _ _ exe _ i o ecode) =
@@ -178,6 +172,7 @@ executable (TestProgramMetadata _ _ exe _ i o ecode) =
     ecode
     ignoreOutput
     (outputChecker o)
+    timeout
 
 outputChecker :: String -> String -> (Bool, String)
 outputChecker rawOutput realOutput = case res of

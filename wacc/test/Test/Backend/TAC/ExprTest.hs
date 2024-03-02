@@ -31,20 +31,23 @@ varExpr v t = WAtom (Ident v t) t
 temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
 temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
 
-temp7, temp8, temp9, temp10 :: Var Int
-temp7 : temp8 : temp9 : temp10 : _ = Temp <$> [7 ..]
+temp7, temp8, temp9, temp10, temp11, temp12, temp13 :: Var Int
+temp7 : temp8 : temp9 : temp10 : temp11 : temp12 : temp13 : _ = Temp <$> [7 ..]
 
 testIndexScaling :: String -> BType -> Int -> TestTree
 testIndexScaling tName bt tSize =
   testProperty (unwords [tName, "array indices are scaled by", show tSize]) $
     \v i ->
       toTAC' (WAtom (ArrayElem (ArrayIndex v [intLit i] (BArray bt)) bt) bt)
-        === [ LoadCI temp1 4
-            , LoadCI temp2 tSize
-            , LoadCI temp3 i
-            , BinInstr temp4 temp3 Mul temp2
-            , BinInstr temp5 temp4 Add temp1
-            , LoadM temp0 (Var v) temp5 (flatten bt)
+        === [ LoadCI temp1 0
+            , LoadCI temp2 4
+            , LoadCI temp3 tSize
+            , LoadCI temp4 i
+            , LoadM temp5 (Var v) temp1 FInt
+            , CheckBounds temp4 temp5
+            , BinInstr temp6 temp4 Mul temp3
+            , BinInstr temp7 temp6 Add temp2
+            , LoadM temp0 (Var v) temp7 (flatten bt)
             ]
 
 testBinOp
@@ -117,17 +120,22 @@ exprTestGroup =
                         )
                         BInt
                     )
-                    === [ LoadCI temp1 4
-                        , LoadCI temp2 8
-                        , LoadCI temp3 i1
-                        , BinInstr temp4 temp3 Mul temp2
-                        , BinInstr temp5 temp4 Add temp1
-                        , LoadM temp6 (Var v) temp5 FPtr
-                        , LoadCI temp7 4
-                        , LoadCI temp8 i2
-                        , BinInstr temp9 temp8 Mul temp7
-                        , BinInstr temp10 temp9 Add temp1
-                        , LoadM temp0 temp6 temp10 FInt
+                    === [ LoadCI temp1 0
+                        , LoadCI temp2 4
+                        , LoadCI temp3 8
+                        , LoadCI temp4 i1
+                        , LoadM temp5 (Var v) temp1 FInt
+                        , CheckBounds temp4 temp5
+                        , BinInstr temp6 temp4 Mul temp3
+                        , BinInstr temp7 temp6 Add temp2
+                        , LoadM temp8 (Var v) temp7 FPtr
+                        , LoadCI temp9 4
+                        , LoadCI temp10 i2
+                        , LoadM temp11 temp8 temp1 FInt
+                        , CheckBounds temp10 temp11
+                        , BinInstr temp12 temp10 Mul temp9
+                        , BinInstr temp13 temp12 Add temp2
+                        , LoadM temp0 temp8 temp13 FInt
                         ]
             ]
         ]
@@ -149,7 +157,10 @@ exprTestGroup =
             toTAC' (AST.Ord (varExpr v BChar) BInt) === [Move temp0 (Var v)]
         , testProperty "chr generates a bounds check" $ \v ->
             toTAC' (AST.Chr (varExpr v BInt) BChar)
-              === [Move temp0 (Var v), CheckBounds 0 temp0 127]
+              === [ Move temp0 (Var v)
+                  , LoadCI temp1 128
+                  , CheckBounds temp0 temp1
+                  ]
         ]
     , testGroup
         "binary expressions"

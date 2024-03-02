@@ -27,9 +27,11 @@ toTAC' = testTACM . (*> ((,) <$> collectTACs <*> collectBlocks)) . fnToTAC
 intLit :: (Integral a) => a -> Expr Int BType
 intLit x = WAtom (IntLit (toInteger x) BInt) BInt
 
-temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8, temp9 :: Var Int
-temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : temp7 : temp8 : temp9
-  : _ = Temp <$> [0 ..]
+temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
+temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
+
+temp7, temp8, temp9, temp10 :: Var Int
+temp7 : temp8 : temp9 : temp10 : _ = Temp <$> [7 ..]
 
 stmtTestGroup :: TestTree
 stmtTestGroup =
@@ -110,15 +112,18 @@ stmtTestGroup =
               BAny
           )
           === (
-                [ LoadCI temp1 4
+                [ LoadCI temp1 0
                 , LoadCI temp2 4
-                , LoadCI temp3 e
-                , BinInstr temp4 temp3 Language.WACC.TAC.TAC.Mul temp2
-                , BinInstr temp5 temp4 Language.WACC.TAC.TAC.Add temp1
-                , LoadCI temp7 i1
-                , LoadCI temp8 i2
-                , BinInstr temp6 temp7 Language.WACC.TAC.TAC.Add temp8
-                , Store (Var v) temp5 temp6 WIntF
+                , LoadCI temp3 4
+                , LoadCI temp4 e
+                , LoadM temp5 (Var v) temp1 FInt
+                , CheckBounds temp4 temp5
+                , BinInstr temp6 temp4 Language.WACC.TAC.TAC.Mul temp3
+                , BinInstr temp7 temp6 Language.WACC.TAC.TAC.Add temp2
+                , LoadCI temp9 i1
+                , LoadCI temp10 i2
+                , BinInstr temp8 temp9 Language.WACC.TAC.TAC.Add temp10
+                , Store (Var v) temp7 temp8 WIntF
                 ]
               , []
               )
@@ -209,7 +214,7 @@ stmtTestGroup =
         stmtsToTAC'
           (AST.Stmts [(AST.Return (intLit x) BAny)])
           0
-          (Jump (Label l))
+          (Jump l)
           === [(0, BasicBlock {block = [LoadCI temp1 x], nextBlock = (Ret temp1)})]
     , testProperty "Exit Creates instructions for var" $ \x ->
         toTAC' (AST.Exit (intLit x) BAny) === ([LoadCI temp1 x], [])
@@ -226,7 +231,7 @@ stmtTestGroup =
         stmtsToTAC'
           (AST.Stmts [(AST.Exit (intLit x) BAny)])
           0
-          (Jump (Label l))
+          (Jump l)
           === [(0, BasicBlock {block = [LoadCI temp1 x], nextBlock = (Exit temp1)})]
     , testProperty "If Else creates If Else Block with Return" $ \b x l ->
         stmtsToTAC'
@@ -239,17 +244,17 @@ stmtTestGroup =
               ]
           )
           0
-          (Jump $ Label l)
+          (Jump l)
           === [
                 ( 0
                 , BasicBlock
                     { block = [LoadCI temp1 (if b then 1 else 0)]
-                    , nextBlock = CJump temp1 (Label 1) (Label 2)
+                    , nextBlock = CJump temp1 1 2
                     }
                 )
               , (1, BasicBlock {block = [LoadCI temp2 x], nextBlock = Ret temp2})
               , (2, BasicBlock {block = [LoadCI temp3 x], nextBlock = Ret temp3})
-              , (3, BasicBlock {block = [], nextBlock = Jump (Label l)})
+              , (3, BasicBlock {block = [], nextBlock = Jump l})
               ]
     , testProperty "If Else creates If Else Block" $ \b l ->
         stmtsToTAC'
@@ -262,17 +267,17 @@ stmtTestGroup =
               ]
           )
           0
-          (Jump $ Label l)
+          (Jump l)
           === [
                 ( 0
                 , BasicBlock
                     { block = [LoadCI temp1 (if b then 1 else 0)]
-                    , nextBlock = CJump temp1 (Label 1) (Label 2)
+                    , nextBlock = CJump temp1 1 2
                     }
                 )
-              , (1, BasicBlock {block = [], nextBlock = Jump (Label l)})
-              , (2, BasicBlock {block = [], nextBlock = Jump (Label l)})
-              , (3, BasicBlock {block = [], nextBlock = Jump (Label l)})
+              , (1, BasicBlock {block = [], nextBlock = Jump 3})
+              , (2, BasicBlock {block = [], nextBlock = Jump 3})
+              , (3, BasicBlock {block = [], nextBlock = Jump l})
               ]
     , testProperty "While creates While Block With Return" $ \b x y ->
         stmtsToTAC'
@@ -284,17 +289,17 @@ stmtTestGroup =
               ]
           )
           0
-          (Jump $ Label x)
-          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+          (Jump x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump 1})
               ,
                 ( 1
                 , BasicBlock
                     { block = [LoadCI temp1 (if b then 1 else 0)]
-                    , nextBlock = CJump temp1 (Label 2) (Label x)
+                    , nextBlock = CJump temp1 2 3
                     }
                 )
               , (2, BasicBlock {block = [LoadCI temp2 y], nextBlock = Ret temp2})
-              , (3, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              , (3, BasicBlock {block = [], nextBlock = Jump x})
               ]
     , testProperty "While creates While Block" $ \b x ->
         stmtsToTAC'
@@ -306,40 +311,40 @@ stmtTestGroup =
               ]
           )
           0
-          (Jump $ Label x)
-          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+          (Jump x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump 1})
               ,
                 ( 1
                 , BasicBlock
                     { block = [LoadCI temp1 (if b then 1 else 0)]
-                    , nextBlock = CJump temp1 (Label 2) (Label x)
+                    , nextBlock = CJump temp1 2 3
                     }
                 )
-              , (2, BasicBlock {block = [], nextBlock = Jump (Label 1)})
-              , (3, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              , (2, BasicBlock {block = [], nextBlock = Jump 1})
+              , (3, BasicBlock {block = [], nextBlock = Jump x})
               ]
     , testProperty "BeginEnd creates BeginEnd Block With Return" $ \x y ->
         stmtsToTAC'
           (AST.Stmts [(AST.BeginEnd (AST.Stmts [(AST.Return (intLit y) BAny)]) BAny)])
           0
-          (Jump $ Label x)
-          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
+          (Jump x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump 1})
               , (1, BasicBlock {block = [LoadCI temp1 y], nextBlock = Ret temp1})
-              , (2, BasicBlock {block = [], nextBlock = Jump (Label x)})
+              , (2, BasicBlock {block = [], nextBlock = Jump x})
               ]
     , testProperty "BeginEnd creates BeginEnd Block" $ \x ->
         stmtsToTAC'
           (AST.Stmts [(AST.BeginEnd (AST.Stmts [(AST.Skip BAny)]) BAny)])
           0
-          (Jump $ Label x)
-          === [ (0, BasicBlock {block = [], nextBlock = Jump (Label 1)})
-              , (1, BasicBlock {block = [], nextBlock = Jump (Label x)})
-              , (2, BasicBlock {block = [], nextBlock = Jump (Label x)})
+          (Jump x)
+          === [ (0, BasicBlock {block = [], nextBlock = Jump 1})
+              , (1, BasicBlock {block = [], nextBlock = Jump 2})
+              , (2, BasicBlock {block = [], nextBlock = Jump x})
               ]
     ]
 
 jump0 :: Jump Int Int
-jump0 = Jump $ Label 0
+jump0 = Jump 0
 
 stmtsToTAC'
   :: Stmts Int Int BType -> Int -> Jump Int Int -> Map Int (BasicBlock Int Int)
@@ -351,41 +356,41 @@ stmtsTestGroup =
   testGroup
     "statement groups"
     [ testProperty "Singleton Skip" $ \l ->
-        stmtsToTAC' (AST.Stmts [AST.Skip BAny]) 0 (Jump $ Label l)
-          === [(0, BasicBlock {block = [], nextBlock = Jump $ Label l})]
+        stmtsToTAC' (AST.Stmts [AST.Skip BAny]) 0 (Jump l)
+          === [(0, BasicBlock {block = [], nextBlock = Jump l})]
     , testProperty "Singleton Read" $ \v l ->
-        stmtsToTAC' (AST.Stmts [AST.Read (LVIdent v BInt) BAny]) 0 (Jump $ Label l)
-          === [(0, BasicBlock {block = [Read (Var v) FInt], nextBlock = Jump $ Label l})]
+        stmtsToTAC' (AST.Stmts [AST.Read (LVIdent v BInt) BAny]) 0 (Jump l)
+          === [(0, BasicBlock {block = [Read (Var v) FInt], nextBlock = Jump l})]
     , testProperty "Singleton Free" $ \v l ->
         stmtsToTAC'
           (AST.Stmts [AST.Free (WAtom (Ident v BErasedPair) BErasedPair) BAny])
           0
-          (Jump $ Label l)
+          (Jump l)
           === [
                 ( 0
                 , BasicBlock
                     { block = [Move temp1 (Var v), Free temp1]
-                    , nextBlock = Jump $ Label l
+                    , nextBlock = Jump l
                     }
                 )
               ]
     , testProperty "Singleton Print" $ \i l ->
-        stmtsToTAC' (AST.Stmts [AST.Print (intLit i) BAny]) 0 (Jump $ Label l)
+        stmtsToTAC' (AST.Stmts [AST.Print (intLit i) BAny]) 0 (Jump l)
           === [
                 ( 0
                 , BasicBlock
                     { block = [LoadCI temp1 i, Print temp1 FInt]
-                    , nextBlock = Jump $ Label l
+                    , nextBlock = Jump l
                     }
                 )
               ]
     , testProperty "Singleton Print" $ \i l ->
-        stmtsToTAC' (AST.Stmts [AST.PrintLn (intLit i) BAny]) 0 (Jump $ Label l)
+        stmtsToTAC' (AST.Stmts [AST.PrintLn (intLit i) BAny]) 0 (Jump l)
           === [
                 ( 0
                 , BasicBlock
                     { block = [LoadCI temp1 i, PrintLn temp1 FInt]
-                    , nextBlock = Jump $ Label l
+                    , nextBlock = Jump l
                     }
                 )
               ]

@@ -21,6 +21,7 @@ dependencies:
   - bimap
   - array
   - template-haskell
+  - async
 
 ghc-options:
   - -Wall

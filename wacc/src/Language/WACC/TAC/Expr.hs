@@ -1,16 +1,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
 TAC translation actions for WACC expressions.
 -}
-module Language.WACC.TAC.Expr () where
+module Language.WACC.TAC.Expr (aiToTAC) where
 
-import Data.Bool (bool)
-import Data.Char (ord)
 import Data.Maybe (fromMaybe)
 import Language.WACC.AST
   ( ArrayIndex (..)
@@ -18,12 +17,21 @@ import Language.WACC.AST
   , WAtom (..)
   )
 import qualified Language.WACC.AST as AST
-import Language.WACC.TAC.Class
-import Language.WACC.TAC.FType
+import Language.WACC.TAC.Class (TACIdent, ToTAC (..))
+import Language.WACC.TAC.FType (FType, flatten, sizeOf, pattern FInt)
 import Language.WACC.TAC.State
-import Language.WACC.TAC.TAC
+  ( TACM
+  , freshTemp
+  , getTarget
+  , into
+  , loadConst
+  , move
+  , putTACs
+  , tempWith
+  )
+import Language.WACC.TAC.TAC (BinOp (..), Offset, TAC (..), UnOp (..), Var (..))
 import Language.WACC.TypeChecking (BType (..))
-import Prelude hiding (GT, LT)
+import Prelude hiding (GT, LT, length)
 
 type instance TACIdent (ArrayIndex ident a) = ident
 
@@ -35,6 +43,14 @@ generator:
 >   TACRepr (ArrayIndex ident BType) lident =
 >     Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
 >     -> TACM ident lident ()
+
+The custom base case is provided with a variable containing the innermost array
+(the 'Var'), a variable containing the last calculated offset (the 'Offset'),
+and the element 'FType'. The default base case loads the innermost element into
+the target variable.
+
+No side effects are performed until the nested action is executed with a custom
+base case or 'Nothing'. See 'aiToTAC' for a simpler calling convention.
 -}
 instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
   type
@@ -43,53 +59,88 @@ instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
       -> TACM ident lident ()
   toTAC (ArrayIndex v xs t) = pure $ \mf -> do
     target <- getTarget
-    offset <- loadConst (sizeOf FInt)
+    lengthOffset <- loadConst 0
+    lengthShift <- loadConst (sizeOf FInt)
     let
-      loadOffset v' offset' t' = do
-        target' <- getTarget
-        putTACs [LoadM target' v' offset' t']
-      mkOffsetTACs x ft = do
+      -- Load a value of type ft starting at address (array + offset).
+      loadOffset array offset ft = do
+        localTarget <- getTarget
+        putTACs [LoadM localTarget array offset ft]
+      -- Evaluate the offset of the xth array element (sizeOf ft * x + 4) into a
+      -- fresh temporary variable, which is then returned. Checks the index
+      -- against the length of array.
+      mkOffsetTACs array x ft = do
         scalar <- loadConst (sizeOf ft)
         index <- tempWith (toTAC x)
-        temp1 <- freshTemp
-        temp2 <- freshTemp
+        length <- freshTemp
+        scaledIndex <- freshTemp
+        result <- freshTemp
         putTACs
-          [ BinInstr temp1 index Mul scalar
-          , BinInstr temp2 temp1 Add offset
+          [ -- length := len array
+            LoadM length array lengthOffset FInt
+          , -- assert 0 <= index < length
+            CheckBounds index length
+          , -- scaledIndex := index * scalar
+            BinInstr scaledIndex index Mul scalar
+          , -- result := scaledIndex + lengthShift
+            BinInstr result scaledIndex Add lengthShift
           ]
-        pure temp2
-      chainIndexTACs v' [x] (BArray t') = do
+        pure result
+      -- Base case (single indexing expression): use a custom base case if one
+      -- is provided, otherwise use loadOffset.
+      chainIndexTACs array [x] (BArray t') = do
         let
           ft = flatten t'
-        offset' <- mkOffsetTACs x ft
-        (fromMaybe loadOffset mf) v' offset' ft `into` target
-      chainIndexTACs v' (x : xs') (BArray t') = do
+        offset <- mkOffsetTACs array x ft
+        (fromMaybe loadOffset mf) array offset ft `into` target
+      -- Inductive case: use loadOffset on the current indexing expression and
+      -- recurse on the inner array.
+      chainIndexTACs outerArray (x : xs') (BArray t') = do
         let
           ft = flatten t'
-        offset' <- mkOffsetTACs x ft
-        temp <- tempWith (loadOffset v' offset' ft)
-        chainIndexTACs temp xs' t'
+        offset <- mkOffsetTACs outerArray x ft
+        innerArray <- tempWith (loadOffset outerArray offset ft)
+        chainIndexTACs innerArray xs' t'
+      -- Impossible case (no indexing expressions).
       chainIndexTACs _ _ _ = error "attempted to translate invalid ArrayIndex"
     chainIndexTACs (Var v) xs t
 
 {- |
-Load an integer constant using 'LoadCI'.
+Translate an 'ArrayIndex' in a single action.
 -}
-loadCI :: (Ord lident) => Int -> TACM ident lident ()
-loadCI x = do
-  t <- getTarget
-  putTACs [LoadCI t x]
+aiToTAC
+  :: (Enum ident, Eq ident, Ord lident)
+  => ArrayIndex ident BType
+  -> Maybe (Var ident -> Offset ident -> FType -> TACM ident lident ())
+  -> TACM ident lident ()
+aiToTAC ai mBaseCase = toTAC ai >>= ($ mBaseCase)
 
+{- |
+Load the index of a value of an enumerable type into the target register using
+'LoadCI'.
+-}
+loadEnum :: (Enum a, Ord lident) => a -> TACM ident lident ()
+loadEnum x = do
+  t <- getTarget
+  putTACs [LoadCI t (fromEnum x)]
+
+{- |
+Apply a unary operator to an expression, storing the result in the target
+variable.
+-}
 unOp
   :: (Enum ident, Eq ident, Ord lident)
   => UnOp
   -> Expr ident BType
   -> TACM ident lident ()
 unOp op x = do
-  temp <- tempWith (toTAC x)
-  t <- getTarget
-  putTACs [UnInstr t op temp]
+  arg <- tempWith (toTAC x)
+  target <- getTarget
+  putTACs [UnInstr target op arg]
 
+{- |
+Apply a ternary 'TAC' constructor to the target variable and two expressions.
+-}
 binInstr
   :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
@@ -97,34 +148,47 @@ binInstr
   -> Expr ident BType
   -> TACM ident lident ()
 binInstr x instr y = do
-  temp1 <- tempWith (toTAC x)
-  temp2 <- tempWith (toTAC y)
-  t <- getTarget
-  putTACs [instr t temp1 temp2]
+  argX <- tempWith (toTAC x)
+  argY <- tempWith (toTAC y)
+  target <- getTarget
+  putTACs [instr target argX argY]
 
+{- |
+Apply a binary operator to two expressions, storing the result in the target
+variable.
+-}
 binOp
   :: (Enum ident, Eq ident, Ord lident)
   => Expr ident BType
   -> BinOp
   -> Expr ident BType
   -> TACM ident lident ()
-binOp x op y = binInstr x (\t xv yv -> BinInstr t xv op yv) y
+binOp x op y = binInstr x mkBinInstr y
+  where
+    mkBinInstr target argX = BinInstr target argX op
 
 type instance TACIdent (Expr ident a) = ident
 
+{- |
+The final result of an expression is stored in the target variable, which can be
+set using 'into' and 'tempWith'.
+-}
 instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   type TACRepr (Expr ident BType) lident = ()
-  toTAC (WAtom (IntLit x _) _) = loadCI $ fromEnum x
-  toTAC (WAtom (BoolLit b _) _) = loadCI $ bool 0 1 b
-  toTAC (WAtom (CharLit c _) _) = loadCI $ ord c
+
+  -- Atomic expressions:
+  toTAC (WAtom (IntLit x _) _) = loadEnum x
+  toTAC (WAtom (BoolLit b _) _) = loadEnum b
+  toTAC (WAtom (CharLit c _) _) = loadEnum c
   toTAC (WAtom (StringLit s _) _) = do
-    t <- getTarget
-    putTACs [LoadCS t s]
-  toTAC (WAtom (Null _) _) = loadCI 0
+    target <- getTarget
+    putTACs [LoadCS target s]
+  toTAC (WAtom (Null _) _) = loadEnum (0 :: Int)
   toTAC (WAtom (Ident v _) _) = do
     target <- getTarget
     move target (Var v)
-  toTAC (WAtom (ArrayElem ai _) _) = toTAC ai >>= ($ Nothing)
+  toTAC (WAtom (ArrayElem ai _) _) = aiToTAC ai Nothing
+  -- Unary operators:
   toTAC (AST.Not x _) = unOp Not x
   toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) = do
@@ -136,7 +200,9 @@ instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   toTAC (AST.Chr x _) = do
     target <- getTarget
     toTAC x
-    putTACs [CheckBounds 0 target 127]
+    validCharUpperBound <- loadConst 128
+    putTACs [CheckBounds target validCharUpperBound]
+  -- Binary operators:
   toTAC (AST.Mul x y _) = binOp x Mul y
   toTAC (AST.Div x y _) = binOp x Div y
   toTAC (AST.Mod x y _) = binOp x Mod y

@@ -40,8 +40,11 @@ lvStore = LVStore . flip RVExpr BInt . intLit
 temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
 temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
 
-temp7, temp8, temp9, temp10, temp11 :: Var Int
-temp7 : temp8 : temp9 : temp10 : temp11 : _ = Temp <$> [7 ..]
+temp7, temp8, temp9, temp10, temp11, temp12, temp13 :: Var Int
+temp7 : temp8 : temp9 : temp10 : temp11 : temp12 : temp13 : _ = Temp <$> [7 ..]
+
+temp14 :: Var Int
+temp14 = Temp 14
 
 testPairProperty
   :: (Testable prop)
@@ -83,17 +86,22 @@ lvalueTestGroup =
                   BInt
               )
               LVLoad
-              === [ LoadCI temp1 4
-                  , LoadCI temp2 8
-                  , LoadCI temp3 i1
-                  , BinInstr temp4 temp3 Mul temp2
-                  , BinInstr temp5 temp4 Add temp1
-                  , LoadM temp6 (Var v) temp5 FPtr
-                  , LoadCI temp7 4
-                  , LoadCI temp8 i2
-                  , BinInstr temp9 temp8 Mul temp7
-                  , BinInstr temp10 temp9 Add temp1
-                  , LoadM temp0 temp6 temp10 FInt
+              === [ LoadCI temp1 0
+                  , LoadCI temp2 4
+                  , LoadCI temp3 8
+                  , LoadCI temp4 i1
+                  , LoadM temp5 (Var v) temp1 FInt
+                  , CheckBounds temp4 temp5
+                  , BinInstr temp6 temp4 Mul temp3
+                  , BinInstr temp7 temp6 Add temp2
+                  , LoadM temp8 (Var v) temp7 FPtr
+                  , LoadCI temp9 4
+                  , LoadCI temp10 i2
+                  , LoadM temp11 temp8 temp1 FInt
+                  , CheckBounds temp10 temp11
+                  , BinInstr temp12 temp10 Mul temp9
+                  , BinInstr temp13 temp12 Add temp2
+                  , LoadM temp0 temp8 temp13 FInt
                   ]
         , testProperty "reading into an array element uses Read" $ \v i1 i2 ->
             lvToTAC'
@@ -102,18 +110,23 @@ lvalueTestGroup =
                   BInt
               )
               LVRead
-              === [ LoadCI temp1 4
-                  , LoadCI temp2 8
-                  , LoadCI temp3 i1
-                  , BinInstr temp4 temp3 Mul temp2
-                  , BinInstr temp5 temp4 Add temp1
-                  , LoadM temp6 (Var v) temp5 FPtr
-                  , LoadCI temp7 4
-                  , LoadCI temp8 i2
-                  , BinInstr temp9 temp8 Mul temp7
-                  , BinInstr temp10 temp9 Add temp1
-                  , Read temp11 FInt
-                  , Store temp6 temp10 temp11 FInt
+              === [ LoadCI temp1 0
+                  , LoadCI temp2 4
+                  , LoadCI temp3 8
+                  , LoadCI temp4 i1
+                  , LoadM temp5 (Var v) temp1 FInt
+                  , CheckBounds temp4 temp5
+                  , BinInstr temp6 temp4 Mul temp3
+                  , BinInstr temp7 temp6 Add temp2
+                  , LoadM temp8 (Var v) temp7 FPtr
+                  , LoadCI temp9 4
+                  , LoadCI temp10 i2
+                  , LoadM temp11 temp8 temp1 FInt
+                  , CheckBounds temp10 temp11
+                  , BinInstr temp12 temp10 Mul temp9
+                  , BinInstr temp13 temp12 Add temp2
+                  , Read temp14 FInt
+                  , Store temp8 temp13 temp14 FInt
                   ]
         , testProperty "storing into an array element uses Store" $
             \v i1 i2 x ->
@@ -123,18 +136,23 @@ lvalueTestGroup =
                     BInt
                 )
                 (lvStore x)
-                === [ LoadCI temp1 4
-                    , LoadCI temp2 8
-                    , LoadCI temp3 i1
-                    , BinInstr temp4 temp3 Mul temp2
-                    , BinInstr temp5 temp4 Add temp1
-                    , LoadM temp6 (Var v) temp5 FPtr
-                    , LoadCI temp7 4
-                    , LoadCI temp8 i2
-                    , BinInstr temp9 temp8 Mul temp7
-                    , BinInstr temp10 temp9 Add temp1
-                    , LoadCI temp11 x
-                    , Store temp6 temp10 temp11 FInt
+                === [ LoadCI temp1 0
+                    , LoadCI temp2 4
+                    , LoadCI temp3 8
+                    , LoadCI temp4 i1
+                    , LoadM temp5 (Var v) temp1 FInt
+                    , CheckBounds temp4 temp5
+                    , BinInstr temp6 temp4 Mul temp3
+                    , BinInstr temp7 temp6 Add temp2
+                    , LoadM temp8 (Var v) temp7 FPtr
+                    , LoadCI temp9 4
+                    , LoadCI temp10 i2
+                    , LoadM temp11 temp8 temp1 FInt
+                    , CheckBounds temp10 temp11
+                    , BinInstr temp12 temp10 Mul temp9
+                    , BinInstr temp13 temp12 Add temp2
+                    , LoadCI temp14 x
+                    , Store temp8 temp13 temp14 FInt
                     ]
         ]
     , testGroup
@@ -280,13 +298,13 @@ rvalueTestGroup =
     , testGroup
         "function calls"
         [ testProperty "nullary function calls are executed using Call" $ \f ->
-            toTAC' (RVCall f [] BInt) === [Call temp0 (Label f) []]
+            toTAC' (RVCall f [] BInt) === [Call temp0 f []]
         , testProperty "function arguments are evaluated before the Call" $
             \f i1 i2 ->
               toTAC' (RVCall f [intLit i1, intLit i2] BInt)
                 === [ LoadCI temp1 i1
                     , LoadCI temp2 i2
-                    , Call temp0 (Label f) [temp1, temp2]
+                    , Call temp0 f [temp1, temp2]
                     ]
         ]
     ]

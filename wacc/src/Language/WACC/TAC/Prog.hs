@@ -19,7 +19,6 @@ import Language.WACC.TAC.Stmt
 import Language.WACC.TAC.TAC
   ( BasicBlock (..)
   , Jump (..)
-  , Label (..)
   , TAC (LoadCI)
   , TACFunc (..)
   , Var (..)
@@ -54,7 +53,7 @@ instance
     f <- stmtsToTAC stmts 0
     mapM_ fnToTAC funcs
     fl <- freshLabel
-    f (Jump (Label fl))
+    f $ Jump fl
     t <- freshTemp
     appendBlock (BasicBlock [LoadCI t 0] (Exit t)) fl
     bs <- collectBlocks
