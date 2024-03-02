@@ -96,18 +96,21 @@ instance
       ga j
       pure (CJump t (Label fl) (Label gl))
   fnToTAC (AST.While e s _) = do
-    t <- tempWith (toTAC e)
+    cl <- freshLabel
     fl <- freshLabel
-    fa <- stmtsToTAC s fl
     pure $ Just $ Blocks $ \j -> do
-      fa j
-      case j of
+      fa <- stmtsToTAC s fl
+      fa (Jump $ Label cl)
+      t <- tempWith (toTAC e)
+      cj' <- case j of
         Jump l -> pure $ CJump t (Label fl) l
         cj@(CJump {}) -> do
           l <- freshLabel
           appendBlock (BasicBlock [] cj) l
           pure $ CJump t (Label fl) (Label l)
         _ -> pure j
+      completeBlock cj' cl
+      pure $ Jump $ Label cl
   fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
     fl <- freshLabel
     fa <- stmtsToTAC s fl
