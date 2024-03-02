@@ -478,7 +478,8 @@ translateUnOp o Not o' = do
   movl o' eax
   cmpl (Imm (IntLitD 32)) eax
   sete al
-  movzbl al o
+  movzbl al eax
+  movl eax o
   comment "End Unary Not"
 translateUnOp o Negate o' = do
   comment $ "Unary Negate: " ++ show o ++ " := - " ++ show o'
