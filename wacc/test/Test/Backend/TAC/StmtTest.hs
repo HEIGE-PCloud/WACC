@@ -384,7 +384,7 @@ stmtsTestGroup =
                     }
                 )
               ]
-    , testProperty "Singleton Print" $ \i l ->
+    , testProperty "Singleton PrintLn" $ \i l ->
         stmtsToTAC' (AST.Stmts [AST.PrintLn (intLit i) BAny]) 0 (Jump l)
           === [
                 ( 0
