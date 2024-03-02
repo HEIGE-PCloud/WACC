@@ -694,4 +694,5 @@ runtimeDeps = array startEnd [(r, deps r) | r <- range startEnd]
     deps ErrOutOfBounds = insert ErrOutOfBounds (deps PrintS)
     deps ErrOverflow = insert ErrOverflow (deps PrintS)
     deps ErrDivByZero = insert ErrDivByZero (deps PrintS)
+    deps Malloc = insert Malloc (deps ErrOutOfMemory)
     deps r = singleton r
