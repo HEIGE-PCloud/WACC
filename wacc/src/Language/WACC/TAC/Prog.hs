@@ -50,8 +50,8 @@ instance
   type TACFnRepr (AST.Prog typ fnident ident BType) = ()
   type TACFnIdent (AST.Prog typ fnident ident BType) = fnident
   fnToTAC (AST.Main funcs stmts _) = do
-    f <- stmtsToTAC stmts 0
     mapM_ fnToTAC funcs
+    f <- stmtsToTAC stmts 0
     fl <- freshLabel
     f $ Jump fl
     t <- freshTemp
