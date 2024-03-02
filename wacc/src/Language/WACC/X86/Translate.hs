@@ -271,7 +271,7 @@ translateTAC (TAC.Call v1 l vs) = do
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
   operand <- getOperand v
-  movq operand arg2
+  movq operand arg1
   translatePrint w
   comment "End Print"
 translateTAC (TAC.PrintLn v w) = do
@@ -319,8 +319,8 @@ translateTAC (TAC.CheckBounds v vm) = do
   cmpl om eax
   jl l4
   lab l3
-  movl om esi
-  movl o edx
+  movl om edi
+  movl o esi
   call (R X86.ErrOutOfBounds)
   lab l4
 translateTAC (TAC.Move v1 v2) = do
@@ -574,6 +574,8 @@ cx = Reg Cx
 cl = Reg Cl
 
 rcx = Reg Rcx
+
+edi = Reg Edi
 
 esi = Reg Esi
 
