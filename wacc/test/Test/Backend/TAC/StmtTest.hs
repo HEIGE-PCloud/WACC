@@ -4,6 +4,7 @@
 module Test.Backend.TAC.StmtTest (stmtTestGroup, stmtsTestGroup) where
 
 import Data.DList
+import Data.List.NonEmpty
 import Data.Map
 import Language.WACC.AST hiding (Stmt (..))
 import qualified Language.WACC.AST as AST
@@ -204,6 +205,12 @@ stmtTestGroup =
                 ]
               , []
               )
+    , testProperty "Return Creates BasicBlock for var" $ \x l ->
+        stmtsToTAC'
+          (AST.Stmts [(AST.Return (intLit x) BAny)])
+          0
+          (Jump (Label l))
+          === [(0,BasicBlock {block = [LoadCI temp1 x], nextBlock = (Ret temp1)})]
     , testProperty "Exit Creates instructions for var" $ \x ->
         toTAC' (AST.Exit (intLit x) BAny) === ([LoadCI temp1 x], [])
     , testProperty "Exit Creates instructions for simple expression" $ \i1 i2 ->
@@ -215,6 +222,12 @@ stmtTestGroup =
                 ]
               , []
               )
+    , testProperty "Exit Creates BasicBlock for var" $ \x l ->
+        stmtsToTAC'
+          (AST.Stmts [(AST.Exit (intLit x) BAny)])
+          0
+          (Jump (Label l))
+          === [(0,BasicBlock {block = [LoadCI temp1 x], nextBlock = (Exit temp1)})]
     ]
 
 jump0 :: Jump Int Int
