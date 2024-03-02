@@ -189,8 +189,10 @@ allocate :: Var Integer -> Analysis X86.OperandQMM
 allocate v = do
   -- increase the stackVarNum
   modify (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
+  -- decrease rsp
+  subq (Imm (IntLitQ 8)) rsp
   -- insert the variable into the allocation map
-  stackAddr <- gets ((* (-8)) . stackVarNum)
+  stackAddr <- gets ((* (-stackElemSize)) . stackVarNum)
   modify (bindVarToLoc v (Mem (MRegI stackAddr Rbp)))
   return (Mem (MRegI stackAddr Rbp))
 
@@ -564,6 +566,8 @@ movq = mov Movq
 movzbl o r = tellInstr (Movzbl o r)
 
 addl o1 o2 = tellInstr (Addl o1 o2)
+
+subq o1 o2 = tellInstr (Subq o1 o2)
 
 subl o1 o2 = tellInstr (Subl o1 o2)
 

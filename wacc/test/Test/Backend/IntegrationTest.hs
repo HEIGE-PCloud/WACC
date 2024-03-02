@@ -45,7 +45,7 @@ ignoredTests :: [FilePath]
 ignoredTests = [t | t <- allTests, or $ map ((`isPrefixOf` t) . ("valid/" ++)) ignoredPaths]
   where
     -- just give the subfolder/file below the valid directory here, to ignore it
-    ignoredPaths = ["array", "scope", "function", "while", "if", "IO", "pairs", "runtimeErr"] --    sequence  variables  expression basic
+    ignoredPaths = ["array", "scope", "while", "if", "IO", "pairs", "runtimeErr"] -- function   sequence  variables  expression basic
 
 lexer :: Lexer
 lexer = mkLexer plain

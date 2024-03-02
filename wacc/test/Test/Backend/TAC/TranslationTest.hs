@@ -49,7 +49,7 @@ mainFuntion = TACFunc 0 [] (fromList [(0, helloWorldBlock)])
 
 runFrontendSource :: IO (Prog WType Integer Integer BType)
 runFrontendSource = do
-  sourceCode <- readFile "test/wacc_examples/valid/IO/read/echoBigInt.wacc"
+  sourceCode <- readFile "test/wacc_examples/valid/sequence/intLeadingZeros.wacc"
   return $ case runParse sourceCode of
     Success ast -> fst ast
     _ -> error "Failed to parse the source code."
