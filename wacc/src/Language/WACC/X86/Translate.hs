@@ -11,6 +11,7 @@ import Control.Monad.RWS
   , asks
   , execRWS
   , gets
+  , local
   , modify
   , tell
   )
@@ -48,11 +49,17 @@ import Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
 translateProg :: TACProgram Integer Integer -> Program
-translateProg p = D.toList $ preamble <> D.concat is <> D.concat runtime
+translateProg p = D.toList $ preamble <> is <> runtime
   where
-    runtime :: [DList Instruction]
-    runtime = (runtimeLib !) <$> S.toList (S.unions runtimeLs)
-    (runtimeLs, is) = unzip $ map translateFunc (M.elems p)
+    runtime :: DList Instruction
+    runtime = D.concat $ (runtimeLib !) <$> (S.toList (runtimeFns st))
+    progRWS :: Analysis ()
+    progRWS = mapM_ translateFunc (M.elems p)
+    (st, is) =
+      execRWS
+        progRWS
+        M.empty
+        (TransST B.empty S.empty 0 S.empty 0)
     preamble :: DList Instruction
     preamble =
       D.fromList
@@ -107,27 +114,27 @@ Local Regs: 1
 .
 .
 -}
-translateFunc :: TACFunc Integer Integer -> (Set Runtime, DList Instruction)
-translateFunc (TACFunc l vs bs) = (runtimeFns st, is)
+translateFunc :: TACFunc Integer Integer -> Analysis ()
+translateFunc (TACFunc l vs bs) = do
+  resetState
+  local
+    (const bs)
+    ( do
+        tellInstr (Lab (I l)) -- label for the function = label of the first block
+        movq rsp rbp -- set the stack base pointer
+        -- if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
+        mapM_ setupStackArgs (zip vs [0 ..])
+        translateBlocks l startBlock -- Translate main part of code
+        movq rbp rsp -- restore stack pointer
+        unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
+        -- assigning arg vars to stack
+    )
   where
-    (st, is) =
-      execRWS
-        funcRWS
-        bs
-        (TransST B.empty S.empty 0 S.empty 0) -- Not empty regs list
-    startBlock = bs M.! l
-
-    funcRWS = do
-      tellInstr (Lab (I l)) -- label for the function = label of the first block
-      movq rsp rbp -- set the stack base pointer
-      -- if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
-      mapM_ setupStackArgs (zip vs [0 ..])
-      translateBlocks l startBlock -- Translate main part of code
-      movq rbp rsp -- restore stack pointer
-      unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
-      -- assigning arg vars to stack
+    startBlock = bs ! l
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
     setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI (stackElemSize * n) Rbp)))
+    resetState :: Analysis ()
+    resetState = modify (\x -> x {alloc = B.empty, translated = S.empty, stackVarNum = 0})
 
 {- | translate each statement of the block. then figure out which block to go to
 labels are printed right before this function is called
