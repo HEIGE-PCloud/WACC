@@ -179,7 +179,7 @@ instance TypeChecked (Expr ident Pos) where
     , (_, [y']) <- unifyExprsAt p BBool [y]
     ]
   check (Or x y p) =
-    [ And x' y' BBool
+    [ Or x' y' BBool
     | (_, [x']) <- unifyExprsAt p BBool [x]
     , (_, [y']) <- unifyExprsAt p BBool [y]
     ]
