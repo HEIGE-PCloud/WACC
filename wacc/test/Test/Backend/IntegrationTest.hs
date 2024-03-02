@@ -2,7 +2,7 @@
 
 module Test.Backend.IntegrationTest where
 
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate, isInfixOf, (\\))
 import Data.Maybe (fromMaybe)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.FilePath (takeBaseName)
@@ -36,17 +36,15 @@ import Text.Gigaparsec.Token.Lexer
   )
 
 enabledTests :: [FilePath]
-enabledTests = allTests
-
---  [ "valid/basic/exit/exit-1.wacc"
---  , "valid/IO/IOLoop.wacc"
---  ]
+enabledTests = [t | t <- allTests,  any (`isInfixOf` t) enabledPaths]
+  where
+    enabledPaths = ["basic", "variables"]
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
 
 ignoredTests :: [FilePath]
-ignoredTests = [] -- allTests \\ enabledTests
+ignoredTests = allTests \\ enabledTests
 
 lexer :: Lexer
 lexer = mkLexer plain
