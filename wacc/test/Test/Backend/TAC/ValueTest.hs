@@ -247,9 +247,8 @@ rvalueTestGroup =
             toTAC' (RVArrayLit [] (BArray BInt))
               @?= [ LoadCI temp1 4
                   , LoadCI temp2 0
-                  , LoadCI temp3 0
                   , Malloc temp0 temp1
-                  , Store temp0 temp3 temp2 FInt
+                  , Store temp0 temp2 temp2 FInt
                   ]
         , testArrayElemSizes "int" BInt (IntLit . toInteger) LoadCI 4
         , testArrayElemSizes

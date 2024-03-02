@@ -118,6 +118,14 @@ instance
   type TACFnRepr (RValue fnident ident BType) = ()
   type TACFnIdent (RValue fnident ident BType) = fnident
   fnToTAC (RVExpr x _) = toTAC x
+  fnToTAC (RVArrayLit [] _) = do
+    target <- getTarget
+    arraySize <- loadConst (sizeOf FInt)
+    const0 <- loadConst 0
+    putTACs
+      [ Malloc target arraySize
+      , Store target const0 const0 FInt
+      ]
   fnToTAC (RVArrayLit xs (BArray t)) = do
     target <- getTarget
     let
