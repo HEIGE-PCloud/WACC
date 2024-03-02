@@ -308,6 +308,7 @@ data Instruction where
   Jg :: Label -> Instruction
   Jge :: Label -> Instruction
   Jo :: Label -> Instruction
+  Js :: Label -> Instruction
   Jmp :: Label -> Instruction
   Call :: Label -> Instruction
   Ret :: Instruction
@@ -550,13 +551,7 @@ data Label = I Integer | R Runtime | S String
   deriving (Eq, Ord, Data, Show)
 
 data Runtime
-  = ArrLoad1
-  | ArrLoad4
-  | ArrLoad8
-  | ArrStore1
-  | ArrStore4
-  | ArrStore8
-  | PrintI
+  = PrintI
   | PrintB
   | PrintC
   | PrintS
@@ -674,22 +669,13 @@ instr4 = Movzx (Reg Al) (Reg Rax)
 instr5 :: Instruction
 instr5 = Comment "this is a comment"
 
-instr6 :: Instruction
-instr6 = Lab (R ArrLoad1)
-
 startEnd :: (Runtime, Runtime)
-startEnd = (ArrLoad1, Exit)
+startEnd = (PrintI, Exit)
 
 runtimeDeps :: Array Runtime (Set Runtime)
 runtimeDeps = array startEnd [(r, deps r) | r <- range startEnd]
   where
     deps :: Runtime -> Set Runtime
-    deps ArrLoad1 = insert ArrLoad1 (deps ErrOutOfBounds)
-    deps ArrLoad4 = insert ArrLoad4 (deps ErrOutOfBounds)
-    deps ArrLoad8 = insert ArrLoad8 (deps ErrOutOfBounds)
-    deps ArrStore1 = insert ArrStore1 (deps ErrOutOfBounds)
-    deps ArrStore4 = insert ArrStore4 (deps ErrOutOfBounds)
-    deps ArrStore8 = insert ArrStore8 (deps ErrOutOfBounds)
     deps ErrOutOfMemory = insert ErrOutOfMemory (deps PrintS)
     deps ErrOutOfBounds = insert ErrOutOfBounds (deps PrintS)
     deps ErrOverflow = insert ErrOverflow (deps PrintS)

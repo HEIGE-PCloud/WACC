@@ -267,7 +267,7 @@ translateTAC (TAC.Call v1 l vs) = do
 translateTAC (Print v w) = do
   comment $ "Print: print " ++ show v
   operand <- getOperand v
-  movq operand arg1
+  movq operand arg2
   translatePrint w
   comment "End Print"
 translateTAC (TAC.PrintLn v w) = do
@@ -302,7 +302,23 @@ translateTAC (TAC.Free v) = do
   movq operand arg1
   call (R X86.Free)
   comment "End Free"
-translateTAC (TAC.CheckBounds {}) = undefined
+-- > assert 0 <= <var> < <max>
+translateTAC (TAC.CheckBounds v vm) = do
+  comment $ "CheckBounds: assert 0 <= " ++ show v ++ " < " ++ show vm
+  l3 <- getLabel
+  l4 <- getLabel
+  o <- getOperand v
+  om <- getOperand vm
+  cmpl (Imm (IntLitD 0)) o
+  js l3
+  movl o eax
+  cmpl om eax
+  jl l4
+  lab l3
+  movl o edx
+  movl o eax
+  call (R X86.ErrOutOfBounds)
+  lab l4
 translateTAC (TAC.Move v1 v2) = do
   comment $ "Move: " ++ show v1 ++ " := " ++ show v2
   operand1 <- allocate' v1
@@ -511,7 +527,6 @@ translateLoadM v1 v2 off s = do
   offset <- getOperand off
   movq o2 r9
   movq offset r10
-  call (arrayLoad s)
   movq r9 o1
 
 translateStore
@@ -524,7 +539,6 @@ translateStore v1 off v2 s = do
   movq o1 r9
   movq offset r10
   movq o2 r11
-  call (arrayStore s)
 
 rbp = Reg Rbp
 
@@ -585,6 +599,10 @@ j s l = tellInstr (s l)
 
 jo = j Jo
 
+js = j Js
+
+jl = j Jl
+
 je = j Je
 
 jne = j Jne
@@ -614,6 +632,16 @@ negl o = tellInstr (Negl o)
 call = j X86.Call
 
 arg1 = Reg Rdi
+
+arg2 = Reg Rsi
+
+arg3 = Reg Rdx
+
+arg4 = Reg Rcx
+
+arg5 = Reg R8
+
+arg6 = Reg R9
 
 argRet = Reg Rax
 
@@ -658,18 +686,6 @@ text = tellInstr (Dir DirText)
 
 comment :: String -> Analysis ()
 comment s = tellInstr (Comment s)
-
-arrayLoad :: (Eq a, Num a) => a -> X86.Label
-arrayLoad 1 = R ArrLoad1
-arrayLoad 4 = R ArrLoad4
-arrayLoad 8 = R ArrLoad8
-arrayLoad _ = error "Invalid size for array load"
-
-arrayStore :: (Eq a, Num a) => a -> X86.Label
-arrayStore 1 = R ArrStore1
-arrayStore 4 = R ArrStore4
-arrayStore 8 = R ArrStore8
-arrayStore _ = error "Invalid size for array store"
 
 useRuntimeFunc :: Runtime -> Analysis ()
 useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})
