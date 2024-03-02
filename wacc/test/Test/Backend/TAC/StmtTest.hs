@@ -210,7 +210,7 @@ stmtTestGroup =
           (AST.Stmts [(AST.Return (intLit x) BAny)])
           0
           (Jump (Label l))
-          === [(0,BasicBlock {block = [LoadCI temp1 x], nextBlock = (Ret temp1)})]
+          === [(0, BasicBlock {block = [LoadCI temp1 x], nextBlock = (Ret temp1)})]
     , testProperty "Exit Creates instructions for var" $ \x ->
         toTAC' (AST.Exit (intLit x) BAny) === ([LoadCI temp1 x], [])
     , testProperty "Exit Creates instructions for simple expression" $ \i1 i2 ->
@@ -227,7 +227,7 @@ stmtTestGroup =
           (AST.Stmts [(AST.Exit (intLit x) BAny)])
           0
           (Jump (Label l))
-          === [(0,BasicBlock {block = [LoadCI temp1 x], nextBlock = (Exit temp1)})]
+          === [(0, BasicBlock {block = [LoadCI temp1 x], nextBlock = (Exit temp1)})]
     ]
 
 jump0 :: Jump Int Int
@@ -240,7 +240,3 @@ stmtsToTAC' stmts l j =
 
 stmtsTestGroup :: TestTree
 stmtsTestGroup = testGroup "statement groups" []
-
--- [LoadCI (Temp 1) 4,LoadCI (Temp 2) 4,LoadCI (Temp 3) 0,BinInstr (Temp 4) (Temp 3) Mul (Temp 2),
---  BinInstr (Temp 5) (Temp 4) Add (Temp 1),LoadCI (Temp 7) 0,LoadCI (Temp 8) 5,
---  BinInstr (Temp 6) (Temp 7) Add (Temp 8),Store (Var 0) (Temp 5) (Temp 6) WIntF]
