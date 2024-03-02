@@ -87,11 +87,12 @@ instance
   fnToTAC (AST.IfElse e s1 s2 _) = do
     t <- tempWith (toTAC e)
     fl <- freshLabel
-    fa <- stmtsToTAC s1 fl
     gl <- freshLabel
-    ga <- stmtsToTAC s2 gl
+
     pure $ Just $ Blocks $ \j -> do
+      fa <- stmtsToTAC s1 fl
       fa j
+      ga <- stmtsToTAC s2 gl
       ga j
       pure (CJump t (Label fl) (Label gl))
   fnToTAC (AST.While e s _) = do
