@@ -51,7 +51,7 @@ runFrontendSource :: IO (Prog WType Integer Integer BType)
 runFrontendSource = do
   sourceCode <- readFile "test/wacc_examples/valid/IO/read/echoBigInt.wacc"
   return $ case runParse sourceCode of
-    Success ast -> ast
+    Success ast -> fst ast
     _ -> error "Failed to parse the source code."
 
 astToTAC :: Prog WType Integer Integer BType -> TACProgram Integer Integer
