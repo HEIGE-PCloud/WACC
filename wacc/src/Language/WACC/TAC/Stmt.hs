@@ -168,7 +168,7 @@ instance
             fl <- freshLabel
             g <- fnToTAC' fl xs
             pure $ \j -> do
-              fj <- f j
+              fj <- f (Jump fl)
               appendBlock (BasicBlock (toList ts) fj) kp
               g j
       fnToTAC' kp [] = pure $ \j -> completeBlock j kp

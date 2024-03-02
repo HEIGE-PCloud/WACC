@@ -275,8 +275,8 @@ stmtTestGroup =
                     , nextBlock = CJump temp1 1 2
                     }
                 )
-              , (1, BasicBlock {block = [], nextBlock = Jump l})
-              , (2, BasicBlock {block = [], nextBlock = Jump l})
+              , (1, BasicBlock {block = [], nextBlock = Jump 3})
+              , (2, BasicBlock {block = [], nextBlock = Jump 3})
               , (3, BasicBlock {block = [], nextBlock = Jump l})
               ]
     , testProperty "While creates While Block With Return" $ \b x y ->
@@ -295,7 +295,7 @@ stmtTestGroup =
                 ( 1
                 , BasicBlock
                     { block = [LoadCI temp1 (if b then 1 else 0)]
-                    , nextBlock = CJump temp1 2 x
+                    , nextBlock = CJump temp1 2 3
                     }
                 )
               , (2, BasicBlock {block = [LoadCI temp2 y], nextBlock = Ret temp2})
@@ -317,7 +317,7 @@ stmtTestGroup =
                 ( 1
                 , BasicBlock
                     { block = [LoadCI temp1 (if b then 1 else 0)]
-                    , nextBlock = CJump temp1 2 x
+                    , nextBlock = CJump temp1 2 3
                     }
                 )
               , (2, BasicBlock {block = [], nextBlock = Jump 1})
@@ -338,7 +338,7 @@ stmtTestGroup =
           0
           (Jump x)
           === [ (0, BasicBlock {block = [], nextBlock = Jump 1})
-              , (1, BasicBlock {block = [], nextBlock = Jump x})
+              , (1, BasicBlock {block = [], nextBlock = Jump 2})
               , (2, BasicBlock {block = [], nextBlock = Jump x})
               ]
     ]
