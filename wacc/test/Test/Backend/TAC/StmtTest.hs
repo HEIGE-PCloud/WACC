@@ -336,7 +336,6 @@ stmtTestGroup =
               , (1, BasicBlock {block = [], nextBlock = Jump (Label x)})
               , (2, BasicBlock {block = [], nextBlock = Jump (Label x)})
               ]
-
     ]
 
 jump0 :: Jump Int Int
