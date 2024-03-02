@@ -394,4 +394,35 @@ stmtsTestGroup =
                     }
                 )
               ]
+    , testProperty "Singleton Decl" $ \v i1 i2 l ->
+        stmtsToTAC'
+          ( AST.Stmts
+              [ AST.Decl
+                  WInt
+                  v
+                  ( AST.RVExpr
+                      ( AST.Add
+                          (intLit i1)
+                          (intLit i2)
+                          BInt
+                      )
+                      BInt
+                  )
+                  BAny
+              ]
+          )
+          0
+          (Jump l)
+          === [
+                ( 0
+                , BasicBlock
+                    { block =
+                        [ LoadCI temp1 i1
+                        , LoadCI temp2 i2
+                        , BinInstr (Var v) temp1 Language.WACC.TAC.TAC.Add temp2
+                        ]
+                    , nextBlock = Jump l
+                    }
+                )
+              ]
     ]
