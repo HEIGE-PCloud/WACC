@@ -7,6 +7,7 @@ module Language.WACC.IO (main, readProgramFile, runParse, runScopeAnalysis, runT
 
 import Control.Exception (handle)
 import Data.List.Extra (replace)
+import Data.Map (lookupMax)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
 import Language.WACC.AST.Prog (Prog)
@@ -83,7 +84,8 @@ Read a WACC source file, replacing each tab character with two spaces.
 readProgramFile :: FilePath -> IO String
 readProgramFile = fmap (replace "\t" "  ") . readFile
 
-type Result' = Result ([Error], ExitCode) (Prog WType Fnident Vident BType)
+type Result' =
+  Result ([Error], ExitCode) (Prog WType Fnident Vident BType, VarST)
 
 data Compile = Compile {file :: FilePath, parseOnly :: Bool}
   deriving (Show, Data, Typeable)
@@ -128,14 +130,15 @@ runScopeAnalysis ast = case scopeAnalysis ast of
 
 runTypeCheck
   :: (Prog WType Fnident Vident Pos, VarST) -> Result'
-runTypeCheck ast = case uncurry checkTypes ast of
-  (Just ast', []) -> Success ast'
+runTypeCheck (ast, vars) = case checkTypes ast vars of
+  (Just ast', []) -> Success (ast', vars)
   (_, errs) -> Failure (errs, semanticErrorCode)
 
-runCodeGen :: String -> Prog WType Fnident Vident BType -> IO ()
-runCodeGen path ast =
+runCodeGen :: String -> (Prog WType Fnident Vident BType, VarST) -> IO ()
+runCodeGen path (ast, vars) =
   writeFile filename (formatA $ translateProg tacProgram) >>= const exitSuccess
   where
     filename = takeBaseName path ++ ".s"
+    nextBlockId = maybe 1 (succ . fst) $ lookupMax vars
     tacProgram :: TACProgram Fnident Vident
-    tacProgram = evalTACM 0 (fnToTAC ast)
+    tacProgram = evalTACM nextBlockId (fnToTAC ast)
