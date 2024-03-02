@@ -530,7 +530,7 @@ translateLoadM v1 v2 off t = do
   o2 <- getOperand v2
   offset <- getOperand off
   movq o2 rax
-  addq offset rbx
+  movq offset rbx
   moveT (Mem (MTwoReg Rax Rbx)) o1 t
 
 -- | > <var>[<offset>] := <var>
