@@ -31,7 +31,7 @@ import Language.WACC.TAC.State
   )
 import Language.WACC.TAC.TAC (BinOp (..), Offset, TAC (..), UnOp (..), Var (..))
 import Language.WACC.TypeChecking (BType (..))
-import Prelude hiding (GT, LT)
+import Prelude hiding (GT, LT, length)
 
 type instance TACIdent (ArrayIndex ident a) = ident
 
@@ -59,24 +59,31 @@ instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
       -> TACM ident lident ()
   toTAC (ArrayIndex v xs t) = pure $ \mf -> do
     target <- getTarget
-    lengthOffset <- loadConst (sizeOf FInt)
+    lengthOffset <- loadConst 0
+    lengthShift <- loadConst (sizeOf FInt)
     let
       -- Load a value of type ft starting at address (array + offset).
       loadOffset array offset ft = do
         localTarget <- getTarget
         putTACs [LoadM localTarget array offset ft]
       -- Evaluate the offset of the xth array element (sizeOf ft * x + 4) into a
-      -- fresh temporary variable, which is then returned.
-      mkOffsetTACs x ft = do
+      -- fresh temporary variable, which is then returned. Checks the index
+      -- against the length of array.
+      mkOffsetTACs array x ft = do
         scalar <- loadConst (sizeOf ft)
         index <- tempWith (toTAC x)
+        length <- freshTemp
         scaledIndex <- freshTemp
         result <- freshTemp
         putTACs
-          [ -- scaledIndex := index * scalar
+          [ -- length := len array
+            LoadM length array lengthOffset FInt
+          , -- assert 0 <= index < length
+            CheckBounds index length
+          , -- scaledIndex := index * scalar
             BinInstr scaledIndex index Mul scalar
-          , -- result := scaledIndex + lengthOffset
-            BinInstr result scaledIndex Add lengthOffset
+          , -- result := scaledIndex + lengthShift
+            BinInstr result scaledIndex Add lengthShift
           ]
         pure result
       -- Base case (single indexing expression): use a custom base case if one
@@ -84,14 +91,14 @@ instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
       chainIndexTACs array [x] (BArray t') = do
         let
           ft = flatten t'
-        offset <- mkOffsetTACs x ft
+        offset <- mkOffsetTACs array x ft
         (fromMaybe loadOffset mf) array offset ft `into` target
       -- Inductive case: use loadOffset on the current indexing expression and
       -- recurse on the inner array.
       chainIndexTACs outerArray (x : xs') (BArray t') = do
         let
           ft = flatten t'
-        offset <- mkOffsetTACs x ft
+        offset <- mkOffsetTACs outerArray x ft
         innerArray <- tempWith (loadOffset outerArray offset ft)
         chainIndexTACs innerArray xs' t'
       -- Impossible case (no indexing expressions).
