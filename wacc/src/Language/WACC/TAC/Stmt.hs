@@ -111,11 +111,12 @@ instance
       fa <- stmtsToTAC s fl
       fa (Jump $ Label cl)
       pure $ Jump $ Label cl
-  fnToTAC (AST.BeginEnd s _) = pure $ Just $ Blocks $ \j -> do
+  fnToTAC (AST.BeginEnd s _) = do
     fl <- freshLabel
-    fa <- stmtsToTAC s fl
-    fa j
-    pure . Jump $ Label fl
+    pure $ Just $ Blocks $ \j -> do
+      fa <- stmtsToTAC s fl
+      fa j
+      pure . Jump $ Label fl
 
 stmtsToTAC
   :: (Enum fnident, Enum ident, Eq ident, Ord fnident)
