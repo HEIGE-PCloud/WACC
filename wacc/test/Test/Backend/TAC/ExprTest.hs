@@ -149,7 +149,10 @@ exprTestGroup =
             toTAC' (AST.Ord (varExpr v BChar) BInt) === [Move temp0 (Var v)]
         , testProperty "chr generates a bounds check" $ \v ->
             toTAC' (AST.Chr (varExpr v BInt) BChar)
-              === [Move temp0 (Var v), CheckBounds 0 temp0 127]
+              === [ Move temp0 (Var v)
+                  , LoadCI temp1 128
+                  , CheckBounds temp0 temp1
+                  ]
         ]
     , testGroup
         "binary expressions"

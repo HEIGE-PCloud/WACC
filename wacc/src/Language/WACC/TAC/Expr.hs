@@ -193,10 +193,8 @@ instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   toTAC (AST.Chr x _) = do
     target <- getTarget
     toTAC x
-    let
-      minValidChar = 0
-      maxValidChar = 127
-    putTACs [CheckBounds minValidChar target maxValidChar]
+    validCharUpperBound <- loadConst 128
+    putTACs [CheckBounds target validCharUpperBound]
   -- Binary operators:
   toTAC (AST.Mul x y _) = binOp x Mul y
   toTAC (AST.Div x y _) = binOp x Div y

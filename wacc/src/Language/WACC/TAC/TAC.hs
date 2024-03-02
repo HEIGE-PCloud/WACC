@@ -53,10 +53,10 @@ data TAC ident lident
   | -- | > free <var>
     Free (Var ident)
   | -- |
-    -- > assert <low> <= <var> <= <high>
+    -- > assert 0 <= <var> < <max>
     --
     -- Throw a runtime error if the assertion fails.
-    CheckBounds Int (Var ident) Int
+    CheckBounds (Var ident) (Var ident)
   | -- | > <var> := <var>
     Move (Var ident) (Var ident)
   deriving (Eq, Show, Functor)
