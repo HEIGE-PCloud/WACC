@@ -324,7 +324,7 @@ translateBinOp o Add o1 o2 = do
   movl o2 ebx
   addl ebx eax
   jo errOverflow
-  movl ebx o
+  movl eax o
   comment "End Binary Addition"
 translateBinOp o Sub o1 o2 = do
   comment $
@@ -333,7 +333,7 @@ translateBinOp o Sub o1 o2 = do
   movl o2 ebx
   subl ebx eax
   jo errOverflow
-  movl ebx o
+  movl eax o
   comment "End Binary Subtraction"
 translateBinOp o Mul o1 o2 = do
   comment $
@@ -342,7 +342,7 @@ translateBinOp o Mul o1 o2 = do
   movl o2 ebx
   imull ebx eax
   jo errOverflow
-  movl ebx o
+  movl eax o
   comment "End Binary Multiplication"
 translateBinOp o Div o1 o2 = do
   comment $ "Binary Division: " ++ show o ++ " := " ++ show o1 ++ " / " ++ show o2
