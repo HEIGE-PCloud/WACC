@@ -159,9 +159,7 @@ instance
         fnToTAC x >>= \case
           Nothing -> fnToTAC' kp xs
           Just (BlockTerminal j) -> do
-            completeBlock j kp
-            l <- freshLabel
-            fnToTAC' l xs
+            pure $ \_ -> completeBlock j kp
           Just (Blocks f) -> do
             ts <- collectTACs
             fl <- freshLabel
