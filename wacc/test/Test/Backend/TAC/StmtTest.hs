@@ -327,9 +327,9 @@ stmtTestGroup =
         stmtsToTAC'
           (AST.Stmts [(AST.BeginEnd (AST.Stmts [(AST.Return (intLit y) BAny)]) BAny)])
           0
-          (Jump x)
-          === [ (0, BasicBlock {block = [], nextBlock = Jump 1})
-              , (1, BasicBlock {block = [LoadCI temp1 y], nextBlock = Ret temp1})
+          (Jump $ x)
+          === [ (0, BasicBlock {block = [LoadCI temp1 y], nextBlock = Jump 1})
+              , (1, BasicBlock {block = [], nextBlock = Ret temp1})
               , (2, BasicBlock {block = [], nextBlock = Jump x})
               ]
     , testProperty "BeginEnd creates BeginEnd Block" $ \x ->
@@ -384,12 +384,43 @@ stmtsTestGroup =
                     }
                 )
               ]
-    , testProperty "Singleton Print" $ \i l ->
+    , testProperty "Singleton PrintLn" $ \i l ->
         stmtsToTAC' (AST.Stmts [AST.PrintLn (intLit i) BAny]) 0 (Jump l)
           === [
                 ( 0
                 , BasicBlock
                     { block = [LoadCI temp1 i, PrintLn temp1 FInt]
+                    , nextBlock = Jump l
+                    }
+                )
+              ]
+    , testProperty "Singleton Decl" $ \v i1 i2 l ->
+        stmtsToTAC'
+          ( AST.Stmts
+              [ AST.Decl
+                  WInt
+                  v
+                  ( AST.RVExpr
+                      ( AST.Add
+                          (intLit i1)
+                          (intLit i2)
+                          BInt
+                      )
+                      BInt
+                  )
+                  BAny
+              ]
+          )
+          0
+          (Jump l)
+          === [
+                ( 0
+                , BasicBlock
+                    { block =
+                        [ LoadCI temp1 i1
+                        , LoadCI temp2 i2
+                        , BinInstr (Var v) temp1 Language.WACC.TAC.TAC.Add temp2
+                        ]
                     , nextBlock = Jump l
                     }
                 )
