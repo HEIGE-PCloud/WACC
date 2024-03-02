@@ -327,9 +327,9 @@ stmtTestGroup =
         stmtsToTAC'
           (AST.Stmts [(AST.BeginEnd (AST.Stmts [(AST.Return (intLit y) BAny)]) BAny)])
           0
-          (Jump x)
-          === [ (0, BasicBlock {block = [], nextBlock = Jump 1})
-              , (1, BasicBlock {block = [LoadCI temp1 y], nextBlock = Ret temp1})
+          (Jump $ x)
+          === [ (0, BasicBlock {block = [LoadCI temp1 y], nextBlock = Jump 1})
+              , (1, BasicBlock {block = [], nextBlock = Ret temp1})
               , (2, BasicBlock {block = [], nextBlock = Jump x})
               ]
     , testProperty "BeginEnd creates BeginEnd Block" $ \x ->
