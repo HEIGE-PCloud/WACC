@@ -63,6 +63,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j
   build-depends:
       array
+    , async
     , base >=4.7 && <5
     , bimap
     , cmdargs
@@ -87,6 +88,7 @@ executable compile
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-missing-export-lists -Wno-type-equality-requires-operators -Wno-orphans -j -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       array
+    , async
     , base >=4.7 && <5
     , bimap
     , cmdargs
@@ -144,6 +146,7 @@ test-suite wacc-test
   build-depends:
       QuickCheck
     , array
+    , async
     , base >=4.7 && <5
     , bimap
     , bytestring

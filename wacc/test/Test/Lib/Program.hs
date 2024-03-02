@@ -64,13 +64,15 @@ module Test.Lib.Program
   )
 where
 
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (race)
 import Control.DeepSeq (deepseq)
 import Data.Foldable (for_)
 import Data.Typeable (Typeable)
 import System.Directory (findExecutable)
 import System.Exit (ExitCode (..))
 import System.IO (hGetContents, hPutStr)
-import System.Process (runInteractiveProcess, waitForProcess)
+import System.Process (runInteractiveProcess, terminateProcess, waitForProcess)
 import Test.Tasty.Providers
   ( IsTest (..)
   , Result
@@ -90,6 +92,7 @@ data TestProgram
       ExitCode
       CheckOutput
       CheckOutput
+      Int
   deriving (Typeable)
 
 type CheckOutput = String -> (Bool, String)
@@ -117,14 +120,34 @@ testProgram
   -- ^ A function to check whether the stderr is correct
   -> CheckOutput
   -- ^ A function to check whether the stdout is correct
+  -> Int
+  -- ^ Timeout in microseconds
   -> TestTree
-testProgram testName program opts workingDir input exitCode checkStderr checkStdout =
+testProgram testName program opts workingDir input exitCode checkStderr checkStdout timeout =
   singleTest
     testName
-    (TestProgram program opts workingDir input exitCode checkStderr checkStdout)
+    ( TestProgram
+        program
+        opts
+        workingDir
+        input
+        exitCode
+        checkStderr
+        checkStdout
+        timeout
+    )
 
 runTestProgram :: TestProgram -> IO Result
-runTestProgram (TestProgram program args workingDir input exitCode checkStderr checkStdout) = do
+runTestProgram ( TestProgram
+                  program
+                  args
+                  workingDir
+                  input
+                  exitCode
+                  checkStderr
+                  checkStdout
+                  timeout
+                ) = do
   execFound <- findExecutable program
 
   case execFound of
@@ -138,6 +161,7 @@ runTestProgram (TestProgram program args workingDir input exitCode checkStderr c
         exitCode
         checkStderr
         checkStdout
+        timeout
 
 instance IsTest TestProgram where
   run _ p _ = runTestProgram p
@@ -159,29 +183,41 @@ runProgram
   -- ^ A function to check whether the stderr is correct
   -> CheckOutput
   -- ^ A function to check whether the stdout is correct
+  -> Int
+  -- ^ Timeout in microseconds
   -> IO Result
-runProgram program args workingDir input exitCode checkStderr checkStdout = do
+runProgram program args workingDir input exitCode checkStderr checkStdout timeout = do
   (stdinH, stdoutH, stderrH, pid) <-
     runInteractiveProcess program args workingDir Nothing
   for_ ((++ "\n") <$> input) (hPutStr stdinH)
-  stderr <- hGetContents stderrH
-  stdout <- hGetContents stdoutH
-  ecode <- stderr `deepseq` stdout `deepseq` waitForProcess pid
   let
-    exitFailure' = exitFailure program args ecode stderr stdout
-  let
-    (stderrCorrect, stderrReason) = checkStderr stderr
-  let
-    (stdoutCorrect, stdoutReason) = checkStdout stdout
-  let
-    res
-      | ecode /= exitCode =
-          exitFailure'
-            ("unexpected exit code " ++ show ecode ++ " expected " ++ show exitCode)
-      | not stderrCorrect = exitFailure' ("stderr is incorrect\n" ++ stderrReason)
-      | not stdoutCorrect = exitFailure' ("stdout is incorrect\n" ++ stdoutReason)
-      | otherwise = success
-  return res
+    processAction = do
+      stderr <- hGetContents stderrH
+      stdout <- hGetContents stdoutH
+      ecode <- stderr `deepseq` stdout `deepseq` waitForProcess pid
+      return (ecode, stderr, stdout)
+  result <- race (threadDelay timeout) processAction
+  case result of
+    Left () -> do
+      terminateProcess pid
+      ecode <- waitForProcess pid
+      return $ exitFailure program args ecode "" "" "program timeout"
+    Right (ecode, stderr, stdout) -> do
+      let
+        exitFailure' = exitFailure program args ecode stderr stdout
+      let
+        (stderrCorrect, stderrReason) = checkStderr stderr
+      let
+        (stdoutCorrect, stdoutReason) = checkStdout stdout
+      let
+        res
+          | ecode /= exitCode =
+              exitFailure'
+                ("unexpected exit code " ++ show ecode ++ " expected " ++ show exitCode)
+          | not stderrCorrect = exitFailure' ("stderr is incorrect\n" ++ stderrReason)
+          | not stdoutCorrect = exitFailure' ("stdout is incorrect\n" ++ stdoutReason)
+          | otherwise = success
+      return res
 
 -- | Indicates successful test
 success :: Result

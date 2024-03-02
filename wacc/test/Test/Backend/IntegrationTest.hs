@@ -134,6 +134,9 @@ data TestProgramMetadata = TestProgramMetadata
   }
   deriving (Show)
 
+timeout :: Int
+timeout = 1000000
+
 workingDirectory :: Maybe String
 workingDirectory = Just ".."
 
@@ -147,6 +150,7 @@ compile (TestProgramMetadata path _ _ _ _ _ _) =
     ExitSuccess
     ignoreOutput
     ignoreOutput
+    timeout
 
 assemble :: TestProgramMetadata -> TestProgram
 assemble (TestProgramMetadata _ path exe _ _ _ _) =
@@ -158,6 +162,7 @@ assemble (TestProgramMetadata _ path exe _ _ _ _) =
     ExitSuccess
     ignoreOutput
     ignoreOutput
+    timeout
 
 executable :: TestProgramMetadata -> TestProgram
 executable (TestProgramMetadata _ _ exe _ i o ecode) =
@@ -169,6 +174,7 @@ executable (TestProgramMetadata _ _ exe _ i o ecode) =
     ecode
     ignoreOutput
     (outputChecker o)
+    timeout
 
 outputChecker :: String -> String -> (Bool, String)
 outputChecker rawOutput realOutput = case res of
