@@ -71,7 +71,7 @@ import Data.Foldable (for_)
 import Data.Typeable (Typeable)
 import System.Directory (findExecutable)
 import System.Exit (ExitCode (..))
-import System.IO (hGetContents, hPutStr)
+import System.IO (hClose, hFlush, hGetContents, hPutStr)
 import System.Process (runInteractiveProcess, terminateProcess, waitForProcess)
 import Test.Tasty.Providers
   ( IsTest (..)
@@ -190,7 +190,10 @@ runProgram
 runProgram program args workingDir input exitCode checkStderr checkStdout timeout = do
   (stdinH, stdoutH, stderrH, pid) <-
     runInteractiveProcess program args workingDir Nothing
-  for_ ((++ "\n") <$> input) (hPutStr stdinH)
+  for_ input $ \i -> do
+    hPutStr stdinH i
+    hFlush stdinH
+    hClose stdinH
   let
     processAction = do
       stderr <- hGetContents stderrH
