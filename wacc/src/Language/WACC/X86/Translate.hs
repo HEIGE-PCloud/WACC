@@ -4,7 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-{- | 
+{- |
 Translates Generated TAC program to X86 assembly.
 -}
 module Language.WACC.X86.Translate where
@@ -226,7 +226,7 @@ translateNext (TAC.Exit x) = do
 bindVarToLoc :: Var Integer -> OperandQMM -> TransST -> TransST
 bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
--- | Allocates memory for given variable  
+-- | Allocates memory for given variable
 allocate :: Var Integer -> Analysis OperandQMM
 allocate v = do
   -- increase the stackVarNum
