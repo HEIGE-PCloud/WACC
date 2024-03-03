@@ -458,7 +458,7 @@ _errOutOfBounds:
 errOutOfBounds :: Program
 errOutOfBounds =
   [ Dir DirSection
-  , Dir $ DirInt 81
+  , Dir $ DirInt 42
   , Lab (S ".L._errOutOfBounds_str0")
   , Dir $
       DirAsciz
