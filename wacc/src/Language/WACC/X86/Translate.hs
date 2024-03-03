@@ -6,6 +6,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
+{- |
+Translates Generated TAC program to X86 assembly.
+-}
 module Language.WACC.X86.Translate where
 
 import Control.Monad (unless)
@@ -182,9 +185,11 @@ translateBlocks l (BasicBlock is next) = do
 setTranslated :: Integer -> TransST -> TransST
 setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated}
 
+-- | Utility to create label
 mapLab :: Integer -> X86.Label
 mapLab = I
 
+-- | Utility to query state to check if label is translated
 isTranslated :: Integer -> Analysis Bool
 isTranslated l = gets (S.member l . translated)
 
@@ -225,9 +230,11 @@ translateNext (TAC.Exit x) = do
   tellInstr (Movl operand (Reg Edi))
   call (R X86.Exit)
 
+-- | Inserts given variable into allocation map with associated location.
 bindVarToLoc :: Var Integer -> OperandQMM -> TransST -> TransST
 bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
+-- | Allocates memory for given variable
 allocate :: Var Integer -> Analysis OperandQMM
 allocate v = do
   -- increase the stackVarNum
@@ -246,12 +253,14 @@ allocate' v = do
     Just o -> return o
     Nothing -> allocate v
 
+-- | Gets label and updates the next fresh label available
 getLabel :: Analysis X86.Label
 getLabel = do
   n <- gets labelCounter
   modify (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
+-- | Queries the allocation map to get operand of given variable
 getOperand :: Var Integer -> Analysis OperandQMM
 getOperand v = gets ((B.! v) . alloc)
 
@@ -396,6 +405,38 @@ tellString l s =
 
 -------------------------------------
 
+divModPrefix o1 o2 = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
+  je errDivByZero
+  cltd -- sign extend eax into edx
+  idivl ebx -- divide edx:eax by ebx
+
+addMullSub o o1 o2 action = do
+  movl o1 eax
+  movl o2 ebx
+  _ <- action
+  jo errOverflow
+  movslq eax rax
+  movq rax o
+
+logicalOPs o o1 o2 cmp set = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  _ <- cmp ebx eax -- compare %ebx and %eax
+  _ <- set al -- set al to 1 if %eax <set flag> %ebx
+  movzbq al rax
+  movq rax o -- %o := %al
+
+eqOps o o1 o2 cmp set = do
+  movq o1 rax -- %eax := o1
+  movq o2 rbx -- %ebx := o2
+  _ <- cmp rbx rax -- compare %ebx and %eax
+  _ <- set al -- set al to 1 if %eax <set flag> %ebx
+  movzbq al rax
+  movq rax o -- %o := %al
+
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
 -}
@@ -404,12 +445,7 @@ translateBinOp
 translateBinOp o Add o1 o2 = do
   commentD $
     "Binary Addition: " <> showD o <> " := " <> showD o1 <> " + " <> showD o2
-  movl o1 eax
-  movl o2 ebx
-  addl ebx eax
-  jo errOverflow
-  movslq eax rax
-  movq rax o
+  addMullSub o o1 o2 (addl ebx eax)
   commentD "End Binary Addition"
 translateBinOp o PtrAdd o1 o2 = do
   commentD $
@@ -428,44 +464,24 @@ translateBinOp o PtrAdd o1 o2 = do
 translateBinOp o Sub o1 o2 = do
   commentD $
     "Binary Subtraction: " <> showD o <> " := " <> showD o1 <> " - " <> showD o2
-  movl o1 eax
-  movl o2 ebx
-  subl ebx eax
-  jo errOverflow
-  movslq eax rax
-  movq rax o
+  addMullSub o o1 o2 (subl ebx eax)
   commentD "End Binary Subtraction"
 translateBinOp o Mul o1 o2 = do
   commentD $
     "Binary Multiplication: " <> showD o <> " := " <> showD o1 <> " * " <> showD o2
-  movl o1 eax
-  movl o2 ebx
-  imull ebx eax
-  jo errOverflow
-  movslq eax rax
-  movq rax o
+  addMullSub o o1 o2 (imull ebx eax)
   commentD "End Binary Multiplication"
 translateBinOp o Div o1 o2 = do
   commentD $
     "Binary Division: " <> showD o <> " := " <> showD o1 <> " / " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
-  je errDivByZero
-  cltd -- sign extend eax into edx
-  idivl ebx -- divide edx:eax by ebx
+  divModPrefix o1 o2
   movslq eax rax
   movq rax o
   commentD "End Binary Division"
 translateBinOp o Mod o1 o2 = do
   commentD $
     "Binary Modulo: " <> showD o <> " := " <> showD o1 <> " % " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
-  je errDivByZero
-  cltd -- sign extend eax into edx
-  idivl ebx -- divide edx:eax by ebx
+  divModPrefix o1 o2
   movslq edx rdx
   movq rdx o
   commentD "End Binary Modulo"
@@ -520,12 +536,7 @@ translateBinOp o Or o1 o2 = do
 translateBinOp o TAC.LT o1 o2 = do
   commentD $
     "Binary Less Than: " <> showD o <> " := " <> showD o1 <> " < " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setl al -- set al to 1 if %eax < %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setl
   commentD "End Binary Less Than"
 translateBinOp o TAC.LTE o1 o2 = do
   commentD $
@@ -535,22 +546,12 @@ translateBinOp o TAC.LTE o1 o2 = do
       <> showD o1
       <> " <= "
       <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setle al -- set al to 1 if %eax <= %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setle
   commentD "End Binary Less Than or Equal"
 translateBinOp o TAC.GT o1 o2 = do
   commentD $
     "Binary Greater Than: " <> showD o <> " := " <> showD o1 <> " > " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setg al -- set al to 1 if %eax > %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setg
   commentD "End Binary Greater Than"
 translateBinOp o TAC.GTE o1 o2 = do
   commentD $
@@ -560,32 +561,17 @@ translateBinOp o TAC.GTE o1 o2 = do
       <> showD o1
       <> " >= "
       <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setge al -- set al to 1 if %eax >= %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setge
   commentD "End Binary Greater Than or Equal"
 translateBinOp o TAC.Eq o1 o2 = do
   commentD $
     "Binary Equal: " <> showD o <> " := " <> showD o1 <> " == " <> showD o2
-  movq o1 rax -- %eax := o1
-  movq o2 rbx -- %ebx := o2
-  cmpq rbx rax -- compare %ebx and %eax
-  sete al -- set al to 1 if %eax == %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  eqOps o o1 o2 cmpq sete
   commentD "End Binary Equal"
 translateBinOp o TAC.Ineq o1 o2 = do
   commentD $
     "Binary Not Equal: " <> showD o <> " := " <> showD o1 <> " != " <> showD o2
-  movq o1 rax -- %eax := o1
-  movq o2 rbx -- %ebx := o2
-  cmpq rbx rax -- compare %ebx and %eax
-  setne al -- set al to 1 if %eax != %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  eqOps o o1 o2 cmpq setne
   commentD "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
@@ -607,6 +593,7 @@ translateUnOp o Negate o' = do
   movq rax o
   commentD "End Unary Negate"
 
+-- | Utility which calls appropriate print runtime library based on given type
 translatePrint :: FType -> Analysis ()
 translatePrint FInt = call printi
 translatePrint FBool = call printb
@@ -614,6 +601,7 @@ translatePrint FChar = call printc
 translatePrint FString = call prints
 translatePrint _ = call printp
 
+-- | Utility generates appropriate read instruction based on given type
 translateRead :: OperandQMM -> FType -> Analysis ()
 translateRead o FInt = do
   call (R X86.ReadI)
@@ -625,6 +613,7 @@ translateRead _ w =
   error $
     "Invalid type for read, only int and char are supported, got: " ++ show w
 
+-- | Utility used to generate load instructions based on given variables for location and offset.
 translateLoadM
   :: Var Integer -> Var Integer -> Var Integer -> FType -> Analysis ()
 translateLoadM v1 v2 off t = do
