@@ -44,8 +44,14 @@ import Language.WACC.TAC.TAC
   , Var
   )
 import qualified Language.WACC.TAC.TAC as TAC
+import Language.WACC.X86.IntLit (IntLit (..))
+import Language.WACC.X86.Label (Label (..))
+import qualified Language.WACC.X86.Label as X86
+import Language.WACC.X86.Lib (runtimeLib)
+import Language.WACC.X86.Memory (Memory (..))
+import Language.WACC.X86.Operand (Operand (..), OperandQMM)
 import Language.WACC.X86.Register (Register (..))
-import Language.WACC.X86.Runtime (runtimeLib)
+import qualified Language.WACC.X86.Runtime as X86
 import Language.WACC.X86.X86 as X86
 
 -- | Translate every function's instructions and concat
@@ -78,13 +84,13 @@ swapReg = R10
 
 -- | The state of RWS monad for translation of each function
 data TransST = TransST
-  { alloc :: Bimap (Var Integer) X86.OperandQMM
+  { alloc :: Bimap (Var Integer) OperandQMM
   -- ^ bijection between variables in TAC to register/memory in X86
   , translated :: Set Integer
   -- ^ Set of basic blocks that have been translated
   , stackVarNum :: Integer
   -- ^ The number of stack variables used so far (not incl. saving callee saved reg)
-  , runtimeFns :: Set Runtime
+  , runtimeFns :: Set X86.Runtime
   -- ^ Set of runtime functions which need to be included
   , labelCounter :: Integer
   -- ^ Counter for generating unique labels
@@ -199,10 +205,10 @@ translateNext (TAC.Exit x) = do
   tellInstr (Movl operand (Reg Edi))
   call (R X86.Exit)
 
-bindVarToLoc :: Var Integer -> X86.OperandQMM -> TransST -> TransST
+bindVarToLoc :: Var Integer -> OperandQMM -> TransST -> TransST
 bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
-allocate :: Var Integer -> Analysis X86.OperandQMM
+allocate :: Var Integer -> Analysis OperandQMM
 allocate v = do
   -- increase the stackVarNum
   modify (\x@(TransST {stackVarNum}) -> x {stackVarNum = stackVarNum + 1})
@@ -212,7 +218,7 @@ allocate v = do
   return (Mem (MRegI stackAddr Rbp))
 
 -- | Sanity check. Variable must not already be allocated in three address code
-allocate' :: Var Integer -> Analysis X86.OperandQMM
+allocate' :: Var Integer -> Analysis OperandQMM
 allocate' v = do
   -- check if the variable is already allocated
   alloc' <- gets (B.lookup v . alloc)
@@ -226,7 +232,7 @@ getLabel = do
   modify (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
-getOperand :: Var Integer -> Analysis X86.OperandQMM
+getOperand :: Var Integer -> Analysis OperandQMM
 getOperand v = gets ((B.! v) . alloc)
 
 -------------------------------------
@@ -356,7 +362,7 @@ translateTAC (TAC.Move v1 v2) = do
 | <o> := <o1> <binop> <o2>
 -}
 translateBinOp
-  :: X86.OperandQMM -> BinOp -> X86.OperandQMM -> X86.OperandQMM -> Analysis ()
+  :: OperandQMM -> BinOp -> OperandQMM -> OperandQMM -> Analysis ()
 translateBinOp o Add o1 o2 = do
   comment $ "Binary Addition: " ++ show o ++ " := " ++ show o1 ++ " + " ++ show o2
   movl o1 eax
@@ -527,7 +533,7 @@ translateBinOp o TAC.Ineq o1 o2 = do
   comment "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
-translateUnOp :: X86.OperandQMM -> UnOp -> X86.OperandQMM -> Analysis ()
+translateUnOp :: OperandQMM -> UnOp -> OperandQMM -> Analysis ()
 translateUnOp o Not o' = do
   comment $ "Unary Not: " ++ show o ++ " := ! " ++ show o'
   movl o' eax
@@ -552,7 +558,7 @@ translatePrint FChar = call printc
 translatePrint FString = call prints
 translatePrint _ = call printp
 
-translateRead :: X86.OperandQMM -> FType -> Analysis ()
+translateRead :: OperandQMM -> FType -> Analysis ()
 translateRead o FInt = do
   call (R X86.ReadI)
   movq argRet o
@@ -588,7 +594,7 @@ translateStore v1 off v2 t = do
   movq offset rbx
   moveT o2 (Mem (MTwoReg Rax Rbx)) t
 
-moveT :: X86.OperandQMM -> X86.OperandQMM -> FType -> Analysis ()
+moveT :: OperandQMM -> OperandQMM -> FType -> Analysis ()
 moveT s d FChar = movb s cl >> movb cl d
 moveT s d FBool = movb s cl >> movb cl d
 moveT s d FInt = movl s ecx >> movl ecx d
@@ -673,8 +679,8 @@ pushq o = tellInstr (Pushq o)
 
 popq o = tellInstr (Popq o)
 
-j :: (Label -> Instruction) -> Label -> Analysis ()
-j s l@(R r) = do
+j :: (X86.Label -> Instruction) -> X86.Label -> Analysis ()
+j s l@(X86.R r) = do
   tellInstr (s l)
   useRuntimeFunc r
 j s l = tellInstr (s l)
@@ -770,5 +776,5 @@ text = tellInstr (Dir DirText)
 comment :: String -> Analysis ()
 comment s = tellInstr (Comment s)
 
-useRuntimeFunc :: Runtime -> Analysis ()
+useRuntimeFunc :: X86.Runtime -> Analysis ()
 useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})

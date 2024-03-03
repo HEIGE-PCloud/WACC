@@ -22,26 +22,13 @@ import Data.Set (Set, insert, singleton)
 import GHC.TypeError (ErrorMessage (ShowType, Text, (:<>:)))
 import GHC.TypeLits (TypeError)
 import Language.WACC.X86.ATNT (ATNT (..), genATNTInstruction)
-import Language.WACC.X86.Register (Register (..), RegisterQ)
+import Language.WACC.X86.IntLit (IntLit (..))
+import Language.WACC.X86.Label (Label (..))
+import Language.WACC.X86.Memory (Memory (..))
+import Language.WACC.X86.Operand
+import Language.WACC.X86.Register (Register (..))
+import Language.WACC.X86.Runtime (Runtime (..))
 import Language.WACC.X86.Size (EQ, LT, LTE, Size (..), SizeToNat)
-
-data OpType = IM | RM | MM
-
-type OperandQ = Operand Q
-
-type OperandD = Operand D
-
-type OperandW = Operand W
-
-type OperandB = Operand B
-
-type IntLitQ = IntLit Q
-
-type IntLitD = IntLit D
-
-type IntLitW = IntLit W
-
-type IntLitB = IntLit B
 
 type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint where
   If 'True a _ = a
@@ -303,100 +290,6 @@ data Instruction where
 -- https://stackoverflow.com/questions/62771323/why-we-cant-move-a-64-bit-immediate-value-to-memory
 
 deriving instance Show Instruction
-
-data Memory where
-  -- | (53) :- immediate memory access
-  MI :: Integer -> Memory
-  -- | (%rax) :- single register memory access
-  MReg :: RegisterQ -> Memory
-  -- | (%rsp, %rax) = M[R[rsp] + R[rax]] :- register sum memory access
-  MTwoReg :: RegisterQ -> RegisterQ -> Memory
-  -- | (%rsp, %rax, 4) = M[R[rsp] + R[rax]*4] :- register scaled (by 1,2,4 or 8) memory access
-  MScale :: RegisterQ -> RegisterQ -> Integer -> Memory
-  -- | 7(%rax) = M[7 + R[rax]] :- offset single register memory access
-  MRegI :: Integer -> RegisterQ -> Memory
-  -- | 7(%rsp, %rax) = M[7 + R[rsp] + R[rax]] :- offset register sum memory access
-  MTwoRegI :: Integer -> RegisterQ -> RegisterQ -> Memory
-  -- | 7(%rsp, %rax, 4) = M[7 + R[rsp] + R[rax]*4] :- offset register scaled (by 1,2,4 or 8) memory access
-  MScaleI :: Integer -> RegisterQ -> RegisterQ -> Integer -> Memory
-  -- | f4(%rax) :- offset to label, single register memory access
-  MRegL :: Label -> RegisterQ -> Memory
-
-deriving instance Eq Memory
-
-deriving instance Ord Memory
-
-deriving instance Show Memory
-
-data IntLit (size :: Size) where
-  IntLitQ :: Int64 -> IntLitQ
-  IntLitD :: Int32 -> IntLitD
-  IntLitW :: Int16 -> IntLitW
-  IntLitB :: Int8 -> IntLitB
-
-deriving instance Show (IntLit size)
-
-deriving instance Eq (IntLit size)
-
-deriving instance Ord (IntLit size)
-
-type OperandQMM = OperandQ MM
-
-type OperandQRM = OperandQ RM
-
-type OperandQIM = OperandQ IM
-
-type OperandDMM = OperandD MM
-
-type OperandDRM = OperandD RM
-
-type OperandDIM = OperandD IM
-
-type OperandWMM = OperandW MM
-
-type OperandWRM = OperandW RM
-
-type OperandWIM = OperandW IM
-
-type OperandBMM = OperandB MM
-
-type OperandBRM = OperandB RM
-
-type OperandBIM = OperandB IM
-
-data Operand (size :: Size) (opType :: OpType) where
-  Imm :: IntLit size -> Operand size IM
-  Reg :: Register size -> Operand size RM
-  Mem :: Memory -> Operand size MM
-
-deriving instance Eq (Operand size opType)
-
-deriving instance Ord (Operand size opType)
-
-deriving instance Show (Operand size opType)
-
-data Label = I Integer | R Runtime | S String
-  deriving (Eq, Ord, Data, Show)
-
-data Runtime
-  = PrintI
-  | PrintB
-  | PrintC
-  | PrintS
-  | PrintP
-  | PrintLn
-  | Free
-  | Malloc
-  | ReadI
-  | ReadC
-  | ErrOutOfMemory
-  | ErrOutOfBounds
-  | ErrOverflow
-  | ErrDivByZero
-  | ErrBadChar
-  | ErrNull
-  | Exit
-  deriving (Ix, Eq, Ord, Typeable, Data, Show)
 
 instance ATNT Int8 where
   formatA :: Int8 -> String
