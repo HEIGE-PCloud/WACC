@@ -593,6 +593,13 @@ translateLoadM v1 v2 off t = do
   je errNull
   movq offset rbx
   moveT (Mem (MTwoReg Rax Rbx)) o1 t
+  where
+    moveT :: OperandQMM -> OperandQMM -> FType -> Analysis ()
+    moveT s d FChar = movzbq s rcx >> movq rcx d
+    moveT s d FBool = movb s cl >> movb cl d
+    moveT s d FInt = movl s ecx >> movl ecx d
+    moveT s d FString = movq s rcx >> movq rcx d
+    moveT s d FPtr = movq s rcx >> movq rcx d
 
 -- | > <var>[<offset>] := <var>
 translateStore
@@ -606,13 +613,13 @@ translateStore v1 off v2 t = do
   je errNull
   movq offset rbx
   moveT o2 (Mem (MTwoReg Rax Rbx)) t
-
-moveT :: OperandQMM -> OperandQMM -> FType -> Analysis ()
-moveT s d FChar = movb s cl >> movb cl d
-moveT s d FBool = movb s cl >> movb cl d
-moveT s d FInt = movl s ecx >> movl ecx d
-moveT s d FString = movq s rcx >> movq rcx d
-moveT s d FPtr = movq s rcx >> movq rcx d
+  where
+    moveT :: OperandQMM -> OperandQMM -> FType -> Analysis ()
+    moveT s d FChar = movb s cl >> movb cl d
+    moveT s d FBool = movb s cl >> movb cl d
+    moveT s d FInt = movl s ecx >> movl ecx d
+    moveT s d FString = movq s rcx >> movq rcx d
+    moveT s d FPtr = movq s rcx >> movq rcx d
 
 leaq o1 o2 = tellInstr (Leaq o1 o2)
 
