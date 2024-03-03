@@ -23,7 +23,9 @@ testTypingM action = case runTypingM action id mempty of
   (_, _, es) -> const . Left $ length es
 
 checkFunc' :: Func WType Int BType Pos -> Int -> Either Int FnType
-checkFunc' = testTypingM . fnCheck
+checkFunc' fn@(Func rwt f pwts _ _) =
+  testTypingM
+    (setFnType f (FnType (fix . fst <$> pwts) (fix rwt)) *> fnCheck fn)
 
 checkProg' :: Prog WType Int BType Pos -> Int -> Either Int FnType
 checkProg' = testTypingM . fnCheck
