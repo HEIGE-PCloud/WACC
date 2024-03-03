@@ -51,7 +51,7 @@ import Language.WACC.TAC.TAC
   )
 import qualified Language.WACC.TAC.TAC as TAC
 import Language.WACC.X86.IntLit (IntLit (..))
-import Language.WACC.X86.Label (Label (..))
+import Language.WACC.X86.Label
 import qualified Language.WACC.X86.Label as X86
 import Language.WACC.X86.Lib (runtimeLib)
 import Language.WACC.X86.Memory (Memory (..))
@@ -63,11 +63,11 @@ import Language.WACC.X86.X86 as X86
 
 $(genRegOperand)
 
-{- | When registers run out and values in the stack are
-required for a computation, they put in this register.
-A caller saved register.
--}
-swapReg = R10
+zeroQ = Imm (IntLitQ 0)
+
+zeroD = Imm (IntLitD 0)
+
+oneD = Imm (IntLitD 1)
 
 -- | The state of RWS monad for translation of each function
 data TransST = TransST
@@ -106,41 +106,27 @@ $(genOperandWrappers 'tellInstr)
 stackElemSize :: Integer
 stackElemSize = 8
 
-{- | Rbp points to the location just before the first stack variable of a frame
-This means the last callee saved register pushed onto the stack
-
-Assuming stack looks like this: (initial value of Rsp and constant value of Rbp)
-
---------------
-Args: 1
-.
-.
-Args: n     <-- Rsp , Rbp
---------------
-Local Regs: 1
-.
-.
--}
 translateFunc :: TACFunc Integer Integer -> Analysis ()
 translateFunc (TACFunc l vs bs) = do
   resetState
   local
     (const bs)
     ( do
-        tellInstr (Lab (I l)) -- label for the function = label of the first block
+        lab (I l) -- label for the function = label of the first block
         pushq rbp
         movq rsp rbp -- set the stack base pointer
         mapM_ setupStackArgs (zip vs [0 ..])
         translateBlocks l startBlock -- Translate main part of code
         movq rbp rsp -- restore stack pointer
         popq rbp
-        unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
+        unless (l == 0) ret -- return only if not main method
         -- assigning arg vars to stack
     )
   where
+    stackOffset = 16
     startBlock = bs ! l
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
-    setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI (stackElemSize * n + 16) Rbp)))
+    setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI (stackElemSize * n + stackOffset) Rbp)))
     resetState :: Analysis ()
     resetState = modify (\x -> x {alloc = B.empty, translated = S.empty, stackVarNum = 0})
 
@@ -202,13 +188,13 @@ translateNext (Jump l) = do
   nextBlock <- asks (! l)
   t <- isTranslated l
   ( if t
-      then tellInstr (Jmp (mapLab l))
-      else tellInstr (Lab (mapLab l)) >> translateBlocks l nextBlock
+      then jmp (mapLab l)
+      else lab (mapLab l) >> translateBlocks l nextBlock
     )
 translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
-  tellInstr (Cmpq (Imm (IntLitQ 0)) operand)
-  tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
+  cmpq zeroQ operand
+  jne (mapLab l1) -- jump to l1 if v != 0. Otherwise keep going
   initStackVarNum <- gets stackVarNum
   translateNext (Jump l2)
   t <- isTranslated l1
@@ -224,11 +210,11 @@ translateNext (TAC.Ret var) = do
   movq retVal argRet
   movq rbp rsp -- restore stack pointer
   popq rbp
-  tellInstr X86.Ret
+  ret
 translateNext (TAC.Exit x) = do
   operand <- gets ((B.! x) . alloc)
-  tellInstr (Movl operand (Reg Edi))
-  call (R X86.Exit)
+  movl operand edi
+  call exit
 
 -- | Inserts given variable into allocation map with associated location.
 bindVarToLoc :: Var Integer -> OperandQMM -> TransST -> TransST
@@ -283,7 +269,7 @@ translateTAC (UnInstr v1 op v2) =
     operand' <- getOperand v2
     translateUnOp operand op operand'
 translateTAC (Store v1 off v2 w) =
-  withComment "Store" (showD v1 <> " := " <> showD v2 <> "[" <> showD off <> "]") $ do
+  withComment "Store" (showD v1 <> " := " <> showD v2 <> "[" <> showD off <> "]") $
     translateStore v1 off v2 w
 translateTAC (LoadCI v i) =
   withComment "LoadCI" (showD v <> " := " <> showD i) $ do
@@ -297,7 +283,7 @@ translateTAC (LoadCS v s) =
     leaq (Mem (MRegL l Rip)) rax
     movq rax o
 translateTAC (LoadM v1 v2 off w) =
-  withComment "LoadM" (showD v1 <> " := " <> showD v2 <> "[" <> showD off <> "]") $ do
+  withComment "LoadM" (showD v1 <> " := " <> showD v2 <> "[" <> showD off <> "]") $
     translateLoadM v1 v2 off w
 translateTAC (TAC.Call v1 l vs) =
   withComment
@@ -331,16 +317,16 @@ translateTAC (TAC.Malloc lv rv) =
   withComment "Malloc" (showD lv <> " := malloc " <> showD rv) $ do
     operand' <- getOperand rv
     movq operand' arg1
-    call (R X86.Malloc)
+    call malloc
     operand <- allocate' lv
     movq argRet operand
 translateTAC (TAC.Free v) =
   withComment "Freefree" (showD v) $ do
     operand <- getOperand v
     movq operand arg1
-    cmpq (Imm (IntLitQ 0)) arg1
+    cmpq zeroQ arg1
     je errNull
-    call (R X86.Free)
+    call free
 
 -- > assert 0 <= <var> < <max>
 translateTAC (TAC.CheckBounds v vm reason) =
@@ -349,7 +335,7 @@ translateTAC (TAC.CheckBounds v vm reason) =
     l4 <- getLabel
     o <- getOperand v
     om <- getOperand vm
-    cmpl (Imm (IntLitD 0)) o
+    cmpl zeroD o
     js l3
     movl o eax
     cmpl om eax
@@ -358,16 +344,15 @@ translateTAC (TAC.CheckBounds v vm reason) =
     movl o esi
     call
       ( case reason of
-          TAC.ChrCheck -> R X86.ErrBadChar
-          TAC.ArrayIndexCheck -> R X86.ErrOutOfBounds
+          TAC.ChrCheck -> errBadChar
+          TAC.ArrayIndexCheck -> errOutOfBounds
       )
     lab l4
-translateTAC (TAC.Move v1 v2) = do
-  withComment "Move" (showD v1 <> " := " <> showD v2) $ do
-    operand1 <- allocate' v1
-    operand2 <- getOperand v2
-    movq operand2 rax
-    movq rax operand1
+translateTAC (TAC.Move v1 v2) = withComment "Move" (showD v1 <> " := " <> showD v2) $ do
+  operand1 <- allocate' v1
+  operand2 <- getOperand v2
+  movq operand2 rax
+  movq rax operand1
 
 tellString :: X86.Label -> String -> Analysis ()
 tellString l s =
@@ -381,12 +366,10 @@ tellString l s =
     , mempty
     )
 
--------------------------------------
-
 divModPrefix o1 o2 = do
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
-  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
+  cmpl zeroD ebx -- check for division by zero
   je errDivByZero
   cltd -- sign extend eax into edx
   idivl ebx -- divide edx:eax by ebx
@@ -424,12 +407,11 @@ translateBinOp o Add o1 o2 =
   withComment
     "Binary Addition"
     (showD o <> " := " <> showD o1 <> " + " <> showD o2)
-    $ do
-      addMullSub o o1 o2 (addl ebx eax)
+    $ addMullSub o o1 o2 (addl ebx eax)
 translateBinOp o PtrAdd o1 o2 =
   withComment
     "Binary Pointer Addition"
-    ((showD o) <> " := " <> showD o1 <> " + " <> showD o2)
+    (showD o <> " := " <> showD o1 <> " + " <> showD o2)
     $ do
       movq o1 rax
       movq o2 rbx
@@ -440,8 +422,7 @@ translateBinOp o Sub o1 o2 =
   withComment
     "Binary Subtraction"
     (showD o <> " := " <> showD o1 <> " - " <> showD o2)
-    $ do
-      addMullSub o o1 o2 (subl ebx eax)
+    $ addMullSub o o1 o2 (subl ebx eax)
 translateBinOp o Mul o1 o2 =
   withComment
     "Binary Multiplication"
@@ -466,14 +447,14 @@ translateBinOp o And o1 o2 =
   withComment "Binary And" (showD o <> " := " <> showD o1 <> " && " <> showD o2) $ do
     l2 <- getLabel
     l3 <- getLabel
-    cmpl (Imm (IntLitD 0)) o1
+    cmpl zeroD o1
     je l2
-    cmpl (Imm (IntLitD 0)) o2
+    cmpl zeroD o2
     je l2
-    movl (Imm (IntLitD 1)) eax
+    movl oneD eax
     jmp l3
     lab l2
-    movl (Imm (IntLitD 0)) eax
+    movl zeroD eax
     lab l3
     movzbq al rax
     movq rax o
@@ -482,15 +463,15 @@ translateBinOp o Or o1 o2 =
     l2 <- getLabel
     l3 <- getLabel
     l4 <- getLabel
-    cmpl (Imm (IntLitD 0)) o1
+    cmpl zeroD o1
     jne l2
-    cmpl (Imm (IntLitD 0)) o2
+    cmpl zeroD o2
     je l3
     lab l2
-    movl (Imm (IntLitD 1)) eax
+    movl oneD eax
     jmp l4
     lab l3
-    movl (Imm (IntLitD 0)) eax
+    movl zeroD eax
     lab l4
     movzbq al rax
     movq rax o
@@ -498,42 +479,37 @@ translateBinOp o TAC.LT o1 o2 =
   withComment
     "Binary Less Than"
     (showD o <> " := " <> showD o1 <> " < " <> showD o2)
-    $ do
-      logicalOPs o o1 o2 cmpl setl
+    $ logicalOPs o o1 o2 cmpl setl
 translateBinOp o TAC.LTE o1 o2 =
   withComment
     "Binary Less Than or Equal"
-    ((showD o) <> " := " <> showD o1 <> " <= " <> showD o2)
-    $ do
-      logicalOPs o o1 o2 cmpl setle
+    (showD o <> " := " <> showD o1 <> " <= " <> showD o2)
+    $ logicalOPs o o1 o2 cmpl setle
 translateBinOp o TAC.GT o1 o2 =
   withComment
     "Binary Greater Than"
     (showD o <> " := " <> showD o1 <> " > " <> showD o2)
-    $ do
-      logicalOPs o o1 o2 cmpl setg
+    $ logicalOPs o o1 o2 cmpl setg
 translateBinOp o TAC.GTE o1 o2 =
   withComment
     "Binary Greater Than or Equal"
     (showD o <> " := " <> showD o1 <> " >= " <> showD o2)
-    $ do
-      logicalOPs o o1 o2 cmpl setge
+    $ logicalOPs o o1 o2 cmpl setge
 translateBinOp o TAC.Eq o1 o2 =
-  withComment "Binary Equal" (showD o <> " := " <> showD o1 <> " == " <> showD o2) $ do
+  withComment "Binary Equal" (showD o <> " := " <> showD o1 <> " == " <> showD o2) $
     eqOps o o1 o2 cmpq sete
 translateBinOp o TAC.Ineq o1 o2 =
   withComment
     "Binary Not Equal"
     (showD o <> " := " <> showD o1 <> " != " <> showD o2)
-    $ do
-      eqOps o o1 o2 cmpq setne
+    $ eqOps o o1 o2 cmpq setne
 
 -- | <var> := <unop> <var>
 translateUnOp :: OperandQMM -> UnOp -> OperandQMM -> Analysis ()
 translateUnOp o Not o' =
   withComment "Unary Not" (showD o <> " := ! " <> showD o') $ do
     movl o' eax
-    cmpl (Imm (IntLitD 0)) eax
+    cmpl zeroD eax
     sete al
     movzbq al rax
     movq rax o
@@ -556,10 +532,10 @@ translatePrint _ = call printp
 -- | Utility generates appropriate read instruction based on given type
 translateRead :: OperandQMM -> FType -> Analysis ()
 translateRead o FInt = do
-  call (R X86.ReadI)
+  call readI
   movq argRet o
 translateRead o FChar = do
-  call (R X86.ReadC)
+  call readC
   movq argRet o
 translateRead _ w =
   error $
@@ -573,7 +549,7 @@ translateLoadM v1 v2 off t = do
   o2 <- getOperand v2
   offset <- getOperand off
   movq o2 rax
-  cmpq (Imm (IntLitQ 0)) rax
+  cmpq zeroQ rax
   je errNull
   movq offset rbx
   moveT (Mem (MTwoReg Rax Rbx)) o1 t
@@ -593,7 +569,7 @@ translateStore v1 off v2 t = do
   offset <- getOperand off
   o2 <- getOperand v2
   movq o1 rax
-  cmpq (Imm (IntLitQ 0)) rax
+  cmpq zeroQ rax
   je errNull
   movq offset rbx
   moveT o2 (Mem (MTwoReg Rax Rbx)) t
@@ -636,33 +612,6 @@ arg5 = r8
 arg6 = r9
 
 argRet = rax
-
-printi :: X86.Label
-printi = R X86.PrintI
-
-printc :: X86.Label
-printc = R X86.PrintC
-
-printb :: X86.Label
-printb = R X86.PrintB
-
-printp :: X86.Label
-printp = R X86.PrintP
-
-prints :: X86.Label
-prints = R X86.PrintS
-
-printLn :: X86.Label
-printLn = R X86.PrintLn
-
-errNull :: X86.Label
-errNull = R X86.ErrNull
-
-errOverflow :: X86.Label
-errOverflow = R X86.ErrOverflow
-
-errDivByZero :: X86.Label
-errDivByZero = R X86.ErrDivByZero
 
 section :: Analysis ()
 section = tellInstr (Dir DirSection)
