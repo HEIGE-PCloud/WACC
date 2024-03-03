@@ -99,6 +99,12 @@ type family ValidOpType (a :: OpType) (b :: OpType) :: Constraint where
   ValidOpType IM IM = TypeError ('Text "Can not have two immediate operands")
   ValidOpType _ _ = ()
 
+type family ValidRegSize (exp :: Size) (act :: Size) (t :: OpType) :: Constraint where
+  ValidRegSize _ _ MM = ()
+  ValidRegSize s s _ = ()
+  ValidRegSize _ _ IM = TypeError ('Text "Invalid immediate value size")
+  ValidRegSize _ _ RM = TypeError ('Text "Invalid register size")
+
 data Directive
   = DirInt Integer
   | DirAsciz String
@@ -164,19 +170,19 @@ data Instruction where
     -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
   Movslq
-    :: (ValidOpType t1 t2)
+    :: (ValidOpType t1 t2, ValidRegSize D s1 t1, ValidRegSize Q s2 t2)
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
   Movsbq
-    :: (ValidOpType t1 t2)
+    :: (ValidOpType t1 t2, ValidRegSize B s1 t1, ValidRegSize Q s2 t2)
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
   Movzbq
-    :: (ValidOpType t1 t2)
+    :: (ValidOpType t1 t2, ValidRegSize B s1 t1, ValidRegSize Q s2 t2)
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
@@ -232,13 +238,21 @@ data Instruction where
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addl
-    :: (ValidOpType t1 t2, NotImm t2)
+    :: ( ValidOpType t1 t2
+       , NotImm t2
+       , ValidRegSize D s1 t1
+       , ValidRegSize D s2 t2
+       )
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addw
-    :: (ValidOpType t1 t2, NotImm t2)
+    :: ( ValidOpType t1 t2
+       , NotImm t2
+       , ValidRegSize W s1 t1
+       , ValidRegSize W s2 t2
+       )
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
@@ -256,74 +270,108 @@ data Instruction where
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subl
-    :: (ValidOpType t1 t2, NotImm t2)
+    :: ( ValidOpType t1 t2
+       , NotImm t2
+       , ValidRegSize D s1 t1
+       , ValidRegSize D s2 t2
+       )
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subw
-    :: (ValidOpType t1 t2, NotImm t2)
+    :: ( ValidOpType t1 t2
+       , NotImm t2
+       , ValidRegSize W s1 t1
+       , ValidRegSize W s2 t2
+       )
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subb
     :: (ValidOpType t1 t2, NotImm t2)
-    => Operand s1 t1
-    -> Operand s2 t2
+    => OperandB t1
+    -> OperandB t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/imul
   --   Yeah... Imul can take in one or two or three operands.
   --   I love x86
   Imulq
     :: (ValidOpType t1 t2, NotImm t2)
-    => Operand s1 t1
-    -> Operand s2 t2
+    => OperandQ t1
+    -> OperandQ t2
     -> Instruction
   Imull
-    :: (ValidOpType t1 t2, NotImm t2)
+    :: ( ValidOpType t1 t2
+       , NotImm t2
+       , ValidRegSize D s1 t1
+       , ValidRegSize D s2 t2
+       )
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Andq
     :: (ValidOpType t1 t2, NotImm t2)
-    => Operand s1 t1
-    -> Operand s2 t2
+    => OperandQ t1
+    -> OperandQ t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Andl
-    :: (ValidOpType t1 t2, NotImm t2)
+    :: ( ValidOpType t1 t2
+       , NotImm t2
+       , ValidRegSize D s1 t1
+       , ValidRegSize D s2 t2
+       )
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   Cmpq
-    :: (ValidOpType t1 t2) => OperandQ t1 -> OperandQ t2 -> Instruction
-  Cmpl
     :: (ValidOpType t1 t2)
+    => OperandQ t1
+    -> OperandQ t2
+    -> Instruction
+  Cmpl
+    :: (ValidOpType t1 t2, ValidRegSize D s1 t1, ValidRegSize D s2 t2)
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   Cmpw
-    :: (ValidOpType t1 t2)
+    :: (ValidOpType t1 t2, ValidRegSize W s1 t1, ValidRegSize W s2 t2)
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   Cmpb
-    :: (ValidOpType t1 t2)
+    :: (ValidOpType t1 t2, ValidRegSize B s1 t1, ValidRegSize B s2 t2)
     => Operand s1 t1
     -> Operand s2 t2
     -> Instruction
   Movq
-    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
+    :: (ValidOpType t1 t2, ValidRegSize Q s1 t1, ValidRegSize Q s2 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
   Movl
-    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
+    :: (ValidOpType t1 t2, ValidRegSize D s1 t1, ValidRegSize D s2 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
   Movw
-    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
+    :: (ValidOpType t1 t2, ValidRegSize W s1 t1, ValidRegSize W s2 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
   Movb
-    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
+    :: (ValidOpType t1 t2, ValidRegSize B s1 t1, ValidRegSize B s2 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
   Leaq
-    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
+    :: (ValidOpType t1 t2, ValidRegSize Q s1 t1, ValidRegSize Q s2 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
 
 deriving instance Show Instruction
 
