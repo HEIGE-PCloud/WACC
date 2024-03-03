@@ -51,40 +51,12 @@ import qualified Language.WACC.X86.Label as X86
 import Language.WACC.X86.Lib (runtimeLib)
 import Language.WACC.X86.Memory (Memory (..))
 import Language.WACC.X86.Operand (Operand (..), OperandQMM)
-import Language.WACC.X86.OperandTH (genRegOperand)
+import Language.WACC.X86.OperandTH (genOperandWrappers, genRegOperand)
 import Language.WACC.X86.Register (Register (..))
 import qualified Language.WACC.X86.Runtime as X86
 import Language.WACC.X86.X86 as X86
 
 $(genRegOperand)
-
--- | Translate every function's instructions and concat
-translateProg :: TACProgram Integer Integer -> Program
-translateProg p = D.toList $ preamble <> is <> runtime
-  where
-    runtime :: DList Instruction
-    runtime = D.concat $ (runtimeLib !) <$> S.toList (runtimeFns st)
-    progRWS :: Analysis ()
-    progRWS = mapM_ translateFunc (M.elems p)
-    (st, is) =
-      execRWS
-        progRWS
-        M.empty
-        (TransST B.empty S.empty 0 S.empty 0)
-    preamble :: DList Instruction
-    preamble =
-      D.fromList
-        [ Dir $ DirGlobl (S "main")
-        , Dir DirSection
-        , Dir DirText
-        , Lab (S "main")
-        ]
-
-{- | When registers run out and values in the stack are
-required for a computation, they put in this register.
-A caller saved register.
--}
-swapReg = R10
 
 -- | The state of RWS monad for translation of each function
 data TransST = TransST
@@ -106,6 +78,11 @@ type Analysis =
     (Map Integer (BasicBlock Integer Integer))
     (DList Instruction)
     TransST
+
+tellInstr :: Instruction -> Analysis ()
+tellInstr = tell . D.singleton
+
+$(genOperandWrappers 'tellInstr)
 
 stackElemSize :: Integer
 stackElemSize = 8
@@ -148,6 +125,28 @@ translateFunc (TACFunc l vs bs) = do
     resetState :: Analysis ()
     resetState = modify (\x -> x {alloc = B.empty, translated = S.empty, stackVarNum = 0})
 
+-- | Translate every function's instructions and concat
+translateProg :: TACProgram Integer Integer -> Program
+translateProg p = D.toList $ preamble <> is <> runtime
+  where
+    runtime :: DList Instruction
+    runtime = D.concat $ (runtimeLib !) <$> S.toList (runtimeFns st)
+    progRWS :: Analysis ()
+    progRWS = mapM_ translateFunc (M.elems p)
+    (st, is) =
+      execRWS
+        progRWS
+        M.empty
+        (TransST B.empty S.empty 0 S.empty 0)
+    preamble :: DList Instruction
+    preamble =
+      D.fromList
+        [ Dir $ DirGlobl (S "main")
+        , Dir DirSection
+        , Dir DirText
+        , Lab (S "main")
+        ]
+
 {- | translate each statement of the block. then figure out which block to go to
 labels are printed right before this function is called
 -}
@@ -172,9 +171,6 @@ setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated
 
 mapLab :: Integer -> X86.Label
 mapLab = I
-
-tellInstr :: Instruction -> Analysis ()
-tellInstr = tell . D.singleton
 
 isTranslated :: Integer -> Analysis Bool
 isTranslated l = gets (S.member l . translated)
@@ -628,79 +624,25 @@ translateStore v1 off v2 t = do
     moveT s d FString = movq s rcx >> movq rcx d
     moveT s d FPtr = movq s rcx >> movq rcx d
 
-leaq o1 o2 = tellInstr (Leaq o1 o2)
-
-movb o r = tellInstr (Movb o r)
-
-movl o r = tellInstr (Movl o r)
-
-movq o r = tellInstr (Movq o r)
-
-movslq o r = tellInstr (Movslq o r)
-
-movzbq o r = tellInstr (Movzbq o r)
-
-addq o1 o2 = tellInstr (Addq o1 o2)
-
-andq o1 o2 = tellInstr (Andq o1 o2)
-
-addl o1 o2 = tellInstr (Addl o1 o2)
-
-subq o1 o2 = tellInstr (Subq o1 o2)
-
-subl o1 o2 = tellInstr (Subl o1 o2)
-
-imull o1 o2 = tellInstr (Imull o1 o2)
-
-idivl o = tellInstr (Idivl o)
-
-cmpl o1 o2 = tellInstr (Cmpl o1 o2)
-
-cmpq o1 o2 = tellInstr (Cmpq o1 o2)
-
-pushq o = tellInstr (Pushq o)
-
-popq o = tellInstr (Popq o)
-
-j :: (X86.Label -> Instruction) -> X86.Label -> Analysis ()
-j s l@(X86.R r) = do
+jump :: (X86.Label -> Instruction) -> X86.Label -> Analysis ()
+jump s l@(X86.R r) = do
   tellInstr (s l)
   useRuntimeFunc r
-j s l = tellInstr (s l)
+jump s l = tellInstr (s l)
 
-jo = j Jo
+jo = jump Jo
 
-js = j Js
+js = jump Js
 
-jl = j Jl
+jl = jump Jl
 
-je = j Je
+je = jump Je
 
-jne = j Jne
+jne = jump Jne
 
-jmp = j Jmp
+jmp = jump Jmp
 
-cltd :: Analysis ()
-cltd = tellInstr Cltd
-
-set :: (a -> Instruction) -> a -> Analysis ()
-set s r = tellInstr (s r)
-
-sete = set Sete
-
-setne = set Setne
-
-setl = set Setl
-
-setle = set Setle
-
-setg = set Setg
-
-setge = set Setge
-
-negl o = tellInstr (Negl o)
-
-call = j X86.Call
+call = jump X86.Call
 
 arg1 = rdi
 
@@ -741,9 +683,6 @@ errOverflow = R X86.ErrOverflow
 errDivByZero :: X86.Label
 errDivByZero = R X86.ErrDivByZero
 
-lab :: X86.Label -> Analysis ()
-lab = tellInstr . Lab
-
 section :: Analysis ()
 section = tellInstr (Dir DirSection)
 
@@ -755,9 +694,6 @@ asciz s = tellInstr (Dir (DirAsciz s))
 
 text :: Analysis ()
 text = tellInstr (Dir DirText)
-
-comment :: String -> Analysis ()
-comment s = tellInstr (Comment s)
 
 useRuntimeFunc :: X86.Runtime -> Analysis ()
 useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})

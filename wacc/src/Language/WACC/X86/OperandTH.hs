@@ -92,4 +92,4 @@ mkWrapper' funcName name args = do
   return funcDec
 
 filterJumps :: [Con] -> [Con]
-filterJumps = filter (\x -> head (constructorName x) /= 'J')
+filterJumps = filter (\x -> head (constructorName x) /= 'J' && constructorName x /= "Call")
