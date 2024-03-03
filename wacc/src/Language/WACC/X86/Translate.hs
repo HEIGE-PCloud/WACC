@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module Language.WACC.X86.Translate where
@@ -50,9 +51,12 @@ import qualified Language.WACC.X86.Label as X86
 import Language.WACC.X86.Lib (runtimeLib)
 import Language.WACC.X86.Memory (Memory (..))
 import Language.WACC.X86.Operand (Operand (..), OperandQMM)
+import Language.WACC.X86.OperandTH (genRegOperand)
 import Language.WACC.X86.Register (Register (..))
 import qualified Language.WACC.X86.Runtime as X86
 import Language.WACC.X86.X86 as X86
+
+$(genRegOperand)
 
 -- | Translate every function's instructions and concat
 translateProg :: TACProgram Integer Integer -> Program
@@ -600,48 +604,6 @@ moveT s d FBool = movb s cl >> movb cl d
 moveT s d FInt = movl s ecx >> movl ecx d
 moveT s d FString = movq s rcx >> movq rcx d
 moveT s d FPtr = movq s rcx >> movq rcx d
-
-rbp = Reg Rbp
-
-rsp = Reg Rsp
-
-al = Reg Al
-
-r8 = Reg R8
-
-r9 = Reg R9
-
-r10 = Reg R10
-
-r11 = Reg R11
-
-rax = Reg Rax
-
-rbx = Reg Rbx
-
-cx = Reg Cx
-
-cl = Reg Cl
-
-rcx = Reg Rcx
-
-rdi = Reg Rdi
-
-edi = Reg Edi
-
-esi = Reg Esi
-
-eax = Reg Eax
-
-ebx = Reg Ebx
-
-ecx = Reg Ecx
-
-edx = Reg Edx
-
-rdx = Reg Rdx
-
-r15 = Reg R15
 
 leaq o1 o2 = tellInstr (Leaq o1 o2)
 
