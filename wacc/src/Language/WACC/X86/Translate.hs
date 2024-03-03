@@ -121,18 +121,19 @@ translateFunc (TACFunc l vs bs) = do
     (const bs)
     ( do
         tellInstr (Lab (I l)) -- label for the function = label of the first block
+        pushq rbp
         movq rsp rbp -- set the stack base pointer
-        -- if more than 6 arguments, subtract from rsp (more than the number of callee saved) to get stack position
         mapM_ setupStackArgs (zip vs [0 ..])
         translateBlocks l startBlock -- Translate main part of code
         movq rbp rsp -- restore stack pointer
+        popq rbp
         unless (l == 0) (tellInstr X86.Ret) -- return only if not main method
         -- assigning arg vars to stack
     )
   where
     startBlock = bs ! l
     setupStackArgs :: (Var Integer, Integer) -> Analysis ()
-    setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI (stackElemSize * n) Rbp)))
+    setupStackArgs (v, n) = modify (bindVarToLoc v (Mem (MRegI (stackElemSize * n + 16) Rbp)))
     resetState :: Analysis ()
     resetState = modify (\x -> x {alloc = B.empty, translated = S.empty, stackVarNum = 0})
 
@@ -189,8 +190,6 @@ translateNext (CJump v l1 l2) = do
 translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
   movq retVal argRet
-  movq rbp rsp
-  tellInstr X86.Ret
 translateNext (TAC.Exit x) = do
   operand <- gets ((B.! x) . alloc)
   tellInstr (Movl operand (Reg Edi))
