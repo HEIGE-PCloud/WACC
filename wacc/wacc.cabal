@@ -51,6 +51,7 @@ library
       Language.WACC.TypeChecking.Prog
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
+      Language.WACC.X86
       Language.WACC.X86.ATNT
       Language.WACC.X86.IntLit
       Language.WACC.X86.Label
