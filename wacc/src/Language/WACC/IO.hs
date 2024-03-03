@@ -136,7 +136,7 @@ runTypeCheck (ast, vars) = case checkTypes ast vars of
 
 runCodeGen :: String -> (Prog WType Fnident Vident BType, VarST) -> IO ()
 runCodeGen path (ast@(Main fs _ _), _) =
-  withFile filename WriteMode (streamA $ translateProg tacProgram)
+  withFile filename WriteMode (flip streamA $ translateProg tacProgram)
     *> exitSuccess
   where
     filename = takeBaseName path ++ ".s"

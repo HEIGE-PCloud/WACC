@@ -11,8 +11,8 @@ import System.IO (Handle, hPutStr)
 
 class ATNT a where
   formatA :: a -> String
-  streamA :: a -> Handle -> IO ()
-  streamA x h = hPutStr h $ formatA x
+  streamA :: Handle -> a -> IO ()
+  streamA h = hPutStr h . formatA
 
 -- Utility function to convert names to lowercase strings
 nameToLower :: Name -> String
