@@ -195,9 +195,16 @@ translateNext (CJump v l1 l2) = do
   operand <- gets ((B.! v) . alloc)
   tellInstr (Cmpq (Imm (IntLitQ 0)) operand)
   tellInstr (Jne (mapLab l1)) -- jump to l1 if v != 0. Otherwise keep going
+  initStackVarNum <- gets stackVarNum
   translateNext (Jump l2)
   t <- isTranslated l1
-  (if t then pure () else translateNext (Jump l1))
+  ( if t
+      then pure ()
+      else do
+        -- reset the stackVarNum to the value before else branch
+        modify (\x -> x {stackVarNum = initStackVarNum})
+        translateNext (Jump l1)
+    )
 translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
   movq retVal argRet
