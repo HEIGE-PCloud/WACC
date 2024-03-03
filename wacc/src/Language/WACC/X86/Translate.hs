@@ -528,6 +528,7 @@ translateUnOp o Negate o' = do
   comment $ "Unary Negate: " ++ show o ++ " := - " ++ show o'
   movl o' eax
   negl eax
+  jo errOverflow
   movl eax o
   comment "End Unary Negate"
 

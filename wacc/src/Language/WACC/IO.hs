@@ -7,10 +7,9 @@ module Language.WACC.IO (main, readProgramFile, runParse, runScopeAnalysis, runT
 
 import Control.Exception (handle)
 import Data.List.Extra (replace)
-import Data.Map (lookupMax)
 import GHC.IO.Handle.FD (stderr)
 import GHC.IO.Handle.Text (hPutStrLn)
-import Language.WACC.AST.Prog (Prog)
+import Language.WACC.AST.Prog (Prog (..))
 import Language.WACC.AST.WType (WType)
 import Language.WACC.Error (Error, printError, semanticError)
 import Language.WACC.Parser.Stmt (parseWithError, program)
@@ -135,10 +134,10 @@ runTypeCheck (ast, vars) = case checkTypes ast vars of
   (_, errs) -> Failure (errs, semanticErrorCode)
 
 runCodeGen :: String -> (Prog WType Fnident Vident BType, VarST) -> IO ()
-runCodeGen path (ast, vars) =
+runCodeGen path (ast@(Main fs _ _), _) =
   writeFile filename (formatA $ translateProg tacProgram) >>= const exitSuccess
   where
     filename = takeBaseName path ++ ".s"
-    nextBlockId = maybe 1 (succ . fst) $ lookupMax vars
+    nextBlockId = toInteger (length fs + 1)
     tacProgram :: TACProgram Fnident Vident
     tacProgram = evalTACM nextBlockId (fnToTAC ast)
