@@ -190,6 +190,9 @@ translateNext (CJump v l1 l2) = do
 translateNext (TAC.Ret var) = do
   retVal <- gets ((B.! var) . alloc)
   movq retVal argRet
+  movq rbp rsp -- restore stack pointer
+  popq rbp
+  tellInstr X86.Ret
 translateNext (TAC.Exit x) = do
   operand <- gets ((B.! x) . alloc)
   tellInstr (Movl operand (Reg Edi))
@@ -302,6 +305,7 @@ translateTAC (TAC.Exit v) = do
 translateTAC (Read v w) = do
   comment $ "Read: " ++ show v ++ " := read"
   operand <- allocate' v
+  movq operand rdi
   translateRead operand w
   comment "End Read"
 translateTAC (TAC.Malloc lv rv) = do
@@ -613,6 +617,8 @@ cx = Reg Cx
 cl = Reg Cl
 
 rcx = Reg Rcx
+
+rdi = Reg Rdi
 
 edi = Reg Edi
 
