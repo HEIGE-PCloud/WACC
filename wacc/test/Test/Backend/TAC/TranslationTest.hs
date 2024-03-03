@@ -5,9 +5,10 @@ module Test.Backend.TAC.TranslationTest where
 import Control.DeepSeq (deepseq)
 import Control.Monad (when)
 import Data.Foldable (for_)
+import Data.List (genericLength)
 import Data.Map (fromList)
 import GHC.IO.Exception (ExitCode (ExitSuccess))
-import Language.WACC.AST (Prog, WType)
+import Language.WACC.AST (Prog (..), WType)
 import Language.WACC.IO (runParse)
 import Language.WACC.TAC.Class (FnToTAC (..))
 import Language.WACC.TAC.FType (pattern FString)
@@ -49,13 +50,15 @@ mainFuntion = TACFunc 0 [] (fromList [(0, helloWorldBlock)])
 
 runFrontendSource :: IO (Prog WType Integer Integer BType)
 runFrontendSource = do
-  sourceCode <- readFile "test/wacc_examples/valid/expressions/orExpr.wacc"
+  sourceCode <-
+    readFile
+      "test/wacc_examples/valid/function/nested_functions/simpleRecursion.wacc"
   return $ case runParse sourceCode of
     Success ast -> fst ast
     _ -> error "Failed to parse the source code."
 
 astToTAC :: Prog WType Integer Integer BType -> TACProgram Integer Integer
-astToTAC ast = evalTACM 1 (fnToTAC ast)
+astToTAC ast@(Main fs _ _) = evalTACM (genericLength fs + 1) (fnToTAC ast)
 
 mainProgram :: IO (TACProgram Integer Integer)
 mainProgram = do astToTAC <$> runFrontendSource
