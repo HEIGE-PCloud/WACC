@@ -416,24 +416,24 @@ divModPrefix o1 o2 = do
 addMullSub o o1 o2 action = do
   movl o1 eax
   movl o2 ebx
-  action
+  _ <- action
   jo errOverflow
   movslq eax rax
   movq rax o
 
-logicalOPs o o1 o2 compare set = do
+logicalOPs o o1 o2 cmp set = do
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
-  compare ebx eax -- compare %ebx and %eax
-  set al -- set al to 1 if %eax < %ebx
+  _ <- cmp ebx eax -- compare %ebx and %eax
+  _ <- set al -- set al to 1 if %eax <set flag> %ebx
   movzbq al rax
   movq rax o -- %o := %al
 
-eqOps o o1 o2 compare set = do
+eqOps o o1 o2 cmp set = do
   movq o1 rax -- %eax := o1
   movq o2 rbx -- %ebx := o2
-  compare rbx rax -- compare %ebx and %eax
-  set al -- set al to 1 if %eax == %ebx
+  _ <- cmp rbx rax -- compare %ebx and %eax
+  _ <- set al -- set al to 1 if %eax <set flag> %ebx
   movzbq al rax
   movq rax o -- %o := %al
 
