@@ -11,9 +11,7 @@ module Language.WACC.TypeChecking.Class
   )
 where
 
-import Language.WACC.TypeChecking.BType (BType)
 import Language.WACC.TypeChecking.State (TypingM)
-import Text.Gigaparsec.Position (Pos)
 
 {- |
 Re-annotated AST types.

@@ -4,7 +4,6 @@
 module Test.Backend.TAC.StmtTest (stmtTestGroup, stmtsTestGroup) where
 
 import Data.DList
-import Data.List.NonEmpty
 import Data.Map
 import Language.WACC.AST hiding (Stmt (..))
 import qualified Language.WACC.AST as AST
@@ -27,8 +26,8 @@ toTAC' = testTACM . (*> ((,) <$> collectTACs <*> collectBlocks)) . fnToTAC
 intLit :: (Integral a) => a -> Expr Int BType
 intLit x = WAtom (IntLit (toInteger x) BInt) BInt
 
-temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
-temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
+temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
+temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
 
 temp7, temp8, temp9, temp10 :: Var Int
 temp7 : temp8 : temp9 : temp10 : _ = Temp <$> [7 ..]
@@ -342,9 +341,6 @@ stmtTestGroup =
               , (2, BasicBlock {block = [], nextBlock = Jump x})
               ]
     ]
-
-jump0 :: Jump Int Int
-jump0 = Jump 0
 
 stmtsToTAC'
   :: Stmts Int Int BType -> Int -> Jump Int Int -> Map Int (BasicBlock Int Int)

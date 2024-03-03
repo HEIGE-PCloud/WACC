@@ -8,12 +8,8 @@ module Language.WACC.TAC.Prog where
 
 -- Define your functions and types here
 
-import Data.DList
-import qualified Data.List.NonEmpty as NE
-import Data.Map (Map)
 import qualified Language.WACC.AST.Prog as AST
 import Language.WACC.TAC.Class
-import Language.WACC.TAC.FType (flatten)
 import Language.WACC.TAC.State
 import Language.WACC.TAC.Stmt
 import Language.WACC.TAC.TAC
