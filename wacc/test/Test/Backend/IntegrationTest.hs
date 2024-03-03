@@ -247,7 +247,7 @@ hexDigit :: Parsec Char
 hexDigit = satisfy (`elem` (['0' .. '9'] ++ ['a' .. 'f']))
 
 address :: Parsec ()
-address = string "0x" *> (manyN 12 hexDigit $> ())
+address = string "0x" *> (manyN 8 hexDigit $> ())
 
 parseAddress :: Parsec (Parsec ())
 parseAddress = string "#addrs#" $> address
