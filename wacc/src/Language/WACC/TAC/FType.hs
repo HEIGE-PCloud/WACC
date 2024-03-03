@@ -11,6 +11,7 @@ module Language.WACC.TAC.FType
   , pattern FString
   , pattern FPtr
   , sizeOf
+  , maxSize
   , flatten
   )
 where
@@ -66,8 +67,14 @@ sizeOf :: FType -> Int
 sizeOf FInt = 4
 sizeOf FBool = 1
 sizeOf FChar = 1
-sizeOf FString = 8
 sizeOf FPtr = 8
+sizeOf FString = sizeOf FPtr
+
+{- |
+The maximum size of a flattened value.
+-}
+maxSize :: Int
+maxSize = maximum $ sizeOf <$> [FInt, FBool, FChar, FString, FPtr]
 
 {- |
 Flatten a 'BType' into an 'FType'.

@@ -190,8 +190,8 @@ instance
     snd <- tempWith (toTAC sndExpr)
     target <- getTarget
     fstOffset <- loadConst 0
-    sndOffset <- loadConst 8
-    pairSize <- loadConst 16
+    sndOffset <- loadConst maxSize
+    pairSize <- loadConst (2 * maxSize)
     putTACs
       [ -- target := malloc pairSize
         Malloc target pairSize
