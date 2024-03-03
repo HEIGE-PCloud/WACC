@@ -1,7 +1,5 @@
 module Language.WACC.X86.Lib where
 
-import qualified Data.DList as D
-import qualified Data.Map as M
 import Language.WACC.X86.ATNT (formatA)
 import Language.WACC.X86.IntLit (IntLit (..))
 import Language.WACC.X86.Label (Label (..))
@@ -31,29 +29,29 @@ x86Examples =
   , (errOutOfBounds, "errOutOfBounds")
   , (errOverflow, "errOverflow")
   , (errDivByZero, "errDivByZero")
+  , (errNull, "errNull")
+  , (errBadChar, "errBadChar")
   , (exit, "exit")
   ]
 
-runtimeLib :: M.Map Runtime (D.DList Instruction)
-runtimeLib =
-  M.fromList
-    [ (PrintI, D.fromList printi)
-    , (PrintB, D.fromList printb)
-    , (PrintC, D.fromList printc)
-    , (PrintS, D.fromList prints)
-    , (PrintP, D.fromList printp)
-    , (PrintLn, D.fromList println)
-    , (Free, D.fromList free)
-    , (Malloc, D.fromList malloc)
-    , (ReadI, D.fromList readi)
-    , (ReadC, D.fromList readc)
-    , (ErrOutOfMemory, D.fromList errOutOfMemory)
-    , (ErrOutOfBounds, D.fromList errOutOfBounds)
-    , (ErrOverflow, D.fromList errOverflow)
-    , (ErrDivByZero, D.fromList errDivByZero)
-    , (ErrNull, D.fromList errNull)
-    , (Exit, D.fromList exit)
-    ]
+runtimeLib :: Runtime -> Program
+runtimeLib PrintI = printi
+runtimeLib PrintB = printb
+runtimeLib PrintC = printc
+runtimeLib PrintS = prints
+runtimeLib PrintP = printp
+runtimeLib PrintLn = println
+runtimeLib Free = free
+runtimeLib Malloc = malloc
+runtimeLib ReadI = readi
+runtimeLib ReadC = readc
+runtimeLib ErrBadChar = errBadChar
+runtimeLib ErrOutOfMemory = errOutOfMemory
+runtimeLib ErrOutOfBounds = errOutOfBounds
+runtimeLib ErrOverflow = errOverflow
+runtimeLib ErrDivByZero = errDivByZero
+runtimeLib ErrNull = errNull
+runtimeLib Exit = exit
 
 cprintf :: Label
 cprintf = S "printf@plt"
@@ -470,16 +468,12 @@ errOutOfBounds =
   [ Dir DirSection
   , Dir $ DirInt 42
   , Lab (S ".L._errOutOfBounds_str0")
-  , Dir $
-      DirAsciz
-        "fatal error: variable failed boundary check. Expected: 0 <= x < %d, while x = %d\n"
+  , Dir $ DirAsciz "fatal error: array index %d out of bounds\n"
   , Dir DirText
   , Lab (R ErrOutOfBounds)
   , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errOutOfBounds_str0") Rip)) (Reg Rdi)
   , Movb (Imm (IntLitB 0)) (Reg Al)
-  , Movq (Reg Rsi) (Reg Rdx)
-  , Movq (Reg Rdi) (Reg Rsi)
   , Call cprintf
   , Movq (Imm (IntLitQ 0)) (Reg Rdi)
   , Call cfflush
@@ -704,6 +698,44 @@ errNull =
   , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
   , Leaq (Mem (MRegL (S ".L._errNull_str0") Rip)) (Reg Rdi)
   , Call (R PrintS)
+  , Movb (Imm (IntLitB (-1))) (Reg Dil)
+  , Call cexit
+  ]
+
+{-
+.section .rodata
+# length of .L._errBadChar_str0
+	.int 50
+.L._errBadChar_str0:
+	.asciz "fatal error: int %d is not ascii character 0-127 \n"
+.text
+_errBadChar:
+	# external calls must be stack-aligned to 16 bytes, accomplished by masking with fffffffffffffff0
+	andq $-16, %rsp
+	leaq .L._errBadChar_str0(%rip), %rdi
+	# on x86, al represents the number of SIMD registers used as variadic arguments
+	movb $0, %al
+	call printf@plt
+	movq $0, %rdi
+	call fflush@plt
+	movb $-1, %dil
+	call exit@plt
+-}
+
+errBadChar :: Program
+errBadChar =
+  [ Dir DirSection
+  , Dir $ DirInt 50
+  , Lab (S ".L._errBadChar_str0")
+  , Dir $ DirAsciz "fatal error: int %d is not ascii character 0-127 \n"
+  , Dir DirText
+  , Lab (R ErrBadChar)
+  , Andq (Imm (IntLitQ (-16))) (Reg Rsp)
+  , Leaq (Mem (MRegL (S ".L._errBadChar_str0") Rip)) (Reg Rdi)
+  , Movb (Imm (IntLitB 0)) (Reg Al)
+  , Call cprintf
+  , Movq (Imm (IntLitQ 0)) (Reg Rdi)
+  , Call cfflush
   , Movb (Imm (IntLitB (-1))) (Reg Dil)
   , Call cexit
   ]

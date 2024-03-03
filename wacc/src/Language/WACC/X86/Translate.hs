@@ -149,7 +149,7 @@ translateProg :: TACProgram Integer Integer -> Program
 translateProg p = D.toList $ preamble <> codeSeg <> dataSeg' <> runtimeIs
   where
     runtimeIs :: DList Instruction
-    runtimeIs = D.concat $ (runtimeLib !) <$> (S.toList runtime)
+    runtimeIs = D.concat $ D.fromList . runtimeLib <$> S.toList runtime
     runtime :: Set X86.Runtime -- Including all the dependencies
     runtime = S.unions $ S.map (runtimeDeps A.!) rs
     dataSeg' = [Dir DirSection] <> dataSeg <> [Dir DirText]
@@ -177,7 +177,7 @@ translateBlocks l (BasicBlock is next) = do
   translateNext next
   where
     lenStack :: Int64
-    lenStack = toInt64 $ 8 * (\x -> if (even x) then x else x + 1) (length is)
+    lenStack = toInt64 $ 8 * (\x -> if even x then x else x + 1) (length is)
     toInt64 :: Int -> Int64
     toInt64 = fromIntegral . toInteger
 
@@ -341,8 +341,9 @@ translateTAC (TAC.Free v) =
     cmpq (Imm (IntLitQ 0)) arg1
     je errNull
     call (R X86.Free)
+
 -- > assert 0 <= <var> < <max>
-translateTAC (TAC.CheckBounds v vm _) =
+translateTAC (TAC.CheckBounds v vm reason) =
   withComment "CheckBounds" ("assert 0 <= " <> showD v <> " < " <> showD vm) $ do
     l3 <- getLabel
     l4 <- getLabel
@@ -354,11 +355,14 @@ translateTAC (TAC.CheckBounds v vm _) =
     cmpl om eax
     jl l4
     lab l3
-    movl om edi
     movl o esi
-    call (R X86.ErrOutOfBounds)
+    call
+      ( case reason of
+          TAC.ChrCheck -> R X86.ErrBadChar
+          TAC.ArrayIndexCheck -> R X86.ErrOutOfBounds
+      )
     lab l4
-translateTAC (TAC.Move v1 v2) =
+translateTAC (TAC.Move v1 v2) = do
   withComment "Move" (showD v1 <> " := " <> showD v2) $ do
     operand1 <- allocate' v1
     operand2 <- getOperand v2

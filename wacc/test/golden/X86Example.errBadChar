@@ -1,0 +1,14 @@
+.section .rodata
+.int 50
+.L._errBadChar_str0:
+.asciz "fatal error: int %d is not ascii character 0-127 \n"
+.text
+_errbadchar:
+andq $-16, %rsp
+leaq .L._errBadChar_str0(%rip), %rdi
+movb $0, %al
+call printf@plt
+movq $0, %rdi
+call fflush@plt
+movb $-1, %dil
+call exit@plt
