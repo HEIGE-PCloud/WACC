@@ -358,7 +358,8 @@ translateBinOp o Add o1 o2 = do
   movl o2 ebx
   addl ebx eax
   jo errOverflow
-  movl eax o
+  movslq eax rax
+  movq rax o
   comment "End Binary Addition"
 translateBinOp o Sub o1 o2 = do
   comment $
@@ -367,7 +368,8 @@ translateBinOp o Sub o1 o2 = do
   movl o2 ebx
   subl ebx eax
   jo errOverflow
-  movl eax o
+  movslq eax rax
+  movq rax o
   comment "End Binary Subtraction"
 translateBinOp o Mul o1 o2 = do
   comment $
@@ -376,7 +378,8 @@ translateBinOp o Mul o1 o2 = do
   movl o2 ebx
   imull ebx eax
   jo errOverflow
-  movl eax o
+  movslq eax rax
+  movq rax o
   comment "End Binary Multiplication"
 translateBinOp o Div o1 o2 = do
   comment $ "Binary Division: " ++ show o ++ " := " ++ show o1 ++ " / " ++ show o2
@@ -386,7 +389,8 @@ translateBinOp o Div o1 o2 = do
   je errDivByZero
   cltd -- sign extend eax into edx
   idivl ebx -- divide edx:eax by ebx
-  movl eax o -- %o := eax
+  movslq eax rax
+  movq rax o
   comment "End Binary Division"
 translateBinOp o Mod o1 o2 = do
   comment $ "Binary Modulo: " ++ show o ++ " := " ++ show o1 ++ " % " ++ show o2
@@ -396,7 +400,8 @@ translateBinOp o Mod o1 o2 = do
   je errDivByZero
   cltd -- sign extend eax into edx
   idivl ebx -- divide edx:eax by ebx
-  movl edx o -- %o := eax
+  movslq edx rdx
+  movq rdx o
   comment "End Binary Modulo"
 translateBinOp o And o1 o2 = do
   comment $ "Binary And: " ++ show o ++ " := " ++ show o1 ++ " && " ++ show o2
@@ -531,7 +536,8 @@ translateUnOp o Negate o' = do
   movl o' eax
   negl eax
   jo errOverflow
-  movl eax o
+  movslq eax rax
+  movq rax o
   comment "End Unary Negate"
 
 translatePrint :: FType -> Analysis ()
@@ -620,6 +626,8 @@ ecx = Reg Ecx
 
 edx = Reg Edx
 
+rdx = Reg Rdx
+
 r15 = Reg R15
 
 leaq o1 o2 = tellInstr (Leaq o1 o2)
@@ -631,6 +639,8 @@ movb = mov Movb
 movl = mov Movl
 
 movq = mov Movq
+
+movslq o r = tellInstr (Movslq o r)
 
 movzbq o r = tellInstr (Movzbq o r)
 
