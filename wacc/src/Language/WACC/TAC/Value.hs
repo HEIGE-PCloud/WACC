@@ -20,9 +20,18 @@ import Language.WACC.TAC.TAC
 import Language.WACC.TypeChecking
 import Prelude hiding (fst, snd)
 
+fstElemOffset :: Int
+fstElemOffset = 0
+
+sndElemOffset :: Int
+sndElemOffset = maxSize
+
+pairBytes :: Int
+pairBytes = 2 * maxSize
+
 pairElemOffset :: PairElem ident a -> Int
-pairElemOffset (FstElem _ _) = 0
-pairElemOffset (SndElem _ _) = 8
+pairElemOffset (FstElem _ _) = fstElemOffset
+pairElemOffset (SndElem _ _) = sndElemOffset
 
 pairElemLValue :: PairElem ident a -> LValue ident a
 pairElemLValue (FstElem lv _) = lv
@@ -189,9 +198,9 @@ instance
     fst <- tempWith (toTAC fstExpr)
     snd <- tempWith (toTAC sndExpr)
     target <- getTarget
-    fstOffset <- loadConst 0
-    sndOffset <- loadConst maxSize
-    pairSize <- loadConst (2 * maxSize)
+    fstOffset <- loadConst fstElemOffset
+    sndOffset <- loadConst sndElemOffset
+    pairSize <- loadConst pairBytes
     putTACs
       [ -- target := malloc pairSize
         Malloc target pairSize
