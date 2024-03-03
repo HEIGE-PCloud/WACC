@@ -4,6 +4,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
+{- | 
+Translates Generated TAC program to X86 assembly.
+-}
 module Language.WACC.X86.Translate where
 
 import Control.Monad (unless)
@@ -58,7 +61,7 @@ import Language.WACC.X86.X86 as X86
 
 $(genRegOperand)
 
--- | Translate every function's instructions and concat
+-- | Top level translation function. Translates each function in the TAC program.
 translateProg :: TACProgram Integer Integer -> Program
 translateProg p = D.toList $ preamble <> is <> runtime
   where
@@ -170,12 +173,15 @@ translateBlocks l (BasicBlock is next) = do
 setTranslated :: Integer -> TransST -> TransST
 setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated}
 
+-- | Utility to create label
 mapLab :: Integer -> X86.Label
 mapLab = I
 
+-- | utility to write generated instruction to output
 tellInstr :: Instruction -> Analysis ()
 tellInstr = tell . D.singleton
 
+-- | Utility to query state to check if label is translated
 isTranslated :: Integer -> Analysis Bool
 isTranslated l = gets (S.member l . translated)
 
@@ -216,9 +222,11 @@ translateNext (TAC.Exit x) = do
   tellInstr (Movl operand (Reg Edi))
   call (R X86.Exit)
 
+-- | Inserts given variable into allocation map with associated location.
 bindVarToLoc :: Var Integer -> OperandQMM -> TransST -> TransST
 bindVarToLoc v o x@(TransST {alloc}) = x {alloc = B.insert v o alloc}
 
+-- | Allocates memory for given variable  
 allocate :: Var Integer -> Analysis OperandQMM
 allocate v = do
   -- increase the stackVarNum
@@ -237,12 +245,14 @@ allocate' v = do
     Just o -> return o
     Nothing -> allocate v
 
+-- | Gets label and updates the next fresh label available
 getLabel :: Analysis X86.Label
 getLabel = do
   n <- gets labelCounter
   modify (\x -> x {labelCounter = n + 1})
   return (S (".TAC_L" ++ show n))
 
+-- | Queries the allocation map to get operand of given variable
 getOperand :: Var Integer -> Analysis OperandQMM
 getOperand v = gets ((B.! v) . alloc)
 
@@ -312,14 +322,6 @@ translateTAC (TAC.PrintLn v w) = do
   translateTAC (Print v w)
   call printLn
   comment "End PrintLn"
-{-
-translateTAC (TAC.Exit v) = do
-  comment $ "Exit: exit " ++ show v
-  operand <- getOperand v
-  movq operand arg1
-  call (R X86.Exit)
-  comment "End Exit"
--}
 translateTAC (Read v w) = do
   comment $ "Read: " ++ show v ++ " := read"
   operand <- allocate' v
@@ -571,6 +573,7 @@ translateUnOp o Negate o' = do
   movq rax o
   comment "End Unary Negate"
 
+-- | Utility which calls appropriate print runtime library based on given type
 translatePrint :: FType -> Analysis ()
 translatePrint FInt = call printi
 translatePrint FBool = call printb
@@ -578,6 +581,7 @@ translatePrint FChar = call printc
 translatePrint FString = call prints
 translatePrint _ = call printp
 
+-- | Utility generates appropriate read instruction based on given type
 translateRead :: OperandQMM -> FType -> Analysis ()
 translateRead o FInt = do
   call (R X86.ReadI)
@@ -589,6 +593,7 @@ translateRead _ w =
   error $
     "Invalid type for read, only int and char are supported, got: " ++ show w
 
+-- | Utility used to generate load instructions based on given variables for location and offset.
 translateLoadM
   :: Var Integer -> Var Integer -> Var Integer -> FType -> Analysis ()
 translateLoadM v1 v2 off t = do
@@ -761,5 +766,6 @@ text = tellInstr (Dir DirText)
 comment :: String -> Analysis ()
 comment s = tellInstr (Comment s)
 
+-- | Utility for runnning runtime functions and writing their effects to the state
 useRuntimeFunc :: X86.Runtime -> Analysis ()
 useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})
