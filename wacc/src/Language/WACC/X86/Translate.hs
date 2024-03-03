@@ -594,7 +594,7 @@ translateLoadM v1 v2 off t = do
   movq offset rbx
   moveT (Mem (MTwoReg Rax Rbx)) o1 t
   where
-    moveT :: X86.OperandQMM -> X86.OperandQMM -> FType -> Analysis ()
+    moveT :: OperandQMM -> OperandQMM -> FType -> Analysis ()
     moveT s d FChar = movzbq s rcx >> movq rcx d
     moveT s d FBool = movb s cl >> movb cl d
     moveT s d FInt = movl s ecx >> movl ecx d
@@ -614,7 +614,7 @@ translateStore v1 off v2 t = do
   movq offset rbx
   moveT o2 (Mem (MTwoReg Rax Rbx)) t
   where
-    moveT :: X86.OperandQMM -> X86.OperandQMM -> FType -> Analysis ()
+    moveT :: OperandQMM -> OperandQMM -> FType -> Analysis ()
     moveT s d FChar = movb s cl >> movb cl d
     moveT s d FBool = movb s cl >> movb cl d
     moveT s d FInt = movl s ecx >> movl ecx d
