@@ -413,6 +413,30 @@ divModPrefix o1 o2 = do
   cltd -- sign extend eax into edx
   idivl ebx -- divide edx:eax by ebx
 
+addMullSub o o1 o2 action = do
+  movl o1 eax
+  movl o2 ebx
+  action
+  jo errOverflow
+  movslq eax rax
+  movq rax o
+
+logicalOPs o o1 o2 compare set = do
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  compare ebx eax -- compare %ebx and %eax
+  set al -- set al to 1 if %eax < %ebx
+  movzbq al rax
+  movq rax o -- %o := %al
+
+eqOps o o1 o2 compare set = do
+  movq o1 rax -- %eax := o1
+  movq o2 rbx -- %ebx := o2
+  compare rbx rax -- compare %ebx and %eax
+  set al -- set al to 1 if %eax == %ebx
+  movzbq al rax
+  movq rax o -- %o := %al
+
 {- | Translate a binary operation
 | <o> := <o1> <binop> <o2>
 -}
@@ -421,12 +445,7 @@ translateBinOp
 translateBinOp o Add o1 o2 = do
   commentD $
     "Binary Addition: " <> showD o <> " := " <> showD o1 <> " + " <> showD o2
-  movl o1 eax
-  movl o2 ebx
-  addl ebx eax
-  jo errOverflow
-  movslq eax rax
-  movq rax o
+  addMullSub o o1 o2 (addl ebx eax)
   commentD "End Binary Addition"
 translateBinOp o PtrAdd o1 o2 = do
   commentD $
@@ -445,22 +464,12 @@ translateBinOp o PtrAdd o1 o2 = do
 translateBinOp o Sub o1 o2 = do
   commentD $
     "Binary Subtraction: " <> showD o <> " := " <> showD o1 <> " - " <> showD o2
-  movl o1 eax
-  movl o2 ebx
-  subl ebx eax
-  jo errOverflow
-  movslq eax rax
-  movq rax o
+  addMullSub o o1 o2 (subl ebx eax)
   commentD "End Binary Subtraction"
 translateBinOp o Mul o1 o2 = do
   commentD $
     "Binary Multiplication: " <> showD o <> " := " <> showD o1 <> " * " <> showD o2
-  movl o1 eax
-  movl o2 ebx
-  imull ebx eax
-  jo errOverflow
-  movslq eax rax
-  movq rax o
+  addMullSub o o1 o2 (imull ebx eax)
   commentD "End Binary Multiplication"
 translateBinOp o Div o1 o2 = do
   commentD $
@@ -527,12 +536,7 @@ translateBinOp o Or o1 o2 = do
 translateBinOp o TAC.LT o1 o2 = do
   commentD $
     "Binary Less Than: " <> showD o <> " := " <> showD o1 <> " < " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setl al -- set al to 1 if %eax < %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setl
   commentD "End Binary Less Than"
 translateBinOp o TAC.LTE o1 o2 = do
   commentD $
@@ -542,22 +546,12 @@ translateBinOp o TAC.LTE o1 o2 = do
       <> showD o1
       <> " <= "
       <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setle al -- set al to 1 if %eax <= %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setle
   commentD "End Binary Less Than or Equal"
 translateBinOp o TAC.GT o1 o2 = do
   commentD $
     "Binary Greater Than: " <> showD o <> " := " <> showD o1 <> " > " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setg al -- set al to 1 if %eax > %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setg
   commentD "End Binary Greater Than"
 translateBinOp o TAC.GTE o1 o2 = do
   commentD $
@@ -567,32 +561,17 @@ translateBinOp o TAC.GTE o1 o2 = do
       <> showD o1
       <> " >= "
       <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl ebx eax -- compare %ebx and %eax
-  setge al -- set al to 1 if %eax >= %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  logicalOPs o o1 o2 cmpl setge
   commentD "End Binary Greater Than or Equal"
 translateBinOp o TAC.Eq o1 o2 = do
   commentD $
     "Binary Equal: " <> showD o <> " := " <> showD o1 <> " == " <> showD o2
-  movq o1 rax -- %eax := o1
-  movq o2 rbx -- %ebx := o2
-  cmpq rbx rax -- compare %ebx and %eax
-  sete al -- set al to 1 if %eax == %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  eqOps o o1 o2 cmpq sete
   commentD "End Binary Equal"
 translateBinOp o TAC.Ineq o1 o2 = do
   commentD $
     "Binary Not Equal: " <> showD o <> " := " <> showD o1 <> " != " <> showD o2
-  movq o1 rax -- %eax := o1
-  movq o2 rbx -- %ebx := o2
-  cmpq rbx rax -- compare %ebx and %eax
-  setne al -- set al to 1 if %eax != %ebx
-  movzbq al rax
-  movq rax o -- %o := %al
+  eqOps o o1 o2 cmpq setne
   commentD "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
