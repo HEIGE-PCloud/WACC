@@ -5,7 +5,7 @@ where
 
 import Data.ByteString.Lazy.UTF8 (fromString)
 import Language.WACC.X86.ATNT (formatA)
-import Language.WACC.X86.Runtime (x86Examples)
+import Language.WACC.X86.Lib (x86Examples)
 import qualified Language.WACC.X86.X86 as X86
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsStringDiff)
