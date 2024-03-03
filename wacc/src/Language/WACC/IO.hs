@@ -22,8 +22,7 @@ import Language.WACC.Semantic.Scope
   )
 import Language.WACC.TAC (TACProgram, generateTAC)
 import Language.WACC.TypeChecking (BType, checkTypes)
-import Language.WACC.X86.ATNT (ATNT (..))
-import Language.WACC.X86.Translate (translateProg)
+import Language.WACC.X86 (ATNT (..), translateProg)
 import System.Console.CmdArgs
   ( Data
   , Typeable
