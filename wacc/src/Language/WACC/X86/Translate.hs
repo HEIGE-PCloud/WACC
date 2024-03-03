@@ -630,16 +630,11 @@ translateStore v1 off v2 t = do
 
 leaq o1 o2 = tellInstr (Leaq o1 o2)
 
-mov m o r = tellInstr (m o r)
+movb o r = tellInstr (Movb o r)
 
-movb :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Analysis ()
-movb = mov Movb
+movl o r = tellInstr (Movl o r)
 
-movl :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Analysis ()
-movl = mov Movl
-
-movq :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Analysis ()
-movq = mov Movq
+movq o r = tellInstr (Movq o r)
 
 movslq o r = tellInstr (Movslq o r)
 
@@ -707,17 +702,17 @@ negl o = tellInstr (Negl o)
 
 call = j X86.Call
 
-arg1 = Reg Rdi
+arg1 = rdi
 
-arg3 = Reg Rdx
+arg3 = rdx
 
-arg4 = Reg Rcx
+arg4 = rcx
 
-arg5 = Reg R8
+arg5 = r8
 
-arg6 = Reg R9
+arg6 = r9
 
-argRet = Reg Rax
+argRet = rax
 
 printi :: X86.Label
 printi = R X86.PrintI

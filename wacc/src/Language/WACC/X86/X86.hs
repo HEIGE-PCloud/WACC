@@ -325,9 +325,6 @@ data Instruction where
   Leaq
     :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
 
--- TODO: You can't operate on 64-bit immediate values unless with mov #imm, reg
--- https://stackoverflow.com/questions/62771323/why-we-cant-move-a-64-bit-immediate-value-to-memory
-
 deriving instance Show Instruction
 
 instance ATNT Int8 where
