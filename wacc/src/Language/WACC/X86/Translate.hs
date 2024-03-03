@@ -413,14 +413,28 @@ translateBinOp o And o1 o2 = do
   movzbq al rax
   movq rax o
   comment "End Binary And"
+{-
+  cmpl $0, -4(%rbp)
+  jne .L2
+  cmpl $0, -8(%rbp)
+  je .L3
+.L2:
+  movl $1, %eax
+  jmp .L4
+.L3:
+  movl $0, %eax
+.L4:
+  movzbl %al, %eax
+  movl %eax, -12(%rbp)
+-}
 translateBinOp o Or o1 o2 = do
   comment $ "Binary Or: " ++ show o ++ " := " ++ show o1 ++ " || " ++ show o2
   l2 <- getLabel
   l3 <- getLabel
   l4 <- getLabel
-  cmpl (Imm (IntLitD 32)) o1
+  cmpl (Imm (IntLitD 0)) o1
   jne l2
-  cmpl (Imm (IntLitD 32)) o2
+  cmpl (Imm (IntLitD 0)) o2
   je l3
   lab l2
   movl (Imm (IntLitD 1)) eax
