@@ -358,7 +358,7 @@ translateTAC (TAC.Free v) = do
   call (R X86.Free)
   commentD "End Free"
 -- > assert 0 <= <var> < <max>
-translateTAC (TAC.CheckBounds v vm) = do
+translateTAC (TAC.CheckBounds v vm _) = do
   commentD $ "CheckBounds: assert 0 <= " <> showD v <> " < " <> showD vm
   l3 <- getLabel
   l4 <- getLabel
