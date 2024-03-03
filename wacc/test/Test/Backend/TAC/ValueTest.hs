@@ -87,14 +87,14 @@ lvalueTestGroup =
                   , LoadCI temp3 8
                   , LoadCI temp4 i1
                   , LoadM temp5 (Var v) temp1 FInt
-                  , CheckBounds temp4 temp5
+                  , CheckBounds temp4 temp5 ArrayIndexCheck
                   , BinInstr temp6 temp4 Mul temp3
                   , BinInstr temp7 temp6 Add temp2
                   , LoadM temp8 (Var v) temp7 FPtr
                   , LoadCI temp9 4
                   , LoadCI temp10 i2
                   , LoadM temp11 temp8 temp1 FInt
-                  , CheckBounds temp10 temp11
+                  , CheckBounds temp10 temp11 ArrayIndexCheck
                   , BinInstr temp12 temp10 Mul temp9
                   , BinInstr temp13 temp12 Add temp2
                   , LoadM defaultTarget temp8 temp13 FInt
@@ -111,14 +111,14 @@ lvalueTestGroup =
                   , LoadCI temp3 8
                   , LoadCI temp4 i1
                   , LoadM temp5 (Var v) temp1 FInt
-                  , CheckBounds temp4 temp5
+                  , CheckBounds temp4 temp5 ArrayIndexCheck
                   , BinInstr temp6 temp4 Mul temp3
                   , BinInstr temp7 temp6 Add temp2
                   , LoadM temp8 (Var v) temp7 FPtr
                   , LoadCI temp9 4
                   , LoadCI temp10 i2
                   , LoadM temp11 temp8 temp1 FInt
-                  , CheckBounds temp10 temp11
+                  , CheckBounds temp10 temp11 ArrayIndexCheck
                   , BinInstr temp12 temp10 Mul temp9
                   , BinInstr temp13 temp12 Add temp2
                   , Read temp14 FInt
@@ -137,14 +137,14 @@ lvalueTestGroup =
                     , LoadCI temp3 8
                     , LoadCI temp4 i1
                     , LoadM temp5 (Var v) temp1 FInt
-                    , CheckBounds temp4 temp5
+                    , CheckBounds temp4 temp5 ArrayIndexCheck
                     , BinInstr temp6 temp4 Mul temp3
                     , BinInstr temp7 temp6 Add temp2
                     , LoadM temp8 (Var v) temp7 FPtr
                     , LoadCI temp9 4
                     , LoadCI temp10 i2
                     , LoadM temp11 temp8 temp1 FInt
-                    , CheckBounds temp10 temp11
+                    , CheckBounds temp10 temp11 ArrayIndexCheck
                     , BinInstr temp12 temp10 Mul temp9
                     , BinInstr temp13 temp12 Add temp2
                     , LoadCI temp14 x

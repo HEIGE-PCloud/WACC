@@ -29,7 +29,14 @@ import Language.WACC.TAC.State
   , putTACs
   , tempWith
   )
-import Language.WACC.TAC.TAC (BinOp (..), Offset, TAC (..), UnOp (..), Var (..))
+import Language.WACC.TAC.TAC
+  ( BinOp (..)
+  , CheckBoundsReason (..)
+  , Offset
+  , TAC (..)
+  , UnOp (..)
+  , Var (..)
+  )
 import Language.WACC.TypeChecking (BType (..))
 import Prelude hiding (GT, LT, length)
 
@@ -82,7 +89,7 @@ instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
           [ -- length := len array
             LoadM length array lengthOffset FInt
           , -- assert 0 <= index < length
-            CheckBounds index length
+            CheckBounds index length ArrayIndexCheck
           , -- scaledIndex := index * scalar
             BinInstr scaledIndex index Mul scalar
           , -- result := scaledIndex + lengthShift
@@ -218,7 +225,7 @@ instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
     validCharUpperBound <- loadConst 128
     putTACs
       [ -- assert 0 <= target < validCharUpperBound
-        CheckBounds target validCharUpperBound
+        CheckBounds target validCharUpperBound ChrCheck
       ]
   -- Binary operators:
   toTAC (AST.Mul x y _) = binOp x Mul y

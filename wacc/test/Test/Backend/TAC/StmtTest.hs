@@ -117,7 +117,7 @@ stmtTestGroup =
                 , LoadCI temp3 4
                 , LoadCI temp4 e
                 , LoadM temp5 (Var v) temp1 FInt
-                , CheckBounds temp4 temp5
+                , CheckBounds temp4 temp5 ArrayIndexCheck
                 , BinInstr temp6 temp4 Language.WACC.TAC.TAC.Mul temp3
                 , BinInstr temp7 temp6 Language.WACC.TAC.TAC.Add temp2
                 , LoadCI temp9 i1

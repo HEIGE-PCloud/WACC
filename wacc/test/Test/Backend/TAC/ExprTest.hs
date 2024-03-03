@@ -44,7 +44,7 @@ testIndexScaling tName bt tSize =
             , LoadCI temp3 tSize
             , LoadCI temp4 i
             , LoadM temp5 (Var v) temp1 FInt
-            , CheckBounds temp4 temp5
+            , CheckBounds temp4 temp5 ArrayIndexCheck
             , BinInstr temp6 temp4 Mul temp3
             , BinInstr temp7 temp6 Add temp2
             , LoadM defaultTarget (Var v) temp7 (flatten bt)
@@ -125,14 +125,14 @@ exprTestGroup =
                         , LoadCI temp3 8
                         , LoadCI temp4 i1
                         , LoadM temp5 (Var v) temp1 FInt
-                        , CheckBounds temp4 temp5
+                        , CheckBounds temp4 temp5 ArrayIndexCheck
                         , BinInstr temp6 temp4 Mul temp3
                         , BinInstr temp7 temp6 Add temp2
                         , LoadM temp8 (Var v) temp7 FPtr
                         , LoadCI temp9 4
                         , LoadCI temp10 i2
                         , LoadM temp11 temp8 temp1 FInt
-                        , CheckBounds temp10 temp11
+                        , CheckBounds temp10 temp11 ArrayIndexCheck
                         , BinInstr temp12 temp10 Mul temp9
                         , BinInstr temp13 temp12 Add temp2
                         , LoadM defaultTarget temp8 temp13 FInt
@@ -159,7 +159,7 @@ exprTestGroup =
             toTAC' (AST.Chr (varExpr v BInt) BChar)
               === [ Move defaultTarget (Var v)
                   , LoadCI temp1 128
-                  , CheckBounds defaultTarget temp1
+                  , CheckBounds defaultTarget temp1 ChrCheck
                   ]
         ]
     , testGroup

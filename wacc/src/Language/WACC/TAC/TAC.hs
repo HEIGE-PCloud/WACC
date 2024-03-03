@@ -56,7 +56,7 @@ data TAC ident lident
     -- > assert 0 <= <var> < <max>
     --
     -- Throw a runtime error if the assertion fails.
-    CheckBounds (Var ident) (Var ident)
+    CheckBounds (Var ident) (Var ident) CheckBoundsReason
   | -- | > <var> := <var>
     Move (Var ident) (Var ident)
   deriving (Eq, Show, Functor)
@@ -87,6 +87,12 @@ data Var ident = Temp ident | Var ident deriving (Eq, Show, Ord, Functor)
 
 -- | Offsets in TAC, either temporary or named in the source code.
 type Offset = Var
+
+{- |
+Reasons for a 'CheckBounds' instruction. Used for clearer runtime error
+messages.
+-}
+data CheckBoundsReason = ChrCheck | ArrayIndexCheck deriving (Eq, Show)
 
 -- | Jump instructions in TAC Basic Blocks for control flow.
 data Jump ident lident
