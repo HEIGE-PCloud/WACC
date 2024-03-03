@@ -11,8 +11,7 @@
 
 module Language.WACC.X86.X86 where
 
--- import Data.Ix hiding (Ix)
-import Data.Array
+import Data.Array (Array, Ix (range), array)
 import Data.Char (toLower)
 import Data.Data (Data (toConstr), Typeable, showConstr)
 import Data.Int (Int16, Int32, Int64, Int8)
@@ -26,9 +25,15 @@ import Language.WACC.X86.IntLit (IntLit (..))
 import Language.WACC.X86.Label (Label (..))
 import Language.WACC.X86.Memory (Memory (..))
 import Language.WACC.X86.Operand
+  ( OpType (..)
+  , Operand (..)
+  , OperandB
+  , OperandD
+  , OperandQ
+  )
 import Language.WACC.X86.Register (Register (..))
 import Language.WACC.X86.Runtime (Runtime (..))
-import Language.WACC.X86.Size (EQ, LT, LTE, Size (..), SizeToNat)
+import Language.WACC.X86.Size (EQ, GTE, LT, LTE, Size (..), SizeToNat)
 import System.IO (hPutStr)
 
 type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint where
@@ -92,18 +97,33 @@ type family ValidSizeLT (s1 :: Size) (s2 :: Size) :: Constraint where
 type family ValidOpType (a :: OpType) (b :: OpType) :: Constraint where
   ValidOpType MM MM = TypeError ('Text "Can not have two memory operands")
   ValidOpType IM IM = TypeError ('Text "Can not have two immediate operands")
-  ValidOpType _ IM =
-    TypeError ('Text "The second operand can not be an immediate value")
   ValidOpType _ _ = ()
 
 data Directive
   = DirInt Integer
-  | -- | String directives (insert ascii binary at location)
-    DirAsciz String
+  | DirAsciz String
   | DirText
   | DirSection
   | DirGlobl Label
   deriving (Typeable, Data, Show)
+
+type family ValidPop (s' :: Size) (s :: Size) (m :: OpType) :: Constraint where
+  ValidPop _ B _ = TypeError ('Text "Can not pop a word value")
+  ValidPop _ _ 'IM = TypeError ('Text "Can not pop an immediate value")
+  ValidPop s' s' 'RM = ()
+  ValidPop _ _ 'RM = TypeError ('Text "Incorrect register size")
+  ValidPop s' s 'MM =
+    Unless (s `GTE` s') (TypeError ('Text "Incorrect memory size"))
+
+type family ValidPush (s' :: Size) (s :: Size) (m :: OpType) :: Constraint where
+  ValidPush B B 'IM = ()
+  ValidPush _ B _ = TypeError ('Text "Can not push a word value")
+  ValidPush _ Q 'IM = TypeError ('Text "Can not push an 64bit immediate value")
+  ValidPush s' s' 'IM = ()
+  ValidPush s' s' 'RM = ()
+  ValidPush _ _ 'RM = TypeError ('Text "Incorrect register size")
+  ValidPush s' s 'MM =
+    Unless (s `GTE` s') (TypeError ('Text "Incorrect memory size"))
 
 data Instruction where
   Comment :: String -> Instruction
@@ -121,174 +141,189 @@ data Instruction where
   Call :: Label -> Instruction
   Ret :: Instruction
   Cltd :: Instruction
-  Popq :: OperandQ type1 -> Instruction
-  Popl :: OperandD type1 -> Instruction
-  Pushq :: OperandQ type1 -> Instruction
-  Pushl :: OperandD type1 -> Instruction
-  Negl :: (NotImm type1) => OperandD type1 -> Instruction
+  -- | https://www.felixcloutier.com/x86/pop
+  Popq :: (ValidPop Q s t) => Operand s t -> Instruction
+  Popl :: (ValidPop D s t) => Operand s t -> Instruction
+  Popw :: (ValidPop W s t) => Operand s t -> Instruction
+  Popb :: (ValidPop B s t) => Operand s t -> Instruction
+  -- | https://www.felixcloutier.com/x86/push
+  Pushq :: (ValidPush Q s t) => Operand s t -> Instruction
+  Pushl :: (ValidPush D s t) => Operand s t -> Instruction
+  Pushw :: (ValidPush W s t) => Operand s t -> Instruction
+  Pushb :: (ValidPush B s t) => Operand s t -> Instruction
+  Negl :: (NotImm t1) => OperandD t1 -> Instruction
   Mov
-    :: (ValidOpType type1 type2, ValidImm size1 type1 size2 type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, ValidImm s1 t1 s2 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   Movzx
-    :: (ValidSizeLT size1 size2, ValidOpType type1 type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidSizeLT s1 s2, ValidOpType t1 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
-  Movslq :: Operand size1 type1 -> Operand size2 type2 -> Instruction
+  Movslq
+    :: (ValidOpType t1 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
-  Movsbq :: Operand size1 type1 -> Operand size2 type2 -> Instruction
+  Movsbq
+    :: (ValidOpType t1 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
   -- | https://www.felixcloutier.com/x86/movsx:movsxd
-  Movzbq :: Operand size1 type1 -> Operand size2 type2 -> Instruction
+  Movzbq
+    :: (ValidOpType t1 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
+    -> Instruction
   Cmovl
-    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
-    => Operand size type1
-    -> Operand size type2
+    :: (ValidOpType t1 t2, NotImm t1, NotImm t2)
+    => Operand size t1
+    -> Operand size t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovle
-    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
-    => Operand size type1
-    -> Operand size type2
+    :: (ValidOpType t1 t2, NotImm t1, NotImm t2)
+    => Operand size t1
+    -> Operand size t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovg
-    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
-    => Operand size type1
-    -> Operand size type2
+    :: (ValidOpType t1 t2, NotImm t1, NotImm t2)
+    => Operand size t1
+    -> Operand size t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovge
-    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
-    => Operand size type1
-    -> Operand size type2
+    :: (ValidOpType t1 t2, NotImm t1, NotImm t2)
+    => Operand size t1
+    -> Operand size t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmovne
-    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
-    => Operand size type1
-    -> Operand size type2
+    :: (ValidOpType t1 t2, NotImm t1, NotImm t2)
+    => Operand size t1
+    -> Operand size t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/cmovcc
   Cmove
-    :: (ValidOpType type1 type2, NotImm type1, NotImm type2)
-    => Operand size type1
-    -> Operand size type2
+    :: (ValidOpType t1 t2, NotImm t1, NotImm t2)
+    => Operand size t1
+    -> Operand size t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/idiv
   Idivl :: Operand size mem -> Instruction
   -- | https://www.felixcloutier.com/x86/setcc
-  Sete :: OperandB type1 -> Instruction
-  Setne :: OperandB type1 -> Instruction
-  Setl :: OperandB type1 -> Instruction
-  Setle :: OperandB type1 -> Instruction
-  Setg :: OperandB type1 -> Instruction
-  Setge :: OperandB type1 -> Instruction
+  Sete :: OperandB t1 -> Instruction
+  Setne :: OperandB t1 -> Instruction
+  Setl :: OperandB t1 -> Instruction
+  Setle :: OperandB t1 -> Instruction
+  Setg :: OperandB t1 -> Instruction
+  Setge :: OperandB t1 -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addq
-    :: (ValidOpType type1 type2, NotImm type2)
-    => OperandQ type1
-    -> OperandQ type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => OperandQ t1
+    -> OperandQ t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addl
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addw
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Addb
-    :: (ValidOpType type1 type2, NotImm type2)
-    => OperandB type1
-    -> OperandB type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => OperandB t1
+    -> OperandB t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subq
-    :: (ValidOpType type1 type2, NotImm type2)
-    => OperandQ type1
-    -> OperandQ type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => OperandQ t1
+    -> OperandQ t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subl
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subw
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/sub
   Subb
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/imul
   --   Yeah... Imul can take in one or two or three operands.
   --   I love x86
   Imulq
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   Imull
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Andq
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   -- | https://www.felixcloutier.com/x86/add
   Andl
-    :: (ValidOpType type1 type2, NotImm type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2, NotImm t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   Cmpq
-    :: OperandQ type1 -> OperandQ type2 -> Instruction
+    :: (ValidOpType t1 t2) => OperandQ t1 -> OperandQ t2 -> Instruction
   Cmpl
-    :: (ValidOpType type1 type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   Cmpw
-    :: (ValidOpType type1 type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   Cmpb
-    :: (ValidOpType type1 type2)
-    => Operand size1 type1
-    -> Operand size2 type2
+    :: (ValidOpType t1 t2)
+    => Operand s1 t1
+    -> Operand s2 t2
     -> Instruction
   Movq
-    :: OperandQ type1 -> OperandQ type2 -> Instruction
+    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
   Movl
-    :: Operand size1 type1 -> Operand size2 type2 -> Instruction
+    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
   Movw
-    :: Operand size1 type1 -> Operand size2 type2 -> Instruction
+    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
   Movb
-    :: Operand size1 type1 -> Operand size2 type2 -> Instruction
+    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
   Leaq
-    :: (ValidOpType type1 type2) => OperandQ type1 -> OperandQ type2 -> Instruction
-
--- TODO: You can't operate on 64-bit immediate values unless with mov #imm, reg
--- https://stackoverflow.com/questions/62771323/why-we-cant-move-a-64-bit-immediate-value-to-memory
+    :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Instruction
 
 deriving instance Show Instruction
 

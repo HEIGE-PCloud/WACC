@@ -28,11 +28,11 @@ intLit x = WAtom (IntLit (toInteger x) BInt) BInt
 varExpr :: Int -> BType -> Expr Int BType
 varExpr v t = WAtom (Ident v t) t
 
-temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
-temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
+temp1, temp2, temp3, temp4, temp5, temp6, temp7 :: Var Int
+temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : temp7 : _ = Temp <$> [1 ..]
 
-temp7, temp8, temp9, temp10, temp11, temp12, temp13 :: Var Int
-temp7 : temp8 : temp9 : temp10 : temp11 : temp12 : temp13 : _ = Temp <$> [7 ..]
+temp8, temp9, temp10, temp11, temp12, temp13 :: Var Int
+temp8 : temp9 : temp10 : temp11 : temp12 : temp13 : _ = Temp <$> [8 ..]
 
 testIndexScaling :: String -> BType -> Int -> TestTree
 testIndexScaling tName bt tSize =
@@ -47,7 +47,7 @@ testIndexScaling tName bt tSize =
             , CheckBounds temp4 temp5
             , BinInstr temp6 temp4 Mul temp3
             , BinInstr temp7 temp6 Add temp2
-            , LoadM temp0 (Var v) temp7 (flatten bt)
+            , LoadM defaultTarget (Var v) temp7 (flatten bt)
             ]
 
 testBinOp
@@ -63,7 +63,7 @@ testBinOp name astOp tacOp t1 t2 t3 =
     toTAC' (astOp (varExpr v1 t1) (varExpr v2 t2) t3)
       === [ Move temp1 (Var v1)
           , Move temp2 (Var v2)
-          , BinInstr temp0 temp1 tacOp temp2
+          , BinInstr defaultTarget temp1 tacOp temp2
           ]
 
 exprTestGroup :: TestTree
@@ -75,20 +75,20 @@ exprTestGroup =
         [ testGroup
             "literals"
             [ testProperty "int literals are loaded using LoadCI" $ \i ->
-                toTAC' (intLit i) === [LoadCI temp0 i]
+                toTAC' (intLit i) === [LoadCI defaultTarget i]
             , testCase "false is 0" $
-                toTAC' (WAtom (BoolLit False BBool) BBool) @?= [LoadCI temp0 0]
+                toTAC' (WAtom (BoolLit False BBool) BBool) @?= [LoadCI defaultTarget 0]
             , testCase "true is 1" $
-                toTAC' (WAtom (BoolLit True BBool) BBool) @?= [LoadCI temp0 1]
+                toTAC' (WAtom (BoolLit True BBool) BBool) @?= [LoadCI defaultTarget 1]
             , testProperty "char literals are loaded using LoadCI" $ \c ->
                 toTAC' (WAtom (CharLit c BChar) BChar)
-                  === [LoadCI temp0 $ ord c]
+                  === [LoadCI defaultTarget $ ord c]
             , testProperty "string literals are loaded using LoadCS" $ \s ->
                 toTAC' (WAtom (StringLit s BString) BString)
-                  === [LoadCS temp0 s]
+                  === [LoadCS defaultTarget s]
             , testCase "null is 0" $
                 toTAC' (WAtom (Null BErasedPair) BErasedPair)
-                  @?= [LoadCI temp0 0]
+                  @?= [LoadCI defaultTarget 0]
             ]
         , testGroup
             "identifiers"
@@ -96,7 +96,7 @@ exprTestGroup =
                 testTACM (toTAC (varExpr v BInt) `into` Var v *> collectTACs)
                   === []
             , testProperty "distinct identifiers are copied using Move" $ \v ->
-                toTAC' (varExpr v BInt) === [Move temp0 (Var v)]
+                toTAC' (varExpr v BInt) === [Move defaultTarget (Var v)]
             ]
         , testGroup
             "array indexing"
@@ -135,7 +135,7 @@ exprTestGroup =
                         , CheckBounds temp10 temp11
                         , BinInstr temp12 temp10 Mul temp9
                         , BinInstr temp13 temp12 Add temp2
-                        , LoadM temp0 temp8 temp13 FInt
+                        , LoadM defaultTarget temp8 temp13 FInt
                         ]
             ]
         ]
@@ -143,23 +143,23 @@ exprTestGroup =
         "unary expressions"
         [ testProperty "!_ generates Not" $ \v ->
             toTAC' (AST.Not (varExpr v BBool) BBool)
-              === [Move temp1 (Var v), UnInstr temp0 Not temp1]
+              === [Move temp1 (Var v), UnInstr defaultTarget Not temp1]
         , testProperty "-_ generates Negate" $ \v ->
             toTAC' (AST.Negate (varExpr v BInt) BInt)
-              === [Move temp1 (Var v), UnInstr temp0 Negate temp1]
+              === [Move temp1 (Var v), UnInstr defaultTarget Negate temp1]
         , testProperty "len loads length stored at base address" $ \v ->
             toTAC' (AST.Len (varExpr v $ BArray BInt) BInt)
               === [ Move temp1 (Var v)
                   , LoadCI temp2 0
-                  , LoadM temp0 temp1 temp2 FInt
+                  , LoadM defaultTarget temp1 temp2 FInt
                   ]
         , testProperty "ord generates no instructions" $ \v ->
-            toTAC' (AST.Ord (varExpr v BChar) BInt) === [Move temp0 (Var v)]
+            toTAC' (AST.Ord (varExpr v BChar) BInt) === [Move defaultTarget (Var v)]
         , testProperty "chr generates a bounds check" $ \v ->
             toTAC' (AST.Chr (varExpr v BInt) BChar)
-              === [ Move temp0 (Var v)
+              === [ Move defaultTarget (Var v)
                   , LoadCI temp1 128
-                  , CheckBounds temp0 temp1
+                  , CheckBounds defaultTarget temp1
                   ]
         ]
     , testGroup

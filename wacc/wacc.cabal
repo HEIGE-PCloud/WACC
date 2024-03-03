@@ -35,6 +35,7 @@ library
       Language.WACC.Parser.Token
       Language.WACC.Parser.Type
       Language.WACC.Semantic.Scope
+      Language.WACC.TAC
       Language.WACC.TAC.Class
       Language.WACC.TAC.Expr
       Language.WACC.TAC.FType

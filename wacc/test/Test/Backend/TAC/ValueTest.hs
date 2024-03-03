@@ -36,14 +36,11 @@ intLit x = WAtom (IntLit (toInteger x) BInt) BInt
 lvStore :: Int -> LVMode Int Int
 lvStore = LVStore . flip RVExpr BInt . intLit
 
-temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
-temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
+temp1, temp2, temp3, temp4, temp5, temp6, temp7 :: Var Int
+temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : temp7 : _ = Temp <$> [1 ..]
 
-temp7, temp8, temp9, temp10, temp11, temp12, temp13 :: Var Int
-temp7 : temp8 : temp9 : temp10 : temp11 : temp12 : temp13 : _ = Temp <$> [7 ..]
-
-temp14 :: Var Int
-temp14 = Temp 14
+temp8, temp9, temp10, temp11, temp12, temp13, temp14 :: Var Int
+temp8 : temp9 : temp10 : temp11 : temp12 : temp13 : temp14 : _ = Temp <$> [8 ..]
 
 testPairProperty
   :: (Testable prop)
@@ -69,7 +66,7 @@ lvalueTestGroup =
                 (lvToTAC (LVIdent v BInt) LVLoad `into` Var v *> collectTACs)
                 === []
         , testProperty "loading a different identifier uses Move" $ \v ->
-            lvToTAC' (LVIdent v BInt) LVLoad === [Move temp0 (Var v)]
+            lvToTAC' (LVIdent v BInt) LVLoad === [Move defaultTarget (Var v)]
         , testProperty "reading into an identifier uses Read" $ \v ->
             lvToTAC' (LVIdent v BInt) LVRead === [Read (Var v) FInt]
         , testProperty "storing into an identifier generates no instructions" $
@@ -100,7 +97,7 @@ lvalueTestGroup =
                   , CheckBounds temp10 temp11
                   , BinInstr temp12 temp10 Mul temp9
                   , BinInstr temp13 temp12 Add temp2
-                  , LoadM temp0 temp8 temp13 FInt
+                  , LoadM defaultTarget temp8 temp13 FInt
                   ]
         , testProperty "reading into an array element uses Read" $ \v i1 i2 ->
             lvToTAC'
@@ -166,7 +163,7 @@ lvalueTestGroup =
                 LVLoad
                 === [ Move temp1 (Var v)
                     , LoadCI temp2 offset
-                    , LoadM temp0 temp1 temp2 FInt
+                    , LoadM defaultTarget temp1 temp2 FInt
                     ]
         , testPairProperty "reading into a pair element uses Read" $
             \mkPairElem offset v ->
@@ -213,14 +210,14 @@ testArrayElemSizes tName bt mkAtom mkTAC tSize =
         === [ LoadCI temp1 (4 + 2 * tSize)
             , LoadCI temp2 0
             , LoadCI temp3 2
-            , Malloc temp0 temp1
-            , Store temp0 temp2 temp3 FInt
+            , Malloc defaultTarget temp1
+            , Store defaultTarget temp2 temp3 FInt
             , mkTAC temp4 e1
             , LoadCI temp5 4
-            , Store temp0 temp5 temp4 ft
+            , Store defaultTarget temp5 temp4 ft
             , mkTAC temp6 e2
             , LoadCI temp7 (4 + tSize)
-            , Store temp0 temp7 temp6 ft
+            , Store defaultTarget temp7 temp6 ft
             ]
   where
     ft = flatten bt
@@ -232,13 +229,13 @@ rvalueTestGroup =
     [ testGroup
         "expressions"
         [ testProperty "int literals are loaded using LoadCI" $ \i ->
-            toTAC' (RVExpr (intLit i) BInt) === [LoadCI temp0 i]
+            toTAC' (RVExpr (intLit i) BInt) === [LoadCI defaultTarget i]
         , testProperty "string literals are loaded using LoadCS" $ \s ->
             toTAC' (RVExpr (WAtom (StringLit s BString) BString) BString)
-              === [LoadCS temp0 s]
+              === [LoadCS defaultTarget s]
         , testProperty "identifiers generate no instructions" $ \v ->
             toTAC' (RVExpr (WAtom (Ident v BInt) BInt) BInt)
-              === [Move temp0 (Var v)]
+              === [Move defaultTarget (Var v)]
         ]
     , testGroup
         "array literals"
@@ -246,8 +243,8 @@ rvalueTestGroup =
             toTAC' (RVArrayLit [] (BArray BInt))
               @?= [ LoadCI temp1 4
                   , LoadCI temp2 0
-                  , Malloc temp0 temp1
-                  , Store temp0 temp2 temp2 FInt
+                  , Malloc defaultTarget temp1
+                  , Store defaultTarget temp2 temp2 FInt
                   ]
         , testArrayElemSizes "int" BInt (IntLit . toInteger) LoadCI 4
         , testArrayElemSizes
@@ -269,13 +266,13 @@ rvalueTestGroup =
               === [ LoadCI temp1 6
                   , LoadCI temp2 0
                   , LoadCI temp3 1
-                  , Malloc temp0 temp1
-                  , Store temp0 temp2 temp3 FInt
+                  , Malloc defaultTarget temp1
+                  , Store defaultTarget temp2 temp3 FInt
                   , LoadCI temp4 5
-                  , Store temp0 temp4 temp2 FChar
+                  , Store defaultTarget temp4 temp2 FChar
                   , LoadCI temp5 (fromEnum c)
                   , LoadCI temp6 4
-                  , Store temp0 temp6 temp5 FChar
+                  , Store defaultTarget temp6 temp5 FChar
                   ]
         ]
     , testProperty "new pairs allocate 16 bytes" $ \i1 i2 ->
@@ -285,9 +282,9 @@ rvalueTestGroup =
               , LoadCI temp3 0
               , LoadCI temp4 8
               , LoadCI temp5 16
-              , Malloc temp0 temp5
-              , Store temp0 temp3 temp1 FInt
-              , Store temp0 temp4 temp2 FInt
+              , Malloc defaultTarget temp5
+              , Store defaultTarget temp3 temp1 FInt
+              , Store defaultTarget temp4 temp2 FInt
               ]
     , testPairProperty "pair elements are loaded with correct offsets" $
         \mkPairElem offset v ->
@@ -298,18 +295,18 @@ rvalueTestGroup =
             )
             === [ Move temp1 (Var v)
                 , LoadCI temp2 offset
-                , LoadM temp0 temp1 temp2 FInt
+                , LoadM defaultTarget temp1 temp2 FInt
                 ]
     , testGroup
         "function calls"
         [ testProperty "nullary function calls are executed using Call" $ \f ->
-            toTAC' (RVCall f [] BInt) === [Call temp0 f []]
+            toTAC' (RVCall f [] BInt) === [Call defaultTarget f []]
         , testProperty "function arguments are evaluated before the Call" $
             \f i1 i2 ->
               toTAC' (RVCall f [intLit i1, intLit i2] BInt)
                 === [ LoadCI temp1 i1
                     , LoadCI temp2 i2
-                    , Call temp0 f [temp1, temp2]
+                    , Call defaultTarget f [temp1, temp2]
                     ]
         ]
     ]

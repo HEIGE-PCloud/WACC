@@ -6,6 +6,7 @@ TAC translation monad and actions.
 -}
 module Language.WACC.TAC.State
   ( TACM
+  , defaultTarget
   , runTACM
   , evalTACM
   , freshTemp
@@ -43,13 +44,25 @@ type TACM ident lident =
   RWS (Var ident) (TACProgram ident lident) (TACMState ident lident)
 
 {- |
+Initial target variable for executing TACM actions.
+-}
+defaultTarget :: (Num a) => Var a
+defaultTarget = Temp 0
+
+{- |
 Run a TAC translation action.
 
 Basic block labels are allocated starting from the given @lident@.
 -}
 runTACM
-  :: (Num ident) => lident -> TACM ident lident a -> (a, TACProgram ident lident)
-runTACM l action = evalRWS action (Temp 0) (TACMState 1 l mempty empty)
+  :: (Num ident)
+  => lident
+  -> TACM ident lident a
+  -> (a, TACProgram ident lident)
+runTACM l action =
+  evalRWS action defaultTarget (TACMState firstTempID l mempty empty)
+  where
+    firstTempID = 1
 
 {- |
 Run a TAC translation action, returning only the generated basic blocks.

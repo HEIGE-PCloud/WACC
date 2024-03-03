@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
@@ -54,34 +56,12 @@ import qualified Language.WACC.X86.Label as X86
 import Language.WACC.X86.Lib (runtimeLib)
 import Language.WACC.X86.Memory (Memory (..))
 import Language.WACC.X86.Operand (Operand (..), OperandQMM)
-import Language.WACC.X86.OperandTH (genRegOperand)
+import Language.WACC.X86.OperandTH (genOperandWrappers, genRegOperand)
 import Language.WACC.X86.Register (Register (..))
 import qualified Language.WACC.X86.Runtime as X86
 import Language.WACC.X86.X86 as X86
 
 $(genRegOperand)
-
--- | Top level translation function. Translates each function in the TAC program.
-translateProg :: TACProgram Integer Integer -> Program
-translateProg p = D.toList $ preamble <> is <> runtime
-  where
-    runtime :: DList Instruction
-    runtime = D.concat $ (runtimeLib !) <$> S.toList (runtimeFns st)
-    progRWS :: Analysis ()
-    progRWS = mapM_ translateFunc (M.elems p)
-    (st, is) =
-      execRWS
-        progRWS
-        M.empty
-        (TransST B.empty S.empty 0 S.empty 0)
-    preamble :: DList Instruction
-    preamble =
-      D.fromList
-        [ Dir $ DirGlobl (S "main")
-        , Dir DirSection
-        , Dir DirText
-        , Lab (S "main")
-        ]
 
 {- | When registers run out and values in the stack are
 required for a computation, they put in this register.
@@ -97,18 +77,31 @@ data TransST = TransST
   -- ^ Set of basic blocks that have been translated
   , stackVarNum :: Integer
   -- ^ The number of stack variables used so far (not incl. saving callee saved reg)
-  , runtimeFns :: Set X86.Runtime
-  -- ^ Set of runtime functions which need to be included
   , labelCounter :: Integer
   -- ^ Counter for generating unique labels
   }
+
+type TransW =
+  ( DList Instruction
+  , -- \^ The translated code
+    DList Instruction
+  , -- \^ Strings literals stored at the end of the program (before runtime lib)
+    Set X86.Runtime
+  )
+
+-- \^ Set of runtime functions which need to be included
 
 -- | Reader maps labels to basic blocks. Writer holds output X86 program
 type Analysis =
   RWS
     (Map Integer (BasicBlock Integer Integer))
-    (DList Instruction)
+    TransW
     TransST
+
+tellInstr :: Instruction -> Analysis ()
+tellInstr i = tell (D.singleton i, mempty, mempty)
+
+$(genOperandWrappers 'tellInstr)
 
 stackElemSize :: Integer
 stackElemSize = 8
@@ -151,6 +144,25 @@ translateFunc (TACFunc l vs bs) = do
     resetState :: Analysis ()
     resetState = modify (\x -> x {alloc = B.empty, translated = S.empty, stackVarNum = 0})
 
+-- | Translate every function's instructions and concat
+translateProg :: TACProgram Integer Integer -> Program
+translateProg p = D.toList $ preamble <> codeSeg <> dataSeg' <> runtimeIs
+  where
+    runtimeIs :: DList Instruction
+    runtimeIs = D.concat $ (runtimeLib !) <$> (S.toList runtime)
+    runtime :: Set X86.Runtime -- Including all the dependencies
+    runtime = S.unions $ S.map (runtimeDeps A.!) rs
+    dataSeg' = [Dir DirSection] <> dataSeg <> [Dir DirText]
+    (_, (codeSeg, dataSeg, rs)) =
+      execRWS (mapM_ translateFunc (M.elems p)) mempty (TransST B.empty S.empty 0 0)
+    preamble :: DList Instruction
+    preamble =
+      [ Dir $ DirGlobl (S "main")
+      , Dir DirSection
+      , Dir DirText
+      , Lab (S "main")
+      ]
+
 {- | translate each statement of the block. then figure out which block to go to
 labels are printed right before this function is called
 -}
@@ -176,10 +188,6 @@ setTranslated l x@(TransST {translated}) = x {translated = S.insert l translated
 -- | Utility to create label
 mapLab :: Integer -> X86.Label
 mapLab = I
-
--- | utility to write generated instruction to output
-tellInstr :: Instruction -> Analysis ()
-tellInstr = tell . D.singleton
 
 -- | Utility to query state to check if label is translated
 isTranslated :: Integer -> Analysis Bool
@@ -261,46 +269,52 @@ getOperand v = gets ((B.! v) . alloc)
 -- | Translate a TAC statement to X86 Instructions
 translateTAC :: TAC Integer Integer -> Analysis ()
 translateTAC (BinInstr v1 v2 op v3) = do
-  comment $
-    "BinInstr: " ++ show v1 ++ " := " ++ show v2 ++ " " ++ show op ++ " " ++ show v3
+  commentD $
+    "BinInstr: "
+      <> showD v1
+      <> " := "
+      <> showD v2
+      <> " "
+      <> showD op
+      <> " "
+      <> showD v3
   operand <- allocate' v1
   operand1 <- getOperand v2
   operand2 <- getOperand v3
   translateBinOp operand op operand1 operand2
-  comment "End BinInstr"
+  commentD "End BinInstr"
 translateTAC (UnInstr v1 op v2) = do
-  comment $ "UnInstr: " ++ show v1 ++ " := " ++ show op ++ " " ++ show v2
+  commentD $ "UnInstr: " <> showD v1 <> " := " <> showD op <> " " <> showD v2
   operand <- allocate' v1
   operand' <- getOperand v2
   translateUnOp operand op operand'
-  comment "End UnInstr"
+  commentD "End UnInstr"
 translateTAC (Store v1 off v2 w) = do
-  comment $ "Store: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
+  commentD $
+    "Store: " <> showD v1 <> " := " <> showD v2 <> "[" <> showD off <> "]"
   translateStore v1 off v2 w
-  comment "End Store"
+  commentD "End Store"
 translateTAC (LoadCI v i) = do
-  comment $ "LoadCI: " ++ show v ++ " := " ++ show i
+  commentD $ "LoadCI: " <> showD v <> " := " <> showD i
   operand <- allocate' v
   movq (Imm (IntLitQ $ fromIntegral i)) operand
-  comment "End LoadCI"
+  commentD "End LoadCI"
 translateTAC (LoadCS v s) = do
-  comment $ "LoadCS: " ++ show v ++ " := " ++ show s
+  commentD $ "LoadCS: " <> showD v <> " := " <> showD s
   o <- allocate' v
   l <- getLabel
-  section
-  int (fromIntegral $ length s)
-  lab l
-  asciz s
-  text
+  tellString l s -- store the string in the data section
   leaq (Mem (MRegL l Rip)) rax
   movq rax o
-  comment "End LoadCS"
+  commentD "End LoadCS"
 translateTAC (LoadM v1 v2 off w) = do
-  comment $ "LoadM: " ++ show v1 ++ " := " ++ show v2 ++ "[" ++ show off ++ "]"
+  commentD $
+    "LoadM: " <> showD v1 <> " := " <> showD v2 <> "[" <> showD off <> "]"
   translateLoadM v1 v2 off w
-  comment "End LoadM"
+  commentD "End LoadM"
 translateTAC (TAC.Call v1 l vs) = do
-  comment $ "Call: " ++ show v1 ++ " := call " ++ show l ++ "(" ++ show vs ++ ")"
+  commentD $
+    "Call: " <> showD v1 <> " := call " <> showD l <> "(" <> showD vs <> ")"
   -- push all registers on to stack
   o <- allocate' v1
   os <- mapM getOperand vs
@@ -310,43 +324,51 @@ translateTAC (TAC.Call v1 l vs) = do
   -- pop all registers off the stack
   mapM_ popq os
   movq argRet o
-  comment "End Call"
+  commentD "End Call"
 translateTAC (Print v w) = do
-  comment $ "Print: print " ++ show v
+  commentD $ "Print: print " <> showD v
   operand <- getOperand v
   movq operand arg1
   translatePrint w
-  comment "End Print"
+  commentD "End Print"
 translateTAC (TAC.PrintLn v w) = do
-  comment $ "PrintLn: println " ++ show v
+  commentD $ "PrintLn: println " <> showD v
   translateTAC (Print v w)
   call printLn
-  comment "End PrintLn"
+  commentD "End PrintLn"
+{-
+translateTAC (TAC.Exit v) = do
+  commentD $ "Exit: exit " <> showD v
+  operand <- getOperand v
+  movq operand arg1
+  call (R X86.Exit)
+  commentD "End Exit"
+-}
 translateTAC (Read v w) = do
-  comment $ "Read: " ++ show v ++ " := read"
+  commentD $ "Read: " <> showD v <> " := read"
   operand <- allocate' v
   movq operand rdi
   translateRead operand w
-  comment "End Read"
+  commentD "End Read"
 translateTAC (TAC.Malloc lv rv) = do
-  comment $ "Malloc: " ++ show lv ++ " := malloc " ++ show rv
+  commentD $ "Malloc: " <> showD lv <> " := malloc " <> showD rv
   operand' <- getOperand rv
   movq operand' arg1
   call (R X86.Malloc)
   operand <- allocate' lv
   movq argRet operand
-  comment "End Malloc"
+  commentD "End Malloc"
 translateTAC (TAC.Free v) = do
-  comment $ "Free: free " ++ show v
+  commentD $ "Free: free " <> showD v
   operand <- getOperand v
   movq operand arg1
   cmpq (Imm (IntLitQ 0)) arg1
   je errNull
   call (R X86.Free)
-  comment "End Free"
+  commentD "End Free"
 -- > assert 0 <= <var> < <max>
 translateTAC (TAC.CheckBounds v vm) = do
-  comment $ "CheckBounds: assert 0 <= " ++ show v ++ " < " ++ show vm
+  commentD $ "CheckBounds: assert 0 <= " <> showD v <> " < " <> showD vm
   l3 <- getLabel
   l4 <- getLabel
   o <- getOperand v
@@ -362,12 +384,24 @@ translateTAC (TAC.CheckBounds v vm) = do
   call (R X86.ErrOutOfBounds)
   lab l4
 translateTAC (TAC.Move v1 v2) = do
-  comment $ "Move: " ++ show v1 ++ " := " ++ show v2
+  commentD $ "Move: " <> showD v1 <> " := " <> showD v2
   operand1 <- allocate' v1
   operand2 <- getOperand v2
   movq operand2 rax
   movq rax operand1
-  comment "End Move"
+  commentD "End Move"
+
+tellString :: X86.Label -> String -> Analysis ()
+tellString l s =
+  tell
+    ( mempty
+    ,
+      [ Dir $ DirInt (fromIntegral $ length s)
+      , Lab l
+      , Dir $ DirAsciz s
+      ]
+    , mempty
+    )
 
 -------------------------------------
 
@@ -385,57 +419,75 @@ divModPrefix o1 o2 = do
 translateBinOp
   :: OperandQMM -> BinOp -> OperandQMM -> OperandQMM -> Analysis ()
 translateBinOp o Add o1 o2 = do
-  comment $ "Binary Addition: " ++ show o ++ " := " ++ show o1 ++ " + " ++ show o2
+  commentD $
+    "Binary Addition: " <> showD o <> " := " <> showD o1 <> " + " <> showD o2
   movl o1 eax
   movl o2 ebx
   addl ebx eax
   jo errOverflow
   movslq eax rax
   movq rax o
-  comment "End Binary Addition"
+  commentD "End Binary Addition"
 translateBinOp o PtrAdd o1 o2 = do
-  comment $
-    "Binary Pointer Addition: " ++ show o ++ " := " ++ show o1 ++ " + " ++ show o2
+  commentD $
+    "Binary Pointer Addition: "
+      <> showD o
+      <> " := "
+      <> showD o1
+      <> " + "
+      <> showD o2
   movq o1 rax
   movq o2 rbx
   addq rbx rax
   jo errOverflow
   movq rax o
-  comment "End Pointer Binary Addition"
+  commentD "End Pointer Binary Addition"
 translateBinOp o Sub o1 o2 = do
-  comment $
-    "Binary Subtraction: " ++ show o ++ " := " ++ show o1 ++ " - " ++ show o2
+  commentD $
+    "Binary Subtraction: " <> showD o <> " := " <> showD o1 <> " - " <> showD o2
   movl o1 eax
   movl o2 ebx
   subl ebx eax
   jo errOverflow
   movslq eax rax
   movq rax o
-  comment "End Binary Subtraction"
+  commentD "End Binary Subtraction"
 translateBinOp o Mul o1 o2 = do
-  comment $
-    "Binary Multiplication: " ++ show o ++ " := " ++ show o1 ++ " * " ++ show o2
+  commentD $
+    "Binary Multiplication: " <> showD o <> " := " <> showD o1 <> " * " <> showD o2
   movl o1 eax
   movl o2 ebx
   imull ebx eax
   jo errOverflow
   movslq eax rax
   movq rax o
-  comment "End Binary Multiplication"
+  commentD "End Binary Multiplication"
 translateBinOp o Div o1 o2 = do
-  comment $ "Binary Division: " ++ show o ++ " := " ++ show o1 ++ " / " ++ show o2
-  divModPrefix o1 o2
+  commentD $
+    "Binary Division: " <> showD o <> " := " <> showD o1 <> " / " <> showD o2
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
+  je errDivByZero
+  cltd -- sign extend eax into edx
+  idivl ebx -- divide edx:eax by ebx
   movslq eax rax
   movq rax o
-  comment "End Binary Division"
+  commentD "End Binary Division"
 translateBinOp o Mod o1 o2 = do
-  comment $ "Binary Modulo: " ++ show o ++ " := " ++ show o1 ++ " % " ++ show o2
-  divModPrefix o1 o2
+  commentD $
+    "Binary Modulo: " <> showD o <> " := " <> showD o1 <> " % " <> showD o2
+  movl o1 eax -- %eax := o1
+  movl o2 ebx -- %ebx := o2
+  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
+  je errDivByZero
+  cltd -- sign extend eax into edx
+  idivl ebx -- divide edx:eax by ebx
   movslq edx rdx
   movq rdx o
-  comment "End Binary Modulo"
+  commentD "End Binary Modulo"
 translateBinOp o And o1 o2 = do
-  comment $ "Binary And: " ++ show o ++ " := " ++ show o1 ++ " && " ++ show o2
+  commentD $ "Binary And: " <> showD o <> " := " <> showD o1 <> " && " <> showD o2
   l2 <- getLabel
   l3 <- getLabel
   cmpl (Imm (IntLitD 0)) o1
@@ -449,7 +501,7 @@ translateBinOp o And o1 o2 = do
   lab l3
   movzbq al rax
   movq rax o
-  comment "End Binary And"
+  commentD "End Binary And"
 {-
   cmpl $0, -4(%rbp)
   jne .L2
@@ -465,7 +517,7 @@ translateBinOp o And o1 o2 = do
   movl %eax, -12(%rbp)
 -}
 translateBinOp o Or o1 o2 = do
-  comment $ "Binary Or: " ++ show o ++ " := " ++ show o1 ++ " || " ++ show o2
+  commentD $ "Binary Or: " <> showD o <> " := " <> showD o1 <> " || " <> showD o2
   l2 <- getLabel
   l3 <- getLabel
   l4 <- getLabel
@@ -481,95 +533,96 @@ translateBinOp o Or o1 o2 = do
   lab l4
   movzbq al rax
   movq rax o
-  comment "End Binary Or"
+  commentD "End Binary Or"
 translateBinOp o TAC.LT o1 o2 = do
-  comment $
-    "Binary Less Than: " ++ show o ++ " := " ++ show o1 ++ " < " ++ show o2
+  commentD $
+    "Binary Less Than: " <> showD o <> " := " <> showD o1 <> " < " <> showD o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setl al -- set al to 1 if %eax < %ebx
   movzbq al rax
   movq rax o -- %o := %al
-  comment "End Binary Less Than"
+  commentD "End Binary Less Than"
 translateBinOp o TAC.LTE o1 o2 = do
-  comment $
+  commentD $
     "Binary Less Than or Equal: "
-      ++ show o
-      ++ " := "
-      ++ show o1
-      ++ " <= "
-      ++ show o2
+      <> showD o
+      <> " := "
+      <> showD o1
+      <> " <= "
+      <> showD o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setle al -- set al to 1 if %eax <= %ebx
   movzbq al rax
   movq rax o -- %o := %al
-  comment "End Binary Less Than or Equal"
+  commentD "End Binary Less Than or Equal"
 translateBinOp o TAC.GT o1 o2 = do
-  comment $
-    "Binary Greater Than: " ++ show o ++ " := " ++ show o1 ++ " > " ++ show o2
+  commentD $
+    "Binary Greater Than: " <> showD o <> " := " <> showD o1 <> " > " <> showD o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setg al -- set al to 1 if %eax > %ebx
   movzbq al rax
   movq rax o -- %o := %al
-  comment "End Binary Greater Than"
+  commentD "End Binary Greater Than"
 translateBinOp o TAC.GTE o1 o2 = do
-  comment $
+  commentD $
     "Binary Greater Than or Equal: "
-      ++ show o
-      ++ " := "
-      ++ show o1
-      ++ " >= "
-      ++ show o2
+      <> showD o
+      <> " := "
+      <> showD o1
+      <> " >= "
+      <> showD o2
   movl o1 eax -- %eax := o1
   movl o2 ebx -- %ebx := o2
   cmpl ebx eax -- compare %ebx and %eax
   setge al -- set al to 1 if %eax >= %ebx
   movzbq al rax
   movq rax o -- %o := %al
-  comment "End Binary Greater Than or Equal"
+  commentD "End Binary Greater Than or Equal"
 translateBinOp o TAC.Eq o1 o2 = do
-  comment $ "Binary Equal: " ++ show o ++ " := " ++ show o1 ++ " == " ++ show o2
+  commentD $
+    "Binary Equal: " <> showD o <> " := " <> showD o1 <> " == " <> showD o2
   movq o1 rax -- %eax := o1
   movq o2 rbx -- %ebx := o2
   cmpq rbx rax -- compare %ebx and %eax
   sete al -- set al to 1 if %eax == %ebx
   movzbq al rax
   movq rax o -- %o := %al
-  comment "End Binary Equal"
+  commentD "End Binary Equal"
 translateBinOp o TAC.Ineq o1 o2 = do
-  comment $
-    "Binary Not Equal: " ++ show o ++ " := " ++ show o1 ++ " != " ++ show o2
+  commentD $
+    "Binary Not Equal: " <> showD o <> " := " <> showD o1 <> " != " <> showD o2
   movq o1 rax -- %eax := o1
   movq o2 rbx -- %ebx := o2
   cmpq rbx rax -- compare %ebx and %eax
   setne al -- set al to 1 if %eax != %ebx
   movzbq al rax
   movq rax o -- %o := %al
-  comment "End Binary Not Equal"
+  commentD "End Binary Not Equal"
 
 -- | <var> := <unop> <var>
 translateUnOp :: OperandQMM -> UnOp -> OperandQMM -> Analysis ()
 translateUnOp o Not o' = do
-  comment $ "Unary Not: " ++ show o ++ " := ! " ++ show o'
+  commentD $ "Unary Not: " <> showD o <> " := ! " <> showD o'
   movl o' eax
   cmpl (Imm (IntLitD 0)) eax
   sete al
   movzbq al rax
   movq rax o
-  comment "End Unary Not"
+  commentD "End Unary Not"
 translateUnOp o Negate o' = do
-  comment $ "Unary Negate: " ++ show o ++ " := - " ++ show o'
+  commentD $ "Unary Negate: " <> showD o <> " := - " <> showD o'
   movl o' eax
   negl eax
   jo errOverflow
   movslq eax rax
   movq rax o
-  comment "End Unary Negate"
+  commentD "End Unary Negate"
 
 -- | Utility which calls appropriate print runtime library based on given type
 translatePrint :: FType -> Analysis ()
@@ -631,93 +684,37 @@ translateStore v1 off v2 t = do
     moveT s d FString = movq s rcx >> movq rcx d
     moveT s d FPtr = movq s rcx >> movq rcx d
 
-leaq o1 o2 = tellInstr (Leaq o1 o2)
-
-mov m o r = tellInstr (m o r)
-
-movb = mov Movb
-
-movl = mov Movl
-
-movq = mov Movq
-
-movslq o r = tellInstr (Movslq o r)
-
-movzbq o r = tellInstr (Movzbq o r)
-
-addq o1 o2 = tellInstr (Addq o1 o2)
-
-andq o1 o2 = tellInstr (Andq o1 o2)
-
-addl o1 o2 = tellInstr (Addl o1 o2)
-
-subq o1 o2 = tellInstr (Subq o1 o2)
-
-subl o1 o2 = tellInstr (Subl o1 o2)
-
-imull o1 o2 = tellInstr (Imull o1 o2)
-
-idivl o = tellInstr (Idivl o)
-
-cmpl o1 o2 = tellInstr (Cmpl o1 o2)
-
-cmpq o1 o2 = tellInstr (Cmpq o1 o2)
-
-pushq o = tellInstr (Pushq o)
-
-popq o = tellInstr (Popq o)
-
-j :: (X86.Label -> Instruction) -> X86.Label -> Analysis ()
-j s l@(X86.R r) = do
+jump :: (X86.Label -> Instruction) -> X86.Label -> Analysis ()
+jump s l@(X86.R r) = do
   tellInstr (s l)
   useRuntimeFunc r
-j s l = tellInstr (s l)
+jump s l = tellInstr (s l)
 
-jo = j Jo
+jo = jump Jo
 
-js = j Js
+js = jump Js
 
-jl = j Jl
+jl = jump Jl
 
-je = j Je
+je = jump Je
 
-jne = j Jne
+jne = jump Jne
 
-jmp = j Jmp
+jmp = jump Jmp
 
-cltd :: Analysis ()
-cltd = tellInstr Cltd
+call = jump X86.Call
 
-set :: (a -> Instruction) -> a -> Analysis ()
-set s r = tellInstr (s r)
+arg1 = rdi
 
-sete = set Sete
+arg3 = rdx
 
-setne = set Setne
+arg4 = rcx
 
-setl = set Setl
+arg5 = r8
 
-setle = set Setle
+arg6 = r9
 
-setg = set Setg
-
-setge = set Setge
-
-negl o = tellInstr (Negl o)
-
-call = j X86.Call
-
-arg1 = Reg Rdi
-
-arg3 = Reg Rdx
-
-arg4 = Reg Rcx
-
-arg5 = Reg R8
-
-arg6 = Reg R9
-
-argRet = Reg Rax
+argRet = rax
 
 printi :: X86.Label
 printi = R X86.PrintI
@@ -746,24 +743,14 @@ errOverflow = R X86.ErrOverflow
 errDivByZero :: X86.Label
 errDivByZero = R X86.ErrDivByZero
 
-lab :: X86.Label -> Analysis ()
-lab = tellInstr . Lab
-
 section :: Analysis ()
 section = tellInstr (Dir DirSection)
 
-int :: Integer -> Analysis ()
-int x = tellInstr (Dir (DirInt x))
+commentD :: DList Char -> Analysis ()
+commentD = comment . D.toList
 
-asciz :: String -> Analysis ()
-asciz s = tellInstr (Dir (DirAsciz s))
+showD :: (Show a) => a -> DList Char
+showD = D.fromList . show
 
-text :: Analysis ()
-text = tellInstr (Dir DirText)
-
-comment :: String -> Analysis ()
-comment s = tellInstr (Comment s)
-
--- | Utility for runnning runtime functions and writing their effects to the state
 useRuntimeFunc :: X86.Runtime -> Analysis ()
-useRuntimeFunc r = modify (\x -> x {runtimeFns = S.union (runtimeDeps A.! r) (runtimeFns x)})
+useRuntimeFunc r = tell (mempty, mempty, S.singleton r)

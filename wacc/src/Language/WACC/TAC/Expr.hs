@@ -65,7 +65,10 @@ instance (Enum ident, Eq ident) => ToTAC (ArrayIndex ident BType) where
       -- Load a value of type ft starting at address (array + offset).
       loadOffset array offset ft = do
         localTarget <- getTarget
-        putTACs [LoadM localTarget array offset ft]
+        putTACs
+          [ -- localTarget := array[offset]
+            LoadM localTarget array offset ft
+          ]
       -- Evaluate the offset of the xth array element (sizeOf ft * x + 4) into a
       -- fresh temporary variable, which is then returned. Checks the index
       -- against the length of array.
@@ -121,8 +124,11 @@ Load the index of a value of an enumerable type into the target register using
 -}
 loadEnum :: (Enum a, Ord lident) => a -> TACM ident lident ()
 loadEnum x = do
-  t <- getTarget
-  putTACs [LoadCI t (fromEnum x)]
+  target <- getTarget
+  putTACs
+    [ -- target := $(fromEnum x)
+      LoadCI target (fromEnum x)
+    ]
 
 {- |
 Apply a unary operator to an expression, storing the result in the target
@@ -136,7 +142,10 @@ unOp
 unOp op x = do
   arg <- tempWith (toTAC x)
   target <- getTarget
-  putTACs [UnInstr target op arg]
+  putTACs
+    [ -- target := op arg
+      UnInstr target op arg
+    ]
 
 {- |
 Apply a ternary 'TAC' constructor to the target variable and two expressions.
@@ -182,7 +191,10 @@ instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   toTAC (WAtom (CharLit c _) _) = loadEnum c
   toTAC (WAtom (StringLit s _) _) = do
     target <- getTarget
-    putTACs [LoadCS target s]
+    putTACs
+      [ -- target := s
+        LoadCS target s
+      ]
   toTAC (WAtom (Null _) _) = loadEnum (0 :: Int)
   toTAC (WAtom (Ident v _) _) = do
     target <- getTarget
@@ -193,15 +205,21 @@ instance (Enum ident, Eq ident) => ToTAC (Expr ident BType) where
   toTAC (AST.Negate x _) = unOp Negate x
   toTAC (AST.Len x _) = do
     array <- tempWith (toTAC x)
-    offset <- loadConst 0
+    lengthOffset <- loadConst 0
     target <- getTarget
-    putTACs [LoadM target array offset FInt]
+    putTACs
+      [ -- target := array[lengthOffset]
+        LoadM target array lengthOffset FInt
+      ]
   toTAC (AST.Ord x _) = toTAC x
   toTAC (AST.Chr x _) = do
     target <- getTarget
     toTAC x
     validCharUpperBound <- loadConst 128
-    putTACs [CheckBounds target validCharUpperBound]
+    putTACs
+      [ -- assert 0 <= target < validCharUpperBound
+        CheckBounds target validCharUpperBound
+      ]
   -- Binary operators:
   toTAC (AST.Mul x y _) = binOp x Mul y
   toTAC (AST.Div x y _) = binOp x Div y
