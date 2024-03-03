@@ -465,24 +465,14 @@ translateBinOp o Mul o1 o2 = do
 translateBinOp o Div o1 o2 = do
   commentD $
     "Binary Division: " <> showD o <> " := " <> showD o1 <> " / " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
-  je errDivByZero
-  cltd -- sign extend eax into edx
-  idivl ebx -- divide edx:eax by ebx
+  divModPrefix o1 o2
   movslq eax rax
   movq rax o
   commentD "End Binary Division"
 translateBinOp o Mod o1 o2 = do
   commentD $
     "Binary Modulo: " <> showD o <> " := " <> showD o1 <> " % " <> showD o2
-  movl o1 eax -- %eax := o1
-  movl o2 ebx -- %ebx := o2
-  cmpl (Imm (IntLitD 0)) ebx -- check for division by zero
-  je errDivByZero
-  cltd -- sign extend eax into edx
-  idivl ebx -- divide edx:eax by ebx
+  divModPrefix o1 o2
   movslq edx rdx
   movq rdx o
   commentD "End Binary Modulo"
