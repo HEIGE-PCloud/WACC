@@ -36,8 +36,6 @@ data TACMState ident lident = TACMState
   , funcBlocks :: Map lident (BasicBlock ident lident)
   }
 
-type Blocks ident lident = DList (BasicBlock ident lident)
-
 {- |
 TAC translation monad.
 -}

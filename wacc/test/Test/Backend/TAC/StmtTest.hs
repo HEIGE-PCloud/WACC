@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns -Wno-type-defaults #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Test.Backend.TAC.StmtTest (stmtTestGroup, stmtsTestGroup) where
 
 import Data.DList
-import Data.List.NonEmpty
 import Data.Map
 import Language.WACC.AST hiding (Stmt (..))
 import qualified Language.WACC.AST as AST

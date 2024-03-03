@@ -8,7 +8,7 @@
 The strategy for scope analysis is first add all function names into a symbol table (pass1).
 The AST renaming and scope analysis occurs simultaneously in the 2nd pass using a RWS monad, @Analysis@.
 -}
-module Language.WACC.Semantic.Scope (scopeAnalysis, Fnident (..), Vident (..), VarST) where
+module Language.WACC.Semantic.Scope (scopeAnalysis, Fnident, Vident, VarST) where
 
 import Control.Monad.RWS
   ( RWS
