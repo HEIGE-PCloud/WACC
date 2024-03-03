@@ -21,10 +21,7 @@ type instance Typed (Func typ fnident ident ann) = Func typ fnident ident BType
 instance (Ord fnident) => FnTypeChecked (Func WType fnident ident Pos) where
   type TypingFnIdent (Func WType fnident ident Pos) = fnident
   fnCheck (Func rwt f pwts ss p) = do
-    let
-      rt = fix rwt
-    setFnType f (FnType (fix . fst <$> pwts) rt)
-    (_, ss') <- unifyStmtsAt p rt ss
+    (_, ss') <- unifyStmtsAt p (fix rwt) ss
     pure $ Func rwt f pwts ss' BAny
 
 type instance Typed (Prog typ fnident ident ann) = Prog typ fnident ident BType
@@ -32,7 +29,11 @@ type instance Typed (Prog typ fnident ident ann) = Prog typ fnident ident BType
 instance (Ord fnident) => FnTypeChecked (Prog WType fnident ident Pos) where
   type TypingFnIdent (Prog WType fnident ident Pos) = fnident
   fnCheck (Main fs ss p) = reportAt p BAny $ do
+    mapM_ setFnType' fs
     fs' <- mapM fnCheck fs
     (t, ss') <- unifyStmts BAny ss
     when (t /= BAny) (abortWith $ ReturnFromMainError p)
     pure $ Main fs' ss' BAny
+    where
+      setFnType' (Func rwt f pwts _ _) =
+        setFnType f (FnType (fix . fst <$> pwts) (fix rwt))
