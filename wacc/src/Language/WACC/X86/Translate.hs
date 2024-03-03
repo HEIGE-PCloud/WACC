@@ -632,10 +632,13 @@ leaq o1 o2 = tellInstr (Leaq o1 o2)
 
 mov m o r = tellInstr (m o r)
 
+movb :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Analysis ()
 movb = mov Movb
 
+movl :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Analysis ()
 movl = mov Movl
 
+movq :: (ValidOpType t1 t2) => Operand s1 t1 -> Operand s2 t2 -> Analysis ()
 movq = mov Movq
 
 movslq o r = tellInstr (Movslq o r)
