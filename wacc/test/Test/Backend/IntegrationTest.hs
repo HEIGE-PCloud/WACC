@@ -36,9 +36,9 @@ import Text.Gigaparsec.Token.Lexer
   )
 
 enabledTests :: [FilePath]
-enabledTests = [t | t <- allTests, any (`isInfixOf` t) enabledPaths]
-  where
-    enabledPaths = ["basic", "variables", "sequence", "epxressions", "if"]
+enabledTests = allTests -- [t | t <- allTests, any (`isInfixOf` t) enabledPaths]
+-- where
+--   enabledPaths = ["basic", "variables", "sequence", "epxressions", "if"]
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
