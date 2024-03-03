@@ -13,7 +13,7 @@ module Language.WACC.TAC.Value (LVMode (..), lvToTAC) where
 import Control.Monad (when, zipWithM_)
 import Language.WACC.AST (LValue (..), PairElem (..), RValue (..), getAnn)
 import Language.WACC.TAC.Class
-import Language.WACC.TAC.Expr ()
+import Language.WACC.TAC.Expr (aiToTAC)
 import Language.WACC.TAC.FType
 import Language.WACC.TAC.State
 import Language.WACC.TAC.TAC
@@ -62,10 +62,12 @@ instance (Enum ident, Eq ident) => ToTAC (LValue ident BType) where
           Read (Var v) (flatten t)
         ]
     LVStore rv -> fnToTAC rv `into` Var v
-  toTAC (LVArrayElem ai _) = pure $ \case
-    LVLoad -> toTAC ai >>= ($ Nothing)
-    LVRead -> toTAC ai >>= ($ Just readBaseCase)
-    LVStore rv -> toTAC ai >>= ($ Just (storeBaseCase rv))
+  toTAC (LVArrayElem ai _) =
+    pure $
+      aiToTAC ai . \case
+        LVLoad -> Nothing
+        LVRead -> Just readBaseCase
+        LVStore rv -> Just (storeBaseCase rv)
     where
       -- Read a value from stdin to a temporary variable, then store its value
       -- into the array at the calculated offset.
