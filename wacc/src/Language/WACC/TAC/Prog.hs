@@ -1,12 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoOverloadedLists #-}
 
 module Language.WACC.TAC.Prog where
-
--- Import any necessary modules here
-
--- Define your functions and types here
 
 import qualified Language.WACC.AST.Prog as AST
 import Language.WACC.TAC.Class
@@ -29,13 +24,13 @@ instance
   where
   type TACFnRepr (AST.Func typ fnident ident BType) = ()
   type TACFnIdent (AST.Func typ fnident ident BType) = fnident
-  fnToTAC (AST.Func _ fid params stmts _) = do
+  fnToTAC (AST.Func _ fnIdent params stmts _) = do
     let
-      vars = Var . snd <$> params
-    f <- stmtsToTAC stmts fid
-    f $ error "Function did not end with return or exit statement."
-    m <- collectBlocks
-    putFunc fid (TACFunc fid vars m)
+      paramVars = Var . snd <$> params
+    stmtsThen stmts fnIdent $
+      error "Function did not end with return or exit statement."
+    funcBlocks <- collectBlocks
+    putFunc fnIdent (TACFunc fnIdent paramVars funcBlocks)
 
 type instance TACIdent (AST.Prog typ fnident ident BType) = ident
 
@@ -47,10 +42,18 @@ instance
   type TACFnIdent (AST.Prog typ fnident ident BType) = fnident
   fnToTAC (AST.Main funcs stmts _) = do
     mapM_ fnToTAC funcs
-    f <- stmtsToTAC stmts 0
-    fl <- freshLabel
-    f $ Jump fl
-    t <- freshTemp
-    appendBlock (BasicBlock [LoadCI t 0] (Exit t)) fl
-    bs <- collectBlocks
-    putFunc 0 (TACFunc 0 [] bs)
+    completeMain <- stmtsToTAC stmts 0
+    implicitExitLabel <- freshLabel
+    completeMain $ Jump implicitExitLabel
+    implicitExitCodeVar <- freshTemp
+    appendBlock
+      ( BasicBlock
+          [LoadCI implicitExitCodeVar implicitExitCode]
+          (Exit implicitExitCodeVar)
+      )
+      implicitExitLabel
+    mainBlocks <- collectBlocks
+    putFunc mainLabel (TACFunc mainLabel [] mainBlocks)
+    where
+      mainLabel = 0
+      implicitExitCode = 0

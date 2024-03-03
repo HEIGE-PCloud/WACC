@@ -7,7 +7,7 @@
 {- |
 TAC Translation actions for WACC @Stmt@s.
 -}
-module Language.WACC.TAC.Stmt (StmtTACs (..), stmtsToTAC) where
+module Language.WACC.TAC.Stmt (StmtTACs (..), stmtsToTAC, stmtsThen) where
 
 import Data.DList
 import qualified Data.List.NonEmpty as NE
