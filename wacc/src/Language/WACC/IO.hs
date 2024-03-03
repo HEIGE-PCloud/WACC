@@ -20,10 +20,7 @@ import Language.WACC.Semantic.Scope
   , Vident
   , scopeAnalysis
   )
-import Language.WACC.TAC.Class (FnToTAC (fnToTAC))
-import Language.WACC.TAC.Prog ()
-import Language.WACC.TAC.State (evalTACM)
-import Language.WACC.TAC.TAC (TACProgram)
+import Language.WACC.TAC (TACProgram, generateTAC)
 import Language.WACC.TypeChecking (BType, checkTypes)
 import Language.WACC.X86.ATNT (ATNT (..))
 import Language.WACC.X86.Translate (translateProg)
@@ -135,11 +132,10 @@ runTypeCheck (ast, vars) = case checkTypes ast vars of
   (_, errs) -> Failure (errs, semanticErrorCode)
 
 runCodeGen :: String -> (Prog WType Fnident Vident BType, VarST) -> IO ()
-runCodeGen path (ast@(Main fs _ _), _) =
+runCodeGen path (ast, _) =
   withFile filename WriteMode (flip streamA $ translateProg tacProgram)
     *> exitSuccess
   where
     filename = takeBaseName path ++ ".s"
-    nextBlockId = toInteger (length fs + 1)
     tacProgram :: TACProgram Fnident Vident
-    tacProgram = evalTACM nextBlockId (fnToTAC ast)
+    tacProgram = generateTAC ast
