@@ -3,7 +3,17 @@ module Language.WACC.X86.Runtime where
 import qualified Data.DList as D
 import qualified Data.Map as M
 import Language.WACC.X86.ATNT (formatA)
+import Language.WACC.X86.Register (Register (..))
 import Language.WACC.X86.X86
+  ( Directive (..)
+  , Instruction (..)
+  , IntLit (..)
+  , Label (..)
+  , Memory (..)
+  , Operand (..)
+  , Program
+  , Runtime (..)
+  )
 
 x86Examples :: [(Program, String)]
 x86Examples =

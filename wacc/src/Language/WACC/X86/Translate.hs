@@ -44,6 +44,7 @@ import Language.WACC.TAC.TAC
   , Var
   )
 import qualified Language.WACC.TAC.TAC as TAC
+import Language.WACC.X86.Register (Register (..))
 import Language.WACC.X86.Runtime (runtimeLib)
 import Language.WACC.X86.X86 as X86
 
@@ -52,7 +53,7 @@ translateProg :: TACProgram Integer Integer -> Program
 translateProg p = D.toList $ preamble <> is <> runtime
   where
     runtime :: DList Instruction
-    runtime = D.concat $ (runtimeLib !) <$> (S.toList (runtimeFns st))
+    runtime = D.concat $ (runtimeLib !) <$> S.toList (runtimeFns st)
     progRWS :: Analysis ()
     progRWS = mapM_ translateFunc (M.elems p)
     (st, is) =
@@ -151,7 +152,7 @@ translateBlocks l (BasicBlock is next) = do
   translateNext next
   where
     lenStack :: Int64
-    lenStack = toInt64 $ 8 * ((\x -> if (even x) then x else x + 1) (length is))
+    lenStack = toInt64 $ 8 * (\x -> if (even x) then x else x + 1) (length is)
     toInt64 :: Int -> Int64
     toInt64 = fromIntegral . toInteger
 

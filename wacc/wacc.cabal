@@ -52,6 +52,7 @@ library
       Language.WACC.TypeChecking.State
       Language.WACC.TypeChecking.Stmt
       Language.WACC.X86.ATNT
+      Language.WACC.X86.Register
       Language.WACC.X86.Runtime
       Language.WACC.X86.Size
       Language.WACC.X86.Translate
