@@ -6,8 +6,7 @@ module Language.WACC.X86.OperandTH where
 
 import Data.Char (toLower)
 import Language.Haskell.TH
-  ( Bang (..)
-  , Body (NormalB)
+  ( Body (NormalB)
   , Con (GadtC)
   , Dec (DataD, SigD, ValD)
   , Exp (AppE, ConE)
