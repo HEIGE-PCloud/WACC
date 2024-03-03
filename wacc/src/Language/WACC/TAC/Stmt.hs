@@ -68,7 +68,7 @@ printArray addNewline array bt = do
       BArray BChar -> FString
       _ -> flatten bt
   putTACs
-    [ BinInstr dataBaseAddr array Add lengthShift
+    [ BinInstr dataBaseAddr array PtrAdd lengthShift
     , printInstr dataBaseAddr printType
     ]
 

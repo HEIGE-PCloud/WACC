@@ -35,7 +35,7 @@ import Language.WACC.TAC.FType
   )
 import Language.WACC.TAC.TAC
   ( BasicBlock (BasicBlock)
-  , BinOp (Add, And, Div, Mod, Mul, Or, Sub)
+  , BinOp (..)
   , Jump (CJump, Jump)
   , TAC (BinInstr, LoadCI, LoadCS, LoadM, Print, Read, Store, UnInstr)
   , TACFunc (..)
@@ -365,6 +365,15 @@ translateBinOp o Add o1 o2 = do
   movslq eax rax
   movq rax o
   comment "End Binary Addition"
+translateBinOp o PtrAdd o1 o2 = do
+  comment $
+    "Binary Pointer Addition: " ++ show o ++ " := " ++ show o1 ++ " + " ++ show o2
+  movq o1 rax
+  movq o2 rbx
+  addq rbx rax
+  jo errOverflow
+  movq rax o
+  comment "End Pointer Binary Addition"
 translateBinOp o Sub o1 o2 = do
   comment $
     "Binary Subtraction: " ++ show o ++ " := " ++ show o1 ++ " - " ++ show o2

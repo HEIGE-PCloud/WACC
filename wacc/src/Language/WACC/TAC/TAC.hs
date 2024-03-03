@@ -76,6 +76,7 @@ data BinOp
   | Ineq
   | And
   | Or
+  | PtrAdd
   deriving (Eq, Show)
 
 -- | Unary operators in TAC
