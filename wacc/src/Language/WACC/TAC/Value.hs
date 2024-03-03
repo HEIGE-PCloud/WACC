@@ -100,11 +100,7 @@ type instance TACIdent (PairElem ident a) = ident
 instance (Enum ident, Eq ident) => ToTAC (PairElem ident BType) where
   type TACRepr (PairElem ident BType) lident = ()
   toTAC pe = do
-    let
-      lv = case pe of
-        FstElem lv' _ -> lv'
-        SndElem lv' _ -> lv'
-    pair <- tempWith (lvToTAC lv LVLoad)
+    pair <- tempWith (lvToTAC (pairElemLValue pe) LVLoad)
     target <- getTarget
     offset <- loadConst (pairElemOffset pe)
     putTACs [LoadM target pair offset (flatten $ getAnn pe)]
