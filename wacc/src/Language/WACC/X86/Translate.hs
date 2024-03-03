@@ -597,7 +597,7 @@ translateStore v1 off v2 t = do
   moveT o2 (Mem (MTwoReg Rax Rbx)) t
 
 moveT :: X86.OperandQMM -> X86.OperandQMM -> FType -> Analysis ()
-moveT s d FChar = movb s cl >> movb cl d
+moveT s d FChar = movzbq s rcx >> movq rcx d
 moveT s d FBool = movb s cl >> movb cl d
 moveT s d FInt = movl s ecx >> movl ecx d
 moveT s d FString = movq s rcx >> movq rcx d
