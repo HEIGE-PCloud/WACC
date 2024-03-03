@@ -1,0 +1,11 @@
+.section .rodata
+.int 45
+.L._errNull_str0:
+.asciz "fatal error: null pair dereferenced or freed\n"
+.text
+_errnull:
+andq $-16, %rsp
+leaq .L._errNull_str0(%rip), %rdi
+call _prints
+movb $-1, %dil
+call exit@plt

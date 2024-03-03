@@ -370,11 +370,10 @@ translateTAC (TAC.CheckBounds v vm reason) = do
   cmpl om eax
   jl l4
   lab l3
-  movl om edi
   movl o esi
   call
     ( case reason of
-        TAC.ChrCheck -> R X86.ErrOutOfBounds
+        TAC.ChrCheck -> R X86.ErrBadChar
         TAC.ArrayIndexCheck -> R X86.ErrOutOfBounds
     )
   lab l4
