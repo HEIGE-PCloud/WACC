@@ -27,11 +27,11 @@ toTAC' = testTACM . (*> ((,) <$> collectTACs <*> collectBlocks)) . fnToTAC
 intLit :: (Integral a) => a -> Expr Int BType
 intLit x = WAtom (IntLit (toInteger x) BInt) BInt
 
-temp0, temp1, temp2, temp3, temp4, temp5, temp6 :: Var Int
-temp0 : temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : _ = Temp <$> [0 ..]
+temp1, temp2, temp3, temp4, temp5, temp6, temp7 :: Var Int
+temp1 : temp2 : temp3 : temp4 : temp5 : temp6 : temp7 : _ = Temp <$> [1 ..]
 
-temp7, temp8, temp9, temp10 :: Var Int
-temp7 : temp8 : temp9 : temp10 : _ = Temp <$> [7 ..]
+temp8, temp9, temp10 :: Var Int
+temp8 : temp9 : temp10 : _ = Temp <$> [8 ..]
 
 stmtTestGroup :: TestTree
 stmtTestGroup =
