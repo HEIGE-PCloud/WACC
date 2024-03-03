@@ -1,14 +1,12 @@
 .section .rodata
 .int 42
 .L._errOutOfBounds_str0:
-.asciz "fatal error: variable failed boundary check. Expected: 0 <= x < %d, while x = %d\n"
+.asciz "fatal error: array index %d out of bounds\n"
 .text
 _erroutofbounds:
 andq $-16, %rsp
 leaq .L._errOutOfBounds_str0(%rip), %rdi
 movb $0, %al
-movq %rsi, %rdx
-movq %rdi, %rsi
 call printf@plt
 movq $0, %rdi
 call fflush@plt
