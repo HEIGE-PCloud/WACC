@@ -4,7 +4,6 @@
 
 module Test.Backend.TAC.ValueTest (lvalueTestGroup, rvalueTestGroup) where
 
-import Data.Char (ord)
 import Data.DList (DList)
 import Language.WACC.AST
   ( ArrayIndex (..)
@@ -212,10 +211,10 @@ testArrayElemSizes tName bt mkAtom mkTAC tSize =
       toTAC'
         (RVArrayLit (flip WAtom bt . flip mkAtom bt <$> [e1, e2]) (BArray bt))
         === [ LoadCI temp1 (4 + 2 * tSize)
-            , LoadCI temp2 2
-            , LoadCI temp3 0
+            , LoadCI temp2 0
+            , LoadCI temp3 2
             , Malloc temp0 temp1
-            , Store temp0 temp3 temp2 FInt
+            , Store temp0 temp2 temp3 FInt
             , mkTAC temp4 e1
             , LoadCI temp5 4
             , Store temp0 temp5 temp4 ft
@@ -258,12 +257,6 @@ rvalueTestGroup =
             (IntLit . toInteger . fromEnum)
             (\v b -> LoadCI v $ fromEnum b)
             1
-        , testArrayElemSizes
-            "char"
-            BChar
-            (IntLit . toInteger . ord)
-            (\v c -> LoadCI v $ ord c)
-            1
         , testArrayElemSizes "string" BString StringLit LoadCS 8
         , testArrayElemSizes
             "pair"
@@ -271,6 +264,19 @@ rvalueTestGroup =
             (const Null)
             (\v () -> LoadCI v 0)
             8
+        , testProperty "char arrays allocate a null terminator" $ \c ->
+            toTAC' (RVArrayLit [WAtom (CharLit c BChar) BChar] (BArray BChar))
+              === [ LoadCI temp1 6
+                  , LoadCI temp2 0
+                  , LoadCI temp3 1
+                  , Malloc temp0 temp1
+                  , Store temp0 temp2 temp3 FInt
+                  , LoadCI temp4 5
+                  , Store temp0 temp4 temp2 FChar
+                  , LoadCI temp5 (fromEnum c)
+                  , LoadCI temp6 4
+                  , Store temp0 temp6 temp5 FChar
+                  ]
         ]
     , testProperty "new pairs allocate 16 bytes" $ \i1 i2 ->
         toTAC' (RVNewPair (intLit i1) (intLit i2) (BKnownPair BInt BInt))

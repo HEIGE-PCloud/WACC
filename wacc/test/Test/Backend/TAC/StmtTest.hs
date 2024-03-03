@@ -164,10 +164,10 @@ stmtTestGroup =
           )
           === (
                 [ LoadCI temp1 16
-                , LoadCI temp2 3
-                , LoadCI temp3 0
+                , LoadCI temp2 0
+                , LoadCI temp3 3
                 , Malloc (Var v) temp1
-                , Store (Var v) temp3 temp2 WIntF
+                , Store (Var v) temp2 temp3 WIntF
                 , LoadCI temp4 5
                 , LoadCI temp5 4
                 , Store (Var v) temp5 temp4 WIntF
