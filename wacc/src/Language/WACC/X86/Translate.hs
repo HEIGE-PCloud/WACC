@@ -316,6 +316,8 @@ translateTAC (TAC.Free v) = do
   comment $ "Free: free " ++ show v
   operand <- getOperand v
   movq operand arg1
+  cmpq (Imm (IntLitQ 0)) arg1
+  je errNull
   call (R X86.Free)
   comment "End Free"
 -- > assert 0 <= <var> < <max>
@@ -558,7 +560,7 @@ translateLoadM v1 v2 off t = do
   offset <- getOperand off
   movq o2 rax
   cmpq (Imm (IntLitQ 0)) rax
-  je (R ErrNull)
+  je errNull
   movq offset rbx
   moveT (Mem (MTwoReg Rax Rbx)) o1 t
 
@@ -571,7 +573,7 @@ translateStore v1 off v2 t = do
   o2 <- getOperand v2
   movq o1 rax
   cmpq (Imm (IntLitQ 0)) rax
-  je (R ErrNull)
+  je errNull
   movq offset rbx
   moveT o2 (Mem (MTwoReg Rax Rbx)) t
 
@@ -723,6 +725,9 @@ prints = R X86.PrintS
 
 printLn :: X86.Label
 printLn = R X86.PrintLn
+
+errNull :: X86.Label
+errNull = R X86.ErrNull
 
 errOverflow :: X86.Label
 errOverflow = R X86.ErrOverflow
