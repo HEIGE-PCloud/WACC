@@ -10,7 +10,7 @@ TAC translation actions for WACC @lvalue@s and @rvalue@s.
 -}
 module Language.WACC.TAC.Value (LVMode (..), lvToTAC) where
 
-import Control.Monad (zipWithM_)
+import Control.Monad (when, zipWithM_)
 import Language.WACC.AST (LValue (..), PairElem (..), RValue (..), getAnn)
 import Language.WACC.TAC.Class
 import Language.WACC.TAC.Expr ()
@@ -118,31 +118,33 @@ instance
   type TACFnRepr (RValue fnident ident BType) = ()
   type TACFnIdent (RValue fnident ident BType) = fnident
   fnToTAC (RVExpr x _) = toTAC x
-  fnToTAC (RVArrayLit [] _) = do
-    target <- getTarget
-    arraySize <- loadConst (sizeOf FInt)
-    const0 <- loadConst 0
-    putTACs
-      [ Malloc target arraySize
-      , Store target const0 const0 FInt
-      ]
   fnToTAC (RVArrayLit xs (BArray t)) = do
     target <- getTarget
     let
       ft = flatten t
       elemCount = length xs
       elemSize = sizeOf ft
+      lengthBytes = sizeOf FInt
+      isCharArray = t == BChar
+      extraCharByte = fromEnum isCharArray
+      indexOffset i = lengthBytes + elemSize * i
+      arrayBytes = indexOffset elemCount
       evaluateAndStore x i = do
         temp <- tempWith (toTAC x)
-        offset <- loadConst (elemSize * i + sizeOf FInt)
+        offset <- loadConst (indexOffset i)
         putTACs [Store target offset temp ft]
-    arraySize <- loadConst (elemSize * elemCount + sizeOf FInt)
-    arrayLength <- loadConst elemCount
-    lengthOffset <- loadConst 0
+    arraySize <- loadConst (arrayBytes + extraCharByte)
+    const0 <- loadConst 0
+    arrayLength <- case xs of
+      [] -> pure const0
+      _ -> loadConst elemCount
     putTACs
       [ Malloc target arraySize
-      , Store target lengthOffset arrayLength FInt
+      , Store target const0 arrayLength FInt
       ]
+    when isCharArray $ do
+      nullByteOffset <- loadConst arrayBytes
+      putTACs [Store target nullByteOffset const0 FChar]
     zipWithM_ evaluateAndStore xs [0 ..]
   fnToTAC (RVNewPair x y _) = do
     temp1 <- tempWith (toTAC x)

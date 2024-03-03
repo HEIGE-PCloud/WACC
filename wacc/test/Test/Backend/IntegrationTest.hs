@@ -38,7 +38,7 @@ import Text.Gigaparsec.Token.Lexer
 enabledTests :: [FilePath]
 enabledTests = [t | t <- allTests, any (`isInfixOf` t) enabledPaths]
   where
-    enabledPaths = ["basic", "variables", "sequence", "valid/if"]
+    enabledPaths = ["basic", "variables", "sequence", "epxressions", "if"]
 
 allTests :: [FilePath]
 allTests = [t | t <- validTests, not $ "advanced" `isInfixOf` t]
@@ -247,7 +247,7 @@ hexDigit :: Parsec Char
 hexDigit = satisfy (`elem` (['0' .. '9'] ++ ['a' .. 'f']))
 
 address :: Parsec ()
-address = string "0x" *> (manyN 12 hexDigit $> ())
+address = string "0x" *> (manyN 8 hexDigit $> ())
 
 parseAddress :: Parsec (Parsec ())
 parseAddress = string "#addrs#" $> address

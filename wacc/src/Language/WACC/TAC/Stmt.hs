@@ -15,25 +15,28 @@ import Language.WACC.AST (Annotated (getAnn))
 import Language.WACC.AST.Stmt (Stmts (..))
 import qualified Language.WACC.AST.Stmt as AST
 import Language.WACC.TAC.Class
-import Language.WACC.TAC.FType (flatten)
+import Language.WACC.TAC.FType
 import Language.WACC.TAC.State
   ( TACM
   , appendBlock
   , collectTACs
   , completeBlock
   , freshLabel
+  , freshTemp
   , into
+  , loadConst
   , putTACs
   , tempWith
   )
 import Language.WACC.TAC.TAC
   ( BasicBlock (..)
+  , BinOp (..)
   , Jump (..)
   , TAC (..)
   , Var (..)
   )
 import Language.WACC.TAC.Value
-import Language.WACC.TypeChecking (BType)
+import Language.WACC.TypeChecking
 
 type instance TACIdent (AST.Stmt fnident ident BType) = ident
 
@@ -47,6 +50,27 @@ data StmtTACs ident fnident
     Blocks (Jump ident fnident -> TACM ident fnident (Jump ident fnident))
   | -- | Jump Translation for terminal instructions like @Ret@ and @Exit@.
     BlockTerminal (Jump ident fnident)
+
+printArray
+  :: (Enum ident, Ord lident)
+  => Bool
+  -> Var ident
+  -> BType
+  -> TACM ident lident ()
+printArray addNewline array bt = do
+  lengthShift <- loadConst (sizeOf FInt)
+  dataBaseAddr <- freshTemp
+  let
+    printInstr
+      | addNewline = PrintLn
+      | otherwise = Print
+    printType = case bt of
+      BArray BChar -> FString
+      _ -> flatten bt
+  putTACs
+    [ BinInstr dataBaseAddr array PtrAdd lengthShift
+    , printInstr dataBaseAddr printType
+    ]
 
 {- |
 Defines instance of @FnToTAC@ for WACC @Stmt@s. This instance is used to translate WACC @Stmt@s AST Nodes to TAC.
@@ -74,14 +98,18 @@ instance
     putTACs [Free t]
     pure Nothing
   fnToTAC (AST.Return e _) = Just . BlockTerminal . Ret <$> tempWith (toTAC e)
-  fnToTAC (AST.Print x _) = do
-    t <- tempWith (toTAC x)
-    putTACs [Print t (flatten $ getAnn x)]
-    pure Nothing
-  fnToTAC (AST.PrintLn x _) = do
-    t <- tempWith (toTAC x)
-    putTACs [PrintLn t (flatten $ getAnn x)]
-    pure Nothing
+  fnToTAC (AST.Print x _) =
+    Nothing <$ do
+      temp <- tempWith (toTAC x)
+      case getAnn x of
+        t@BArray {} -> printArray False temp t
+        t -> putTACs [Print temp (flatten t)]
+  fnToTAC (AST.PrintLn x _) =
+    Nothing <$ do
+      temp <- tempWith (toTAC x)
+      case getAnn x of
+        t@BArray {} -> printArray True temp t
+        t -> putTACs [PrintLn temp (flatten t)]
   fnToTAC (AST.Exit e _) = Just . BlockTerminal . Exit <$> tempWith (toTAC e)
   fnToTAC (AST.IfElse e s1 s2 _) = do
     t <- tempWith (toTAC e)
