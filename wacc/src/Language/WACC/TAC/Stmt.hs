@@ -96,71 +96,75 @@ instance
 
   -- Translates a WACC @Stmt@ AST Node to TAC.
   fnToTAC (AST.Skip _) = pure Nothing
-  fnToTAC (AST.Decl _ x rv _) = Nothing <$ fnToTAC rv `into` Var x
+  fnToTAC (AST.Decl _ v rv _) = Nothing <$ fnToTAC rv `into` Var v
   fnToTAC (AST.Asgn lv rv _) = Nothing <$ lvToTAC lv (LVStore rv)
   fnToTAC (AST.Read lv _) = Nothing <$ lvToTAC lv LVRead
-  fnToTAC (AST.Free e _) = do
-    t <- tempWith (toTAC e)
+  fnToTAC (AST.Free x _) = do
+    ptr <- tempWith (toTAC x)
     putTACs
-      [ -- free t
-        Free t
+      [ -- free ptr
+        Free ptr
       ]
     pure Nothing
-  fnToTAC (AST.Return e _) = Just . BlockTerminal . Ret <$> tempWith (toTAC e)
-  fnToTAC (AST.Print x _) =
-    Nothing <$ do
-      temp <- tempWith (toTAC x)
-      case getAnn x of
-        t@BArray {} -> printArray False temp t
-        t ->
-          putTACs
-            [ -- print temp
-              Print temp (flatten t)
-            ]
-  fnToTAC (AST.PrintLn x _) =
-    Nothing <$ do
-      temp <- tempWith (toTAC x)
-      case getAnn x of
-        t@BArray {} -> printArray True temp t
-        t ->
-          putTACs
-            [ -- println temp
-              PrintLn temp (flatten t)
-            ]
-  fnToTAC (AST.Exit e _) = Just . BlockTerminal . Exit <$> tempWith (toTAC e)
-  fnToTAC (AST.IfElse e s1 s2 _) = do
-    t <- tempWith (toTAC e)
-    fl <- freshLabel
-    gl <- freshLabel
-    pure $ Just $ Blocks $ \j -> do
-      fa <- stmtsToTAC s1 fl
-      fa j
-      ga <- stmtsToTAC s2 gl
-      ga j
-      pure $ CJump t fl gl
-  fnToTAC (AST.While e s _) = do
-    cl <- freshLabel
-    fl <- freshLabel
-    pure $ Just $ Blocks $ \j -> do
-      t <- tempWith (toTAC e)
-      cj' <- case j of
-        Jump l -> pure $ CJump t fl l
-        cj@(CJump {}) -> do
-          l <- freshLabel
-          appendBlock (BasicBlock [] cj) l
-          pure $ CJump t fl l
-        _ -> pure j
-      completeBlock cj' cl
-      fa <- stmtsToTAC s fl
-      fa (Jump cl)
-      pure $ Jump cl
-  fnToTAC (AST.BeginEnd s _) = do
-    fl <- freshLabel
-    fa <- stmtsToTAC s fl
-    pure $ Just $ Blocks $ \j -> do
-      fa j
-      pure $ Jump fl
+  fnToTAC (AST.Return x _) = Just . BlockTerminal . Ret <$> tempWith (toTAC x)
+  fnToTAC (AST.Print x _) = do
+    temp <- tempWith (toTAC x)
+    case getAnn x of
+      t@BArray {} -> printArray False temp t
+      t ->
+        putTACs
+          [ -- print temp
+            Print temp (flatten t)
+          ]
+    pure Nothing
+  fnToTAC (AST.PrintLn x _) = do
+    temp <- tempWith (toTAC x)
+    case getAnn x of
+      t@BArray {} -> printArray True temp t
+      t ->
+        putTACs
+          [ -- println temp
+            PrintLn temp (flatten t)
+          ]
+    pure Nothing
+  fnToTAC (AST.Exit x _) = Just . BlockTerminal . Exit <$> tempWith (toTAC x)
+  fnToTAC (AST.IfElse condExpr ifBody elseBody _) = do
+    cond <- tempWith (toTAC condExpr)
+    ifLabel <- freshLabel
+    elseLabel <- freshLabel
+    pure $ Just $ Blocks $ \contJump -> do
+      stmtsThen ifBody ifLabel contJump
+      stmtsThen elseBody elseLabel contJump
+      pure $ CJump cond ifLabel elseLabel
+  fnToTAC (AST.While condExpr body _) = do
+    condLabel <- freshLabel
+    bodyLabel <- freshLabel
+    pure $ Just $ Blocks $ \contJump -> do
+      cond <- tempWith (toTAC condExpr)
+      condJump <- case contJump of
+        Jump elseLabel -> pure $ CJump cond bodyLabel elseLabel
+        condJump@(CJump {}) -> do
+          elseIfLabel <- freshLabel
+          appendBlock (BasicBlock [] condJump) elseIfLabel
+          pure $ CJump cond bodyLabel elseIfLabel
+        _ -> pure contJump
+      completeBlock condJump condLabel
+      let
+        jumpToCond = Jump condLabel
+      stmtsThen body bodyLabel jumpToCond
+      pure jumpToCond
+  fnToTAC (AST.BeginEnd body _) = do
+    bodyLabel <- freshLabel
+    completeBody <- stmtsToTAC body bodyLabel
+    pure $ Just $ Blocks $ \contJump -> do
+      completeBody contJump
+      pure $ Jump bodyLabel
 
+{- |
+Partially translate a sequence of statements from a starting label.
+
+Returns an action which accepts the continuation jump.
+-}
 stmtsToTAC
   :: (Enum fnident, Enum ident, Eq ident, Ord fnident)
   => AST.Stmts fnident ident BType
@@ -170,6 +174,18 @@ stmtsToTAC
       fnident
       (Jump ident fnident -> TACM ident fnident ())
 stmtsToTAC stmts l = fnToTAC stmts >>= ($ l)
+
+{- |
+Fully translate a sequence of statements from a starting label and a
+continuation jump in a single action.
+-}
+stmtsThen
+  :: (Enum fnident, Enum ident, Eq ident, Ord fnident)
+  => AST.Stmts fnident ident BType
+  -> fnident
+  -> Jump ident fnident
+  -> TACM ident fnident ()
+stmtsThen stmts l j = stmtsToTAC stmts l >>= ($ j)
 
 {- |
 Defines instance of @FnToTAC@ for WACC @Stmts@s. This instance is used to
@@ -205,16 +221,17 @@ instance
             ident
             fnident
             (Jump ident fnident -> TACM ident fnident ())
-      fnToTAC' kp (x : xs) =
-        fnToTAC x >>= \case
-          Nothing -> fnToTAC' kp xs
-          Just (BlockTerminal j) -> pure $ \_ -> completeBlock j kp
-          Just (Blocks f) -> do
-            ts <- collectTACs
-            fl <- freshLabel
-            pure $ \j -> do
-              fj <- f (Jump fl)
-              appendBlock (BasicBlock (toList ts) fj) kp
-              g <- fnToTAC' fl xs
-              g j
-      fnToTAC' kp [] = pure $ \j -> completeBlock j kp
+      fnToTAC' curLabel (stmt : rest) =
+        fnToTAC stmt >>= \case
+          Nothing -> fnToTAC' curLabel rest
+          Just (BlockTerminal terminalJump) ->
+            pure $ const $ completeBlock terminalJump curLabel
+          Just (Blocks completeBlocks) -> do
+            curTACs <- collectTACs
+            nextLabel <- freshLabel
+            pure $ \curJump -> do
+              contJump <- completeBlocks (Jump nextLabel)
+              appendBlock (BasicBlock (toList curTACs) contJump) curLabel
+              completeNext <- fnToTAC' nextLabel rest
+              completeNext curJump
+      fnToTAC' curLabel [] = pure $ \contJump -> completeBlock contJump curLabel
