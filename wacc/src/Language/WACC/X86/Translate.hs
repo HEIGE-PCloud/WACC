@@ -604,7 +604,7 @@ translateLoadM v1 v2 off t = do
     moveT :: OperandQMM -> OperandQMM -> FType -> Analysis ()
     moveT s d FChar = movzbq s rcx >> movq rcx d
     moveT s d FBool = movb s cl >> movb cl d
-    moveT s d FInt = movl s ecx >> movl ecx d
+    moveT s d FInt = movslq s rcx >> movq rcx d
     moveT s d FString = movq s rcx >> movq rcx d
     moveT s d FPtr = movq s rcx >> movq rcx d
 
