@@ -38,7 +38,7 @@ instance TypeChecked (PairElem ident Pos) where
     t <- case pt of
       BKnownPair _ t -> pure t
       _ -> abort
-    pure $ FstElem lv' t
+    pure $ SndElem lv' t
 
 type instance Typed (LValue ident ann) = LValue ident BType
 

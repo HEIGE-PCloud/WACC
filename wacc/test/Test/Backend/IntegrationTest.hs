@@ -133,7 +133,7 @@ data TestProgramMetadata = TestProgramMetadata
   deriving (Show)
 
 timeout :: Int
-timeout = 5000000
+timeout = 1000000
 
 workingDirectory :: Maybe String
 workingDirectory = Just ".."
