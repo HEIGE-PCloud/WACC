@@ -7,9 +7,12 @@ module Language.WACC.X86.ATNT where
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Language.Haskell.TH
+import System.IO (Handle, hPutStr)
 
 class ATNT a where
   formatA :: a -> String
+  streamA :: a -> Handle -> IO ()
+  streamA x h = hPutStr h $ formatA x
 
 -- Utility function to convert names to lowercase strings
 nameToLower :: Name -> String
