@@ -302,6 +302,7 @@ translateTAC (TAC.Exit v) = do
 translateTAC (Read v w) = do
   comment $ "Read: " ++ show v ++ " := read"
   operand <- allocate' v
+  movq operand rdi
   translateRead operand w
   comment "End Read"
 translateTAC (TAC.Malloc lv rv) = do
@@ -613,6 +614,8 @@ cx = Reg Cx
 cl = Reg Cl
 
 rcx = Reg Rcx
+
+rdi = Reg Rdi
 
 edi = Reg Edi
 
