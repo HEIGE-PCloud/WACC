@@ -62,12 +62,13 @@ $(genRegOperand)
 
 -- | Translate every function's instructions and concat
 translateProg :: TACProgram Integer Integer -> Program
-translateProg p = D.toList $ preamble <> codeSeg <> dataSeg <> runtimeIs
+translateProg p = D.toList $ preamble <> codeSeg <> dataSeg' <> runtimeIs
   where
     runtimeIs :: DList Instruction
     runtimeIs = D.concat $ (runtimeLib !) <$> (S.toList runtime)
     runtime :: Set X86.Runtime -- Including all the dependencies
     runtime = S.unions $ S.map (runtimeDeps A.!) rs
+    dataSeg' = [Dir DirSection] <> dataSeg <> [Dir DirText]
     (_, (codeSeg, dataSeg, rs)) =
       execRWS (mapM_ translateFunc (M.elems p)) mempty (TransST B.empty S.empty 0 0)
     preamble :: DList Instruction
@@ -374,11 +375,9 @@ tellString l s =
   tell
     ( mempty
     ,
-      [ Dir DirSection
-      , Dir $ DirInt (fromIntegral $ length s)
+      [ Dir $ DirInt (fromIntegral $ length s)
       , Lab l
       , Dir $ DirAsciz s
-      , Dir DirText
       ]
     , mempty
     )
