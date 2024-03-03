@@ -29,6 +29,7 @@ import Language.WACC.X86.Operand
 import Language.WACC.X86.Register (Register (..))
 import Language.WACC.X86.Runtime (Runtime (..))
 import Language.WACC.X86.Size (EQ, LT, LTE, Size (..), SizeToNat)
+import System.IO (hPutStr)
 
 type family If (a :: Bool) (b :: Constraint) (c :: Constraint) :: Constraint where
   If 'True a _ = a
@@ -373,6 +374,9 @@ $(genATNTInstruction ''Instruction)
 instance ATNT Program where
   formatA :: Program -> String
   formatA = unlines . map formatA
+  streamA h = mapM_ streamInstr
+    where
+      streamInstr i = streamA h i *> hPutStr h "\n"
 
 type Program = [Instruction]
 

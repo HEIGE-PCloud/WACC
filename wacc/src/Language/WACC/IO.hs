@@ -45,6 +45,7 @@ import System.Exit
   , exitWith
   )
 import System.FilePath.Posix (takeBaseName)
+import System.IO (IOMode (WriteMode), withFile)
 import System.IO.Error
   ( isDoesNotExistError
   , isFullError
@@ -135,7 +136,8 @@ runTypeCheck (ast, vars) = case checkTypes ast vars of
 
 runCodeGen :: String -> (Prog WType Fnident Vident BType, VarST) -> IO ()
 runCodeGen path (ast@(Main fs _ _), _) =
-  writeFile filename (formatA $ translateProg tacProgram) >>= const exitSuccess
+  withFile filename WriteMode (flip streamA $ translateProg tacProgram)
+    *> exitSuccess
   where
     filename = takeBaseName path ++ ".s"
     nextBlockId = toInteger (length fs + 1)
