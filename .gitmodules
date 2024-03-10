@@ -1,8 +1,0 @@
-[submodule "gigaparsec"]
-	path = lib/gigaparsec
-	url = https://gitlab.doc.ic.ac.uk/dt222/gigaparsec.git
-	branch = wacc-19
-[submodule "wacc_examples"]
-	path = wacc/test/wacc_examples
-	url = https://gitlab.doc.ic.ac.uk/dt222/wacc_examples.git
-	branch = master
