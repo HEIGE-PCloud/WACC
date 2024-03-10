@@ -1,0 +1,14 @@
+# Reading is not legal when the type is not known
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(pair, int) p = null;
+  read fst fst p
+end

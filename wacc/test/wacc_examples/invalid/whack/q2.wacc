@@ -1,0 +1,8 @@
+# how much wacc could a whack wacc whack,
+# if a whack wacc could whack wacc
+begin
+    int g() is
+        return 5
+        if true then return 4
+        else skip fi
+end

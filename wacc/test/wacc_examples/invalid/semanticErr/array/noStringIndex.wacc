@@ -1,0 +1,14 @@
+# It shouldn't be possible to index strings (wrong side of the type relaxation)
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  string str = "hello world";
+  char x = str[0]
+end

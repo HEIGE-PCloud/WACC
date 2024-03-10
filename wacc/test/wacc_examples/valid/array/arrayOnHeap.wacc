@@ -1,0 +1,26 @@
+# ensures that arrays are heap allocated
+
+# Output:
+# false
+# 0
+# 1
+#
+
+# Program:
+
+begin
+  int[] dummy_arr = [] ;
+  int[][] arrs = [dummy_arr, dummy_arr] ;
+  int i = 0;
+  while i < 2 do
+    int[] arr = [i] ;
+    arrs[i] = arr ;
+    i = i + 1
+  done;
+
+  # should have different addresses
+  println arrs[0] == arrs[1];
+  # should have different values
+  println arrs[0][0];
+  println arrs[1][0]
+end

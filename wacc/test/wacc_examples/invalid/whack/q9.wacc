@@ -1,0 +1,11 @@
+# how much wacc could a whack wacc whack,
+# if a whack wacc could whack wacc
+
+begin
+    string printf = "%s\n";
+    printf "hi";
+    println(5 + 6);
+    println("%d", 6);
+    println11;
+    println-1;
+end

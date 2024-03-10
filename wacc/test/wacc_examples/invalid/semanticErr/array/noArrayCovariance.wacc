@@ -1,0 +1,15 @@
+# Arrays should not be covariant
+# Thanks to Nathaniel Burke
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  char[][] acs = [] ;
+  string[] bad = acs
+end

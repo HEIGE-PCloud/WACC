@@ -1,0 +1,44 @@
+# Trying to obfuscate invalid returns with whiles.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f() is
+    if true then
+      while true do
+        return 'a'
+      done
+    else
+      return 5
+    fi;
+    if false then
+      return 2
+    else
+      while false do
+        return 'b'
+      done
+    fi;
+    if true then
+      while true do
+        return -2
+      done
+    else
+      while false do
+        return -4
+      done
+    fi;
+    while false do
+      return !"horse"
+    done;
+    exit -1
+  end
+
+  int i = call f()
+end

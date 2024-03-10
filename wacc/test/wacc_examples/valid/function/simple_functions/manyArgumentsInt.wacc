@@ -1,0 +1,21 @@
+# tests a function with more arguments than fit into registers
+
+# Output:
+# 23
+#
+
+# Program:
+
+begin
+  # w, x, y and z are stack allocated on aarch32
+  # y and z are stack allocated on x86-64
+  int f(int s, int t, int u, int v, int w, int x, int y, int z) is
+    int i = u + v ;
+    int j = w * x ;
+    int k = y - z ;
+    return i + j * k
+  end
+
+  int r = call f(0, 0, 1, 4, 2, 3, 7, 4) ;
+  println r
+end

@@ -1,0 +1,10 @@
+// how much wacc could a whack wacc whack,
+// if a whack wacc could whack wacc
+
+int main(int argc, char** argv) is
+    if argc < 0 then {
+        println "please add more arguments";;
+        exit -1
+    } fi
+    return 0
+end

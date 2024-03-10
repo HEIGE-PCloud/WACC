@@ -1,0 +1,15 @@
+# Accessing too many array indices.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int[] a = [1, 2];
+  int oops = a[1][2][3]
+end

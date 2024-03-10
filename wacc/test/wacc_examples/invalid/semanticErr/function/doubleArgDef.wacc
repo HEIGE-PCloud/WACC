@@ -1,0 +1,17 @@
+# functions cannot define the same argument twice
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int foo(int x, int x) is
+	return x
+  end
+
+  skip
+end

@@ -1,0 +1,22 @@
+# Trying to return something invalid from a branch.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f() is
+    if true then
+      return horse
+    else
+      return 1
+    fi
+  end
+
+  int result = call f()
+end

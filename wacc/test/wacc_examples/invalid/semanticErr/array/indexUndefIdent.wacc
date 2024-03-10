@@ -1,0 +1,14 @@
+# Attempting to array-index an undefined identifier.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  char c = horse[2]
+end

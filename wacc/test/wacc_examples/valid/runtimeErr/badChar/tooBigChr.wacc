@@ -1,0 +1,13 @@
+# try to convert a too large number to character
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+    char c = chr 128
+end

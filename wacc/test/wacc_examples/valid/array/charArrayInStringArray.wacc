@@ -1,0 +1,11 @@
+# a char[] can fit into a string[]
+# Thanks to Iurii Zamiatin for finding this
+
+# Output:
+
+# Program:
+
+begin
+    char[] testArr = ['a', 'b', 'c'];
+    string[] arr = [testArr, "box", "foo", "bar"]
+end

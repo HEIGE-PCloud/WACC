@@ -1,0 +1,27 @@
+# tests a function with more arguments than fit into registers
+
+# Output:
+# A
+# b
+#
+
+# Program:
+
+begin
+  # w, x, y and z are stack allocated on aarch32
+  # y and z are stack allocated on x86-64
+  char f(int s, int t, int u, int v, int w, int x, char y, bool z) is
+    int i = u + v ;
+    int j = w + x ;
+    if z
+        then return chr (ord y - i * j)
+        else return y
+    fi
+  end
+
+  char r1 = call f(0, 0, 3, 5, 1, 3, 'a', true) ;
+  println r1 ;
+
+  char r2 = call f(0, 0, 3, 5, 1, 3, 'b', false) ;
+  println r2
+end

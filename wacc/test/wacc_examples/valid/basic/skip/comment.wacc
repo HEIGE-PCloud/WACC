@@ -1,0 +1,10 @@
+# simple skip program with comment line
+
+# Output:
+
+# Program:
+
+begin
+  # I can write stuff on a comment line
+  skip
+end

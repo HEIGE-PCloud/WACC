@@ -1,0 +1,12 @@
+# exit with wrapped int
+
+# Output:
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  exit 256
+end

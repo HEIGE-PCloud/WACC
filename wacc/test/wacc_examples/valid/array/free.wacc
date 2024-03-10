@@ -1,0 +1,12 @@
+# Create and free an array
+
+# Output:
+
+# Program:
+
+begin
+  int[] arr = [1, 2, 3] ;
+  free arr
+end
+
+
